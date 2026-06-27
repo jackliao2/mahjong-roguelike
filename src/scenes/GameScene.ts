@@ -1,10 +1,9 @@
 import Phaser from 'phaser';
-import { Tile, Hand, RunState } from '@/types';
+import { Tile, Hand, RunState, Relic, CustomTile, Yaku } from '@/types';
 import { TileWall } from '@/game/wall';
 import { createHand, sortHand, getAllTiles } from '@/game/hand';
 import { detectWin, findWaitingTiles } from '@/game/winDetector';
 import { calculateScore, createRunState } from '@/game/scoring';
-import { checkAllYaku } from '@/game/yaku';
 import { tileKey, getTileDisplay } from '@/game/tiles';
 import { TILE_WIDTH, TILE_HEIGHT } from '@/render/tileRenderer';
 import { generateRewards, Reward } from '@/roguelike/rewards';
@@ -12,7 +11,7 @@ import { addRelicToRun, addCustomTileToRun, applyYakuBoost, advanceRound, checkR
 import { loadMeta } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
 
-type GamePhase = 'idle' | 'drew' | 'won' | 'lost' | 'round_end' | 'reward';
+type GamePhase = 'idle' | 'drew' | 'won' | 'survived' | 'lost' | 'reward';
 
 interface GameState {
   wall: TileWall;
@@ -42,8 +41,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
 
-    // Handle scene resume from RewardScene
-    if (data?.action === 'new_run' || !this.state) {
+    if (data?.action === 'new_run') {
+      this.startNewRun();
+    } else if (!this.state) {
       this.startNewRun();
     }
     this.createUI();
@@ -200,6 +200,15 @@ export class GameScene extends Phaser.Scene {
   private discardTile(tileId: string): void {
     if (this.state.phase !== 'drew') return;
 
+    // Riichi lock: can only discard the drawn tile
+    if (this.state.runState.isRiichi && this.state.hand.drawnTile) {
+      if (tileId !== this.state.hand.drawnTile.id) {
+        this.showMessage('Riichi lock! Can only discard the drawn tile.');
+        this.time.delayedCall(1200, () => this.showMessage(''));
+        return;
+      }
+    }
+
     let discarded: Tile;
     if (this.state.hand.drawnTile && this.state.hand.drawnTile.id === tileId) {
       discarded = this.state.hand.drawnTile;
@@ -272,12 +281,22 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    const yakuBonuses = loadYakuBonuses();
     const score = calculateScore(
       win,
       allTiles,
       this.state.runState.isRiichi,
-      this.state.runState.relics
+      this.state.runState.relics,
+      this.state.runState.unlockedYaku,
+      yakuBonuses
     );
+
+    // Require at least 1 yaku to win
+    if (score.totalHan === 0) {
+      this.showMessage('No yaku! Need at least one winning pattern.');
+      this.soundManager.playClick();
+      return;
+    }
 
     this.state.roundScore = score.finalScore;
     this.state.runState.score += score.finalScore;
@@ -293,17 +312,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   private endRound(won: boolean): void {
-    this.state.phase = won ? 'won' : 'lost';
-
-    if (!won) {
+    if (won) {
+      this.state.phase = 'won';
+    } else {
+      // Wall exhausted — check if cumulative score meets target
       if (this.state.runState.score >= this.state.runState.targetScore) {
+        this.state.phase = 'survived';
         this.showMessage(`Round survived! Score: ${this.state.runState.score}/${this.state.runState.targetScore}`);
       } else {
         // Game over - run failed
+        this.state.phase = 'lost';
         this.showMessage(`Game Over! Score: ${this.state.runState.score}/${this.state.runState.targetScore}`);
         this.soundManager.playGameOver();
-        const meta = loadMeta();
         endRun(this.state.runState, false);
+        const meta = loadMeta();
         this.time.delayedCall(2000, () => {
           this.scene.launch('GameOverScene', { runState: this.state.runState, won: false, meta });
           this.scene.pause();
@@ -320,13 +342,13 @@ export class GameScene extends Phaser.Scene {
   // ========== REWARD SYSTEM ==========
 
   private triggerRewardScreen(): void {
-    if (this.state.phase !== 'won') return;
+    if (this.state.phase !== 'won' && this.state.phase !== 'survived') return;
 
-    // Check if run is complete
+    // Check if run is complete (final round)
     if (checkRunComplete(this.state.runState)) {
       // Run won!
-      const meta = loadMeta();
       endRun(this.state.runState, true);
+      const meta = loadMeta();
       this.scene.launch('GameOverScene', { runState: this.state.runState, won: true, meta });
       this.scene.pause();
       return;
@@ -347,13 +369,13 @@ export class GameScene extends Phaser.Scene {
   private applyReward(reward: Reward): void {
     switch (reward.type) {
       case 'relic':
-        this.state.runState = addRelicToRun(this.state.runState, reward.data as any);
+        this.state.runState = addRelicToRun(this.state.runState, reward.data as Relic);
         break;
       case 'customTile':
-        this.state.runState = addCustomTileToRun(this.state.runState, reward.data as any);
+        this.state.runState = addCustomTileToRun(this.state.runState, reward.data as CustomTile);
         break;
       case 'yakuBoost':
-        const boost = reward.data as { yaku: any; hanBonus: number };
+        const boost = reward.data as { yaku: Yaku; hanBonus: number };
         this.state.runState = applyYakuBoost(this.state.runState, boost.yaku.id, boost.hanBonus);
         break;
     }
@@ -378,6 +400,7 @@ export class GameScene extends Phaser.Scene {
   // ========== RENDERING ==========
 
   private renderHand(): void {
+    this.hideTooltip();
     this.tileSprites.forEach(s => s.destroy());
     this.tileSprites = [];
 
@@ -480,7 +503,7 @@ export class GameScene extends Phaser.Scene {
 
     const phaseLabels: Record<GamePhase, string> = {
       idle: 'Your Turn', drew: 'Discard or Win', won: 'Round Won!',
-      lost: 'Round Over', round_end: 'Round End', reward: 'Pick Reward',
+      survived: 'Round Survived!', lost: 'Game Over', reward: 'Pick Reward',
     };
     this.uiText.phase.setText(phaseLabels[this.state.phase]);
 
@@ -506,6 +529,7 @@ export class GameScene extends Phaser.Scene {
         if (detectWin(allTiles)) this.showButton('win');
         break;
       case 'won':
+      case 'survived':
         this.showButton('nextRound');
         break;
       case 'lost':

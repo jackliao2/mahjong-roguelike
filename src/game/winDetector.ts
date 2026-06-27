@@ -1,15 +1,26 @@
 import { Tile, Meld, WinningHand } from '@/types';
-import { isSameTile, isHonorTile } from './tiles';
-import { isPair, isTriplet, isSequence } from './hand';
+import { isSameTile, isHonorTile, isTerminal } from './tiles';
+
+// Terminal and honor tile types required for Kokushi (13 Orphans)
+const KOKUSHI_TYPES = [
+  'man-1', 'man-9', 'pin-1', 'pin-9', 'sou-1', 'sou-9',
+  'wind-1', 'wind-2', 'wind-3', 'wind-4',
+  'dragon-1', 'dragon-2', 'dragon-3',
+];
 
 /**
- * Detects if 14 tiles form a winning mahjong hand (4 sets + 1 pair).
- * A set is either a sequence (3 consecutive suited tiles) or a triplet (3 identical).
+ * Detects if 14 tiles form a winning mahjong hand.
+ * Supports: 4 sets + 1 pair, 7 pairs (Chiitoitsu), 13 Orphans (Kokushi).
  */
 export function detectWin(tiles: Tile[]): WinningHand | null {
   if (tiles.length !== 14) return null;
 
-  // Try each possible pair
+  // Check Kokushi (13 Orphans) first — it's a special form
+  if (isKokushi(tiles)) {
+    return { melds: [], pairs: extractAllPairs(tiles) };
+  }
+
+  // Try each possible pair (4 sets + 1 pair)
   const pairCandidates = findPairCandidates(tiles);
   for (const pair of pairCandidates) {
     const remaining = tiles.filter(t => t.id !== pair[0].id && t.id !== pair[1].id);
@@ -22,12 +33,65 @@ export function detectWin(tiles: Tile[]): WinningHand | null {
     }
   }
 
-  // Also check for seven pairs (Chiitoitsu) - special winning form
+  // Check for seven pairs (Chiitoitsu)
   if (isSevenPairs(tiles)) {
     return { melds: [], pairs: extractAllPairs(tiles) };
   }
 
   return null;
+}
+
+/**
+ * Check if 14 tiles form Kokushi Musou (13 Orphans):
+ * one of each terminal/honor type (13 unique) + 1 duplicate of any.
+ */
+function isKokushi(tiles: Tile[]): boolean {
+  if (tiles.length !== 14) return false;
+  const counts = new Map<string, number>();
+  for (const t of tiles) {
+    const key = `${t.suit}-${t.rank}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  // Must have all 13 required terminal/honor types
+  for (const req of KOKUSHI_TYPES) {
+    if (!counts.has(req)) return false;
+  }
+  // Must have exactly one duplicate (14 = 13 unique + 1 extra)
+  let extraCount = 0;
+  for (const [, count] of counts) {
+    if (count > 1) extraCount += count - 1;
+  }
+  return extraCount === 1;
+}
+
+/**
+ * Check if 13 tiles are in Kokushi tenpai (12 unique terminals/honors + 1 pair).
+ */
+function isKokushiTenpai(tiles: Tile[]): string[] {
+  if (tiles.length !== 13) return [];
+  const counts = new Map<string, number>();
+  for (const t of tiles) {
+    const key = `${t.suit}-${t.rank}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  // Count how many of the 13 required types are present
+  const present = KOKUSHI_TYPES.filter(k => counts.has(k));
+  if (present.length === 13) {
+    // All 13 present, one must be a pair — waiting for the 13th unique + duplicate
+    // This means we have 12 unique + 1 pair = 13 tiles
+    // Waiting for any of the 13 types (completing to 14)
+    return KOKUSHI_TYPES;
+  }
+  if (present.length === 12) {
+    // Missing exactly one type, and all others are singles (no pairs)
+    const missing = KOKUSHI_TYPES.filter(k => !counts.has(k));
+    if (missing.length === 1) {
+      // Check no duplicates among present tiles
+      const hasDup = Array.from(counts.values()).some(c => c > 1);
+      if (!hasDup) return [missing[0]];
+    }
+  }
+  return [];
 }
 
 // Check if 14 tiles form 7 pairs (Chiitoitsu)
@@ -63,18 +127,17 @@ function extractAllPairs(tiles: Tile[]): Meld[] {
   return pairs;
 }
 
-// Find all possible pair candidates (unique tile types with >= 2 copies)
+// Find one pair candidate per unique tile type (avoids redundant work for 4-of-a-kind)
 function findPairCandidates(tiles: Tile[]): [Tile, Tile][] {
   const candidates: [Tile, Tile][] = [];
-  const used = new Set<string>();
+  const seenTypes = new Set<string>();
   for (let i = 0; i < tiles.length; i++) {
-    if (used.has(tiles[i].id)) continue;
+    const typeKey = `${tiles[i].suit}-${tiles[i].rank}`;
+    if (seenTypes.has(typeKey)) continue;
     for (let j = i + 1; j < tiles.length; j++) {
-      if (used.has(tiles[j].id)) continue;
       if (isSameTile(tiles[i], tiles[j])) {
         candidates.push([tiles[i], tiles[j]]);
-        used.add(tiles[i].id);
-        used.add(tiles[j].id);
+        seenTypes.add(typeKey);
         break;
       }
     }
@@ -209,17 +272,23 @@ export function isWinningTile(currentTiles: Tile[], drawTile: Tile): boolean {
 
 /**
  * Find all tiles that would complete the hand (tenpai detection).
- * Returns the list of winning tile types.
+ * Checks standard wins, Chiitoitsu, and Kokushi (13 Orphans) waits.
  */
 export function findWaitingTiles(currentTiles: Tile[]): string[] {
   if (currentTiles.length !== 13) return [];
   const waiting = new Set<string>();
+
+  // Check Kokushi tenpai
+  const kokushiWaits = isKokushiTenpai(currentTiles);
+  for (const w of kokushiWaits) waiting.add(w);
+
+  // Check standard + Chiitoitsu waits
   const allSuits = ['man', 'pin', 'sou', 'wind', 'dragon'] as const;
   const maxRanks: Record<string, number> = { man: 9, pin: 9, sou: 9, wind: 4, dragon: 3 };
-
+  let testCounter = 0;
   for (const suit of allSuits) {
     for (let rank = 1; rank <= maxRanks[suit]; rank++) {
-      const testTile: Tile = { suit, rank, id: 'test' };
+      const testTile: Tile = { suit, rank, id: `wait-test-${testCounter++}` };
       if (isWinningTile(currentTiles, testTile)) {
         waiting.add(`${suit}-${rank}`);
       }

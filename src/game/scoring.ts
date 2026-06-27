@@ -7,6 +7,7 @@ const MANGAN_POINTS = 2000; // mangan base points
 
 /**
  * Calculate the score for a winning hand.
+ * Requires at least 1 yaku — a structurally valid hand with 0 yaku is not a valid win.
  * Score = basePoints × (1 + relic multipliers) + relic bonuses
  * basePoints = sum of yaku han values × fu, capped at mangan
  */
@@ -14,11 +15,25 @@ export function calculateScore(
   winningHand: WinningHand,
   rawTiles: Tile[],
   isRiichi: boolean,
-  relics: Relic[] = []
+  relics: Relic[] = [],
+  unlockedYaku?: string[],
+  yakuBonuses?: Record<string, number>
 ): ScoreResult {
-  const matchedYaku = checkAllYaku(winningHand, rawTiles, isRiichi);
+  const matchedYaku = checkAllYaku(winningHand, rawTiles, isRiichi, unlockedYaku, yakuBonuses);
 
   let totalHan = matchedYaku.reduce((sum, { han }) => sum + han, 0);
+
+  // No yaku = invalid win (return 0 score, caller should reject)
+  if (totalHan === 0) {
+    return {
+      basePoints: 0,
+      yakuList: [],
+      totalHan: 0,
+      finalScore: 0,
+      relicMultipliers: 0,
+      relicBonuses: 0,
+    };
+  }
 
   // Handle yakuman (13 han = instant win, capped)
   if (totalHan >= 13) {
@@ -34,11 +49,7 @@ export function calculateScore(
 
   // Calculate base points from han × fu
   let basePoints: number;
-  if (totalHan === 0) {
-    // No yaku matched - shouldn't happen in a valid win, but handle gracefully
-    basePoints = BASE_FU;
-  } else if (totalHan >= MANGAN_HAN) {
-    // Mangan and above - use fixed values
+  if (totalHan >= MANGAN_HAN) {
     basePoints = manganPoints(totalHan);
   } else {
     // Normal calculation: fu × 2^(han+2)
@@ -73,17 +84,18 @@ function applyRelics(basePoints: number, relics: Relic[]): number {
 
 /**
  * Calculate the target score for a given round.
- * Difficulty scales: round 1 is easy, final round is hard.
+ * Target is cumulative — the player's total score must reach this by end of round.
+ * Round 1 target is low enough to be winnable with a single basic yaku (e.g. Tanyao ≈ 480 pts).
  */
 export function calculateTargetScore(round: number, maxRounds: number): number {
-  // Base target: 1000 points, scaling up each round
-  const base = 1000;
-  const scalePerRound = 1.5;
+  // Base target: 500 points (a single 1-han win gives ~480 pts)
+  const base = 500;
+  const scalePerRound = 1.4;
   const target = Math.floor(base * Math.pow(scalePerRound, round - 1));
 
   // Final round (boss) gets an extra debuff multiplier
   if (round === maxRounds) {
-    return Math.floor(target * 1.5);
+    return Math.floor(target * 1.3);
   }
   return target;
 }

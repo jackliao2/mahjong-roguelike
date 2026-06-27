@@ -94,16 +94,16 @@ export const YAKU_LIST: Yaku[] = [
     description: 'Three consecutive sequences (1-2-3, 4-5-6, 7-8-9) in the same suit.',
     check: (hand) => {
       const sequences = hand.melds.filter(m => m.type === 'sequence');
-      const bySuit = new Map<string, number[]>();
+      // Group sequences by suit and check for exact 1-2-3, 4-5-6, 7-8-9
+      const bySuit = new Map<string, Set<string>>();
       for (const seq of sequences) {
-        const ranks = seq.tiles.map(t => t.rank).sort((a, b) => a - b);
-        if (!bySuit.has(seq.tiles[0].suit)) bySuit.set(seq.tiles[0].suit, []);
-        bySuit.get(seq.tiles[0].suit)!.push(...ranks);
+        const ranks = seq.tiles.map(t => t.rank).sort((a, b) => a - b).join('-');
+        const suit = seq.tiles[0].suit;
+        if (!bySuit.has(suit)) bySuit.set(suit, new Set());
+        bySuit.get(suit)!.add(ranks);
       }
-      for (const [suit, allRanks] of bySuit) {
-        if (allRanks.includes(1) && allRanks.includes(2) && allRanks.includes(3) &&
-            allRanks.includes(4) && allRanks.includes(5) && allRanks.includes(6) &&
-            allRanks.includes(7) && allRanks.includes(8) && allRanks.includes(9)) {
+      for (const [, rankSet] of bySuit) {
+        if (rankSet.has('1-2-3') && rankSet.has('4-5-6') && rankSet.has('7-8-9')) {
           return true;
         }
       }
@@ -191,12 +191,18 @@ export function getYakuById(id: string): Yaku | undefined {
 export function checkAllYaku(
   winningHand: WinningHand,
   rawTiles: Tile[],
-  isRiichi: boolean
+  isRiichi: boolean,
+  unlockedYaku?: string[],
+  yakuBonuses?: Record<string, number>
 ): { yaku: Yaku; han: number }[] {
   const matched: { yaku: Yaku; han: number }[] = [];
   for (const yaku of YAKU_LIST) {
+    // Skip yaku not yet unlocked (if filter is provided)
+    if (unlockedYaku && !unlockedYaku.includes(yaku.id)) continue;
     if (yaku.check(winningHand, rawTiles, isRiichi)) {
-      matched.push({ yaku, han: yaku.han });
+      // Apply yaku boost bonus if any
+      const bonus = yakuBonuses?.[yaku.id] || 0;
+      matched.push({ yaku, han: yaku.han + bonus });
     }
   }
   return matched;
