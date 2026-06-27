@@ -3,12 +3,15 @@ import { Tile, Hand, RunState } from '@/types';
 import { TileWall } from '@/game/wall';
 import { createHand, sortHand, getAllTiles } from '@/game/hand';
 import { detectWin, findWaitingTiles } from '@/game/winDetector';
-import { calculateScore, calculateTargetScore, createRunState } from '@/game/scoring';
+import { calculateScore, createRunState } from '@/game/scoring';
 import { checkAllYaku } from '@/game/yaku';
 import { tileKey, getTileDisplay } from '@/game/tiles';
 import { TILE_WIDTH, TILE_HEIGHT } from '@/render/tileRenderer';
+import { generateRewards, Reward } from '@/roguelike/rewards';
+import { addRelicToRun, addCustomTileToRun, applyYakuBoost, advanceRound, checkRunComplete, persistRun, endRun, loadYakuBonuses } from '@/roguelike/run';
+import { loadMeta } from '@/data/storage';
 
-type GamePhase = 'idle' | 'drew' | 'won' | 'lost' | 'round_end';
+type GamePhase = 'idle' | 'drew' | 'won' | 'lost' | 'round_end' | 'reward';
 
 interface GameState {
   wall: TileWall;
@@ -25,14 +28,33 @@ export class GameScene extends Phaser.Scene {
   private uiText: Record<string, Phaser.GameObjects.Text> = {};
   private actionButtons: Record<string, Phaser.GameObjects.Container> = {};
   private messageText!: Phaser.GameObjects.Text;
+  private tooltipText: Phaser.GameObjects.Text | null = null;
+  private tooltipBg: Phaser.GameObjects.Rectangle | null = null;
+  private yakuInfoText!: Phaser.GameObjects.Text;
 
   constructor() {
     super('GameScene');
   }
 
-  create(): void {
+  create(data?: { action?: string }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
-    this.startNewRun();
+
+    // Handle scene resume from RewardScene
+    if (data?.action === 'new_run' || !this.state) {
+      this.startNewRun();
+    }
+    this.createUI();
+    this.renderHand();
+    this.updateUI();
+  }
+
+  // Called when scene resumes from RewardScene
+  private handleResume(sys: Phaser.Scenes.Systems, data: { action?: string; reward?: Reward }): void {
+    if (data.action === 'reward_selected' && data.reward) {
+      this.applyReward(data.reward);
+    }
+    // Either way, advance to next round or end run
+    this.proceedAfterReward();
   }
 
   private startNewRun(): void {
@@ -46,8 +68,6 @@ export class GameScene extends Phaser.Scene {
       roundScore: 0,
     };
     this.dealInitialHand();
-    this.createUI();
-    this.renderHand();
   }
 
   private dealInitialHand(): void {
@@ -63,56 +83,55 @@ export class GameScene extends Phaser.Scene {
 
   private createUI(): void {
     // Top bar - score panel
-    const topBg = this.add.rectangle(0, 0, 1024, 60, 0x1a0f08, 0.9)
-      .setOrigin(0, 0);
-    topBg.setStrokeStyle(2, 0xd4a574);
+    const topBg = this.add.rectangle(0, 0, 1024, 60, 0x1a0f08, 0.95)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0xd4a574);
 
     this.uiText.round = this.add.text(20, 12, '', {
-      fontSize: '16px',
-      color: '#f5e6d3',
-      fontFamily: 'monospace',
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace',
+    });
+    this.uiText.score = this.add.text(180, 12, '', {
+      fontSize: '16px', color: '#d4a574', fontFamily: 'monospace',
+    });
+    this.uiText.target = this.add.text(380, 12, '', {
+      fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace',
+    });
+    this.uiText.wall = this.add.text(620, 12, '', {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
+    });
+    this.uiText.phase = this.add.text(820, 12, '', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
     });
 
-    this.uiText.score = this.add.text(200, 12, '', {
-      fontSize: '16px',
-      color: '#d4a574',
-      fontFamily: 'monospace',
-    });
-
-    this.uiText.target = this.add.text(400, 12, '', {
-      fontSize: '16px',
-      color: '#c73e3a',
-      fontFamily: 'monospace',
-    });
-
-    this.uiText.wall = this.add.text(650, 12, '', {
-      fontSize: '16px',
-      color: '#8b6f47',
-      fontFamily: 'monospace',
-    });
-
-    this.uiText.phase = this.add.text(850, 12, '', {
-      fontSize: '14px',
-      color: '#f5e6d3',
-      fontFamily: 'monospace',
+    // Relics display (top bar right)
+    this.uiText.relics = this.add.text(820, 34, '', {
+      fontSize: '11px', color: '#d4a574', fontFamily: 'monospace',
     });
 
     // Message area (center)
-    this.messageText = this.add.text(512, 250, '', {
-      fontSize: '28px',
-      color: '#f5e6d3',
-      fontFamily: 'monospace',
+    this.messageText = this.add.text(512, 220, '', {
+      fontSize: '24px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center',
+    }).setOrigin(0.5);
+
+    // Yaku info display (below message)
+    this.yakuInfoText = this.add.text(512, 300, '', {
+      fontSize: '14px', color: '#d4a574', fontFamily: 'monospace',
       align: 'center',
     }).setOrigin(0.5);
 
     // Action buttons
-    this.createButton('draw', 512, 400, 'DRAW TILE', () => this.drawTile());
-    this.createButton('riichi', 350, 400, 'RIICHI', () => this.declareRiichi());
-    this.createButton('win', 674, 400, 'WIN!', () => this.declareWin(), true);
-    this.createButton('nextRound', 512, 400, 'NEXT ROUND', () => this.nextRound());
-    this.createButton('newRun', 512, 400, 'NEW RUN', () => this.startNewRun());
+    this.createButton('draw', 512, 420, 'DRAW TILE', () => this.drawTile());
+    this.createButton('riichi', 340, 420, 'RIICHI', () => this.declareRiichi());
+    this.createButton('win', 684, 420, 'WIN!', () => this.declareWin(), true);
+    this.createButton('nextRound', 512, 420, 'NEXT ROUND', () => this.triggerRewardScreen());
+    this.createButton('newRun', 512, 420, 'NEW RUN', () => this.startNewRun());
 
-    this.updateUI();
+    // Register resume handler (only once)
+    this.events.removeAllListeners('resume');
+    this.events.on('resume', (sys: Phaser.Scenes.Systems, data: { action?: string; reward?: Reward }) => {
+      this.handleResume(sys, data);
+    });
   }
 
   private createButton(
@@ -124,24 +143,15 @@ export class GameScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, width, height, highlight ? 0xc73e3a : 0xd4a574)
       .setStrokeStyle(2, 0x2b1810);
     const text = this.add.text(0, 0, label, {
-      fontSize: '14px',
-      color: '#2b1810',
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
+      fontSize: '14px', color: '#2b1810', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const container = this.add.container(x, y, [bg, text])
       .setSize(width, height)
       .setInteractive({ useHandCursor: true });
 
-    container.on('pointerover', () => {
-      bg.setScale(1.05);
-      text.setScale(1.05);
-    });
-    container.on('pointerout', () => {
-      bg.setScale(1);
-      text.setScale(1);
-    });
+    container.on('pointerover', () => { bg.setScale(1.05); text.setScale(1.05); });
+    container.on('pointerout', () => { bg.setScale(1); text.setScale(1); });
     container.on('pointerdown', callback);
 
     this.actionButtons[key] = container;
@@ -173,11 +183,10 @@ export class GameScene extends Phaser.Scene {
     this.state.hand.drawnTile = tile;
     this.state.phase = 'drew';
 
-    // Check for win
     const allTiles = getAllTiles(this.state.hand);
     const win = detectWin(allTiles);
     if (win) {
-      this.showMessage('Tsumo! You can win!');
+      this.showMessage('Tsumo! You can win with this tile!');
     }
 
     this.renderHand();
@@ -187,7 +196,6 @@ export class GameScene extends Phaser.Scene {
   private discardTile(tileId: string): void {
     if (this.state.phase !== 'drew') return;
 
-    // Can be from hand tiles or drawn tile
     let discarded: Tile;
     if (this.state.hand.drawnTile && this.state.hand.drawnTile.id === tileId) {
       discarded = this.state.hand.drawnTile;
@@ -197,7 +205,6 @@ export class GameScene extends Phaser.Scene {
       if (idx === -1) return;
       discarded = this.state.hand.tiles[idx];
       this.state.hand.tiles.splice(idx, 1);
-      // If there was a drawn tile, move it into the hand
       if (this.state.hand.drawnTile) {
         this.state.hand.tiles.push(this.state.hand.drawnTile);
         this.state.hand.drawnTile = null;
@@ -208,13 +215,19 @@ export class GameScene extends Phaser.Scene {
     this.state.discardedTiles.push(discarded);
     this.state.phase = 'idle';
 
-    // Check if wall is exhausted
     if (this.state.wall.remaining === 0) {
       this.endRound(false);
       return;
     }
 
-    // If in riichi, auto-draw
+    // Show tenpai hint if close to winning
+    const waiting = findWaitingTiles(this.state.hand.tiles);
+    if (waiting.length > 0 && !this.state.runState.isRiichi) {
+      this.showYakuInfo(`Tenpai! Waiting for: ${waiting.length} tile type(s)`);
+    } else {
+      this.showYakuInfo('');
+    }
+
     if (this.state.runState.isRiichi) {
       this.time.delayedCall(300, () => this.drawTile());
     }
@@ -227,7 +240,6 @@ export class GameScene extends Phaser.Scene {
     if (this.state.phase !== 'idle') return;
     if (this.state.runState.isRiichi) return;
 
-    // Check if in tenpai (1 tile away from win)
     const waiting = findWaitingTiles(this.state.hand.tiles);
     if (waiting.length === 0) {
       this.showMessage('Not in tenpai! Cannot declare Riichi.');
@@ -236,8 +248,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.state.runState.isRiichi = true;
-    this.showMessage('Riichi declared! Auto-draw enabled.');
+    this.showMessage('Riichi! Auto-draw enabled.');
+    this.showYakuInfo(`Waiting tiles: ${waiting.length}`);
     this.time.delayedCall(1500, () => this.showMessage(''));
+    persistRun(this.state.runState);
     this.updateUI();
   }
 
@@ -262,12 +276,11 @@ export class GameScene extends Phaser.Scene {
     this.state.runState.score += score.finalScore;
     this.state.phase = 'won';
 
-    // Show win message with yaku
-    const yakuNames = score.yakuList.map(y => y.yaku.name).join(', ');
-    this.showMessage(
-      `WIN! ${score.finalScore} pts\n${yakuNames}\nHan: ${score.totalHan}`
-    );
+    const yakuNames = score.yakuList.map(y => `${y.yaku.name} (${y.han}h)`).join(', ');
+    this.showMessage(`WIN! +${score.finalScore} pts`);
+    this.showYakuInfo(`${yakuNames}\nTotal: ${score.totalHan} han`);
 
+    persistRun(this.state.runState);
     this.endRound(true);
   }
 
@@ -275,32 +288,80 @@ export class GameScene extends Phaser.Scene {
     this.state.phase = won ? 'won' : 'lost';
 
     if (!won) {
-      // Check if score meets target
       if (this.state.runState.score >= this.state.runState.targetScore) {
-        this.showMessage(`Round survived! Score: ${this.state.runState.score}`);
+        this.showMessage(`Round survived! Score: ${this.state.runState.score}/${this.state.runState.targetScore}`);
       } else {
+        // Game over - run failed
         this.showMessage(`Game Over! Score: ${this.state.runState.score}/${this.state.runState.targetScore}`);
+        const meta = loadMeta();
+        endRun(this.state.runState, false);
+        this.time.delayedCall(2000, () => {
+          this.scene.launch('GameOverScene', { runState: this.state.runState, won: false, meta });
+          this.scene.pause();
+        });
+        return;
       }
     }
 
+    persistRun(this.state.runState);
     this.renderHand();
     this.updateUI();
   }
 
-  private nextRound(): void {
-    this.state.runState.round++;
-    this.state.runState.isRiichi = false;
+  // ========== REWARD SYSTEM ==========
+
+  private triggerRewardScreen(): void {
+    if (this.state.phase !== 'won') return;
+
+    // Check if run is complete
+    if (checkRunComplete(this.state.runState)) {
+      // Run won!
+      const meta = loadMeta();
+      endRun(this.state.runState, true);
+      this.scene.launch('GameOverScene', { runState: this.state.runState, won: true, meta });
+      this.scene.pause();
+      return;
+    }
+
+    // Generate 3 rewards and show RewardScene
+    const rewards = generateRewards(
+      this.state.runState.relics.map(r => r.id),
+      this.state.runState.customTiles.map(t => t.id),
+      this.state.runState.unlockedYaku
+    );
+
+    this.state.phase = 'reward';
+    this.scene.launch('RewardScene', { runState: this.state.runState, rewards });
+    this.scene.pause();
+  }
+
+  private applyReward(reward: Reward): void {
+    switch (reward.type) {
+      case 'relic':
+        this.state.runState = addRelicToRun(this.state.runState, reward.data as any);
+        break;
+      case 'customTile':
+        this.state.runState = addCustomTileToRun(this.state.runState, reward.data as any);
+        break;
+      case 'yakuBoost':
+        const boost = reward.data as { yaku: any; hanBonus: number };
+        this.state.runState = applyYakuBoost(this.state.runState, boost.yaku.id, boost.hanBonus);
+        break;
+    }
+    persistRun(this.state.runState);
+  }
+
+  private proceedAfterReward(): void {
+    // Advance to next round
+    this.state.runState = advanceRound(this.state.runState);
     this.state.wall = new TileWall();
     this.state.hand = createHand();
     this.state.discardedTiles = [];
     this.state.roundScore = 0;
-    this.state.runState.targetScore = calculateTargetScore(
-      this.state.runState.round,
-      this.state.runState.maxRounds
-    );
     this.state.phase = 'idle';
     this.dealInitialHand();
     this.showMessage('');
+    this.showYakuInfo('');
     this.renderHand();
     this.updateUI();
   }
@@ -308,7 +369,6 @@ export class GameScene extends Phaser.Scene {
   // ========== RENDERING ==========
 
   private renderHand(): void {
-    // Clear old sprites
     this.tileSprites.forEach(s => s.destroy());
     this.tileSprites = [];
 
@@ -318,47 +378,44 @@ export class GameScene extends Phaser.Scene {
     const startX = 512 - totalWidth / 2;
     const y = 620;
 
-    // Render hand tiles
     hand.tiles.forEach((tile, index) => {
       const x = startX + index * (TILE_WIDTH + tileSpacing);
       const sprite = this.createTileSprite(tile, x, y);
       this.tileSprites.push(sprite);
     });
 
-    // Render drawn tile (separated)
     if (hand.drawnTile) {
       const drawnX = startX + hand.tiles.length * (TILE_WIDTH + tileSpacing) + 20;
       const sprite = this.createTileSprite(hand.drawnTile, drawnX, y, true);
       this.tileSprites.push(sprite);
     }
 
-    // Render discard area (top right)
     this.renderDiscards();
   }
 
   private createTileSprite(tile: Tile, x: number, y: number, isDrawn: boolean = false): Phaser.GameObjects.Container {
     const textureKey = `tile-${tileKey(tile)}`;
     const sprite = this.add.image(0, 0, textureKey);
-
-    // Tile back/shadow
     const shadow = this.add.rectangle(2, 4, TILE_WIDTH, TILE_HEIGHT, 0x000000, 0.3);
 
     const container = this.add.container(x, y, [shadow, sprite]);
-
-    // Hover and click interaction
     container.setSize(TILE_WIDTH, TILE_HEIGHT);
     container.setInteractive({ useHandCursor: true });
+
+    // Highlight drawn tile
+    if (isDrawn) {
+      const highlight = this.add.rectangle(0, 0, TILE_WIDTH + 4, TILE_HEIGHT + 4, 0xd4a574, 0.3);
+      container.addAt(highlight, 0);
+    }
 
     container.on('pointerover', () => {
       container.setY(y - 8);
       this.showTileTooltip(tile, x, y - TILE_HEIGHT - 20);
     });
-
     container.on('pointerout', () => {
       container.setY(y);
       this.hideTooltip();
     });
-
     container.on('pointerdown', () => {
       if (this.state.phase === 'drew') {
         this.discardTile(tile.id);
@@ -368,22 +425,16 @@ export class GameScene extends Phaser.Scene {
     return container;
   }
 
-  private tooltipText: Phaser.GameObjects.Text | null = null;
-  private tooltipBg: Phaser.GameObjects.Rectangle | null = null;
-
   private showTileTooltip(tile: Tile, x: number, y: number): void {
     this.hideTooltip();
     const display = getTileDisplay(tile);
 
-    this.tooltipBg = this.add.rectangle(x, y, 180, 60, 0x1a0f08, 0.95)
+    this.tooltipBg = this.add.rectangle(x, y, 180, 70, 0x1a0f08, 0.95)
       .setStrokeStyle(2, 0xd4a574)
       .setDepth(1000);
 
     this.tooltipText = this.add.text(x, y, `${display.englishName}\n(${display.romaji})\n${display.westernHint}`, {
-      fontSize: '12px',
-      color: '#f5e6d3',
-      fontFamily: 'monospace',
-      align: 'center',
+      fontSize: '12px', color: '#f5e6d3', fontFamily: 'monospace', align: 'center',
     }).setOrigin(0.5).setDepth(1001);
   }
 
@@ -393,23 +444,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private renderDiscards(): void {
-    // Simple discard pile in top right
-    const x = 950;
-    const y = 100;
     const count = this.state.discardedTiles.length;
     if (this.uiText['discardCount']) {
       this.uiText['discardCount'].setText(`Discards: ${count}`);
     } else {
-      this.uiText['discardCount'] = this.add.text(x - 60, y, `Discards: ${count}`, {
-        fontSize: '12px',
-        color: '#8b6f47',
-        fontFamily: 'monospace',
+      this.uiText['discardCount'] = this.add.text(920, 80, `Discards: ${count}`, {
+        fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
       });
     }
   }
 
   private showMessage(msg: string): void {
     this.messageText.setText(msg);
+  }
+
+  private showYakuInfo(msg: string): void {
+    this.yakuInfoText.setText(msg);
   }
 
   private updateUI(): void {
@@ -420,38 +470,34 @@ export class GameScene extends Phaser.Scene {
     this.uiText.wall.setText(`Wall: ${this.state.wall.remaining}`);
 
     const phaseLabels: Record<GamePhase, string> = {
-      idle: 'Your Turn',
-      drew: 'Discard or Win',
-      won: 'Round Won!',
-      lost: 'Round Over',
-      round_end: 'Round End',
+      idle: 'Your Turn', drew: 'Discard or Win', won: 'Round Won!',
+      lost: 'Round Over', round_end: 'Round End', reward: 'Pick Reward',
     };
     this.uiText.phase.setText(phaseLabels[this.state.phase]);
+
+    // Relics display
+    if (rs.relics.length > 0) {
+      this.uiText.relics.setText(`Relics: ${rs.relics.length}`);
+    } else {
+      this.uiText.relics.setText('');
+    }
 
     if (this.uiText['discardCount']) {
       this.uiText['discardCount'].setText(`Discards: ${this.state.discardedTiles.length}`);
     }
 
-    // Button visibility
     this.hideAllButtons();
-
     switch (this.state.phase) {
       case 'idle':
         this.showButton('draw');
         if (!rs.isRiichi) this.showButton('riichi');
         break;
       case 'drew':
-        // Show win button if hand is winning
         const allTiles = getAllTiles(this.state.hand);
         if (detectWin(allTiles)) this.showButton('win');
         break;
       case 'won':
-        if (rs.round < rs.maxRounds) {
-          this.showButton('nextRound');
-        } else {
-          this.showMessage(`Run Complete! Final Score: ${rs.score}`);
-          this.showButton('newRun');
-        }
+        this.showButton('nextRound');
         break;
       case 'lost':
         this.showButton('newRun');

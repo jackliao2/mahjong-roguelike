@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { GameScene } from '@/scenes/GameScene';
 import { BootScene } from '@/scenes/BootScene';
+import { RewardScene } from '@/scenes/RewardScene';
+import { GameOverScene } from '@/scenes/GameOverScene';
 
 const GAME_WIDTH = 1024;
 const GAME_HEIGHT = 720;
@@ -17,6 +19,6 @@ export function createGame(parent: HTMLElement): Phaser.Game {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, GameScene],
+    scene: [BootScene, GameScene, RewardScene, GameOverScene],
   });
 }
