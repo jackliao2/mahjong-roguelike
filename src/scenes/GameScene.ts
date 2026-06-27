@@ -10,6 +10,7 @@ import { TILE_WIDTH, TILE_HEIGHT } from '@/render/tileRenderer';
 import { generateRewards, Reward } from '@/roguelike/rewards';
 import { addRelicToRun, addCustomTileToRun, applyYakuBoost, advanceRound, checkRunComplete, persistRun, endRun, loadYakuBonuses } from '@/roguelike/run';
 import { loadMeta } from '@/data/storage';
+import { SoundManager } from '@/render/sound';
 
 type GamePhase = 'idle' | 'drew' | 'won' | 'lost' | 'round_end' | 'reward';
 
@@ -31,6 +32,7 @@ export class GameScene extends Phaser.Scene {
   private tooltipText: Phaser.GameObjects.Text | null = null;
   private tooltipBg: Phaser.GameObjects.Rectangle | null = null;
   private yakuInfoText!: Phaser.GameObjects.Text;
+  private soundManager!: SoundManager;
 
   constructor() {
     super('GameScene');
@@ -38,6 +40,7 @@ export class GameScene extends Phaser.Scene {
 
   create(data?: { action?: string }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
+    this.soundManager = new SoundManager(this);
 
     // Handle scene resume from RewardScene
     if (data?.action === 'new_run' || !this.state) {
@@ -182,6 +185,7 @@ export class GameScene extends Phaser.Scene {
 
     this.state.hand.drawnTile = tile;
     this.state.phase = 'drew';
+    this.soundManager.playDraw();
 
     const allTiles = getAllTiles(this.state.hand);
     const win = detectWin(allTiles);
@@ -214,6 +218,7 @@ export class GameScene extends Phaser.Scene {
     this.state.hand.tiles = sortHand(this.state.hand.tiles);
     this.state.discardedTiles.push(discarded);
     this.state.phase = 'idle';
+    this.soundManager.playDiscard();
 
     if (this.state.wall.remaining === 0) {
       this.endRound(false);
@@ -224,6 +229,7 @@ export class GameScene extends Phaser.Scene {
     const waiting = findWaitingTiles(this.state.hand.tiles);
     if (waiting.length > 0 && !this.state.runState.isRiichi) {
       this.showYakuInfo(`Tenpai! Waiting for: ${waiting.length} tile type(s)`);
+      this.soundManager.playTenpai();
     } else {
       this.showYakuInfo('');
     }
@@ -248,6 +254,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.state.runState.isRiichi = true;
+    this.soundManager.playRiichi();
     this.showMessage('Riichi! Auto-draw enabled.');
     this.showYakuInfo(`Waiting tiles: ${waiting.length}`);
     this.time.delayedCall(1500, () => this.showMessage(''));
@@ -275,6 +282,7 @@ export class GameScene extends Phaser.Scene {
     this.state.roundScore = score.finalScore;
     this.state.runState.score += score.finalScore;
     this.state.phase = 'won';
+    this.soundManager.playWin();
 
     const yakuNames = score.yakuList.map(y => `${y.yaku.name} (${y.han}h)`).join(', ');
     this.showMessage(`WIN! +${score.finalScore} pts`);
@@ -293,6 +301,7 @@ export class GameScene extends Phaser.Scene {
       } else {
         // Game over - run failed
         this.showMessage(`Game Over! Score: ${this.state.runState.score}/${this.state.runState.targetScore}`);
+        this.soundManager.playGameOver();
         const meta = loadMeta();
         endRun(this.state.runState, false);
         this.time.delayedCall(2000, () => {
