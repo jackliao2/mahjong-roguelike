@@ -1,0 +1,81 @@
+// Mahjong Roguelike — Service Worker
+// Strategy: cache-first for same-origin assets, network-first for HTML navigations
+// with cache fallback. This enables offline play after the first visit.
+
+const CACHE_NAME = 'mahjong-roguelike-v1';
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/play.html',
+  '/how-to-play.html',
+  '/yaku-list.html',
+  '/privacy.html',
+  '/terms.html',
+  '/cookies.html',
+  '/manifest.json',
+  '/og-image.svg',
+];
+
+// ===== Install: precache core pages =====
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)).catch(() => {
+      // If any precache fails (e.g., offline on first install), ignore —
+      // the SW still activates and caches on demand.
+    })
+  );
+  self.skipWaiting();
+});
+
+// ===== Activate: clean up old caches =====
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+// ===== Fetch: cache-first for assets, network-first for navigations =====
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // Only handle GET requests for same-origin
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Skip analytics and font requests (let them go to network or fail silently)
+  if (url.hostname.includes('umami') || url.hostname.includes('fonts.googleapis') || url.hostname.includes('fonts.gstatic')) {
+    return;
+  }
+
+  // Navigation requests (HTML pages): network-first, fall back to cache
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('/play.html')))
+    );
+    return;
+  }
+
+  // Static assets: cache-first, fall back to network
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        // Only cache successful, same-type responses
+        if (!res || res.status !== 200 || res.type === 'opaque') return res;
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+        return res;
+      });
+    })
+  );
+});

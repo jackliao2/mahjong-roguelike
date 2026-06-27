@@ -1,6 +1,7 @@
 import { RunState, Relic, CustomTile, MetaProgression } from '@/types';
 import { calculateTargetScore } from '@/game/scoring';
 import { loadRun, saveRun, clearRun, loadMeta, saveMeta } from '@/data/storage';
+import { recordRunResult, getNewAchievements, Achievement, loadMetaProgression } from './meta';
 
 // Yaku han bonuses applied during the run (from yakuBoost rewards)
 const yakuBonusesKey = 'mjrg_yaku_bonuses';
@@ -39,17 +40,19 @@ export function persistRun(run: RunState): void {
   saveRun(run);
 }
 
-export function endRun(run: RunState, won: boolean): void {
-  const meta = loadMeta();
-  meta.totalRuns++;
-  if (won) meta.totalWins++;
-  if (run.score > meta.bestScore) meta.bestScore = run.score;
-  // Earn currency: 1 per 100 points scored
-  meta.currency += Math.floor(run.score / 100);
-  saveMeta(meta);
+export interface EndRunResult {
+  meta: MetaProgression;
+  newAchievements: Achievement[];
+}
+
+export function endRun(run: RunState, won: boolean): EndRunResult {
+  const oldMeta = loadMetaProgression();
+  const newMeta = recordRunResult(oldMeta, run.score, won);
+  const newAchievements = getNewAchievements(oldMeta, newMeta);
   clearRun();
   // Clear yaku bonuses so they don't leak into the next run
   clearYakuBonuses();
+  return { meta: newMeta, newAchievements };
 }
 
 /**

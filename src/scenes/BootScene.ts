@@ -14,7 +14,7 @@ export class BootScene extends Phaser.Scene {
     // Generate all pixel-art tile textures
     generateAllTileTextures(this);
 
-    // Transition to the main game scene
-    this.scene.start('GameScene');
+    // Transition to deck selection (player picks a build before each run)
+    this.scene.start('DeckSelectScene');
   }
 }

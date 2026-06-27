@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { RunState, MetaProgression } from '@/types';
+import { Achievement } from '@/roguelike/meta';
 
 export class GameOverScene extends Phaser.Scene {
   private titleColorHex = '#c73e3a';
@@ -8,9 +9,9 @@ export class GameOverScene extends Phaser.Scene {
     super('GameOverScene');
   }
 
-  create(data: { runState: RunState; won: boolean; meta: MetaProgression }): void {
+  create(data: { runState: RunState; won: boolean; meta: MetaProgression; newAchievements?: Achievement[] }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
-    const { runState, won, meta } = data;
+    const { runState, won, meta, newAchievements } = data;
 
     // ===== Decorative background (matches GameScene theme) =====
     this.add.rectangle(0, 0, 1024, 720, 0x2b1810).setOrigin(0);
@@ -62,6 +63,11 @@ export class GameOverScene extends Phaser.Scene {
 
     // ===== Stats panel with decorative border =====
     this.createStatsPanel(512, 320, runState, meta, won);
+
+    // ===== New achievements banner (if any) =====
+    if (newAchievements && newAchievements.length > 0) {
+      this.createAchievementBanner(512, 482, newAchievements);
+    }
 
     // ===== Relics & Custom Tiles summary =====
     this.createCollectionSummary(512, 540, runState);
@@ -190,6 +196,37 @@ export class GameOverScene extends Phaser.Scene {
     }
   }
 
+  // ===== New achievements unlocked banner =====
+  private createAchievementBanner(cx: number, y: number, achievements: Achievement[]): void {
+    const bannerW = 560;
+    const bannerH = 36;
+    // Background with golden glow
+    this.add.rectangle(cx, y, bannerW, bannerH, 0x2a1d10, 0.9)
+      .setStrokeStyle(2, 0xe5b567);
+    // Trophy icon (pixel star)
+    this.add.text(cx - bannerW / 2 + 18, y, '*', {
+      fontSize: '20px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    // Achievement text
+    const names = achievements.map(a => a.name).join('  +  ');
+    const text = this.add.text(cx, y, `ACHIEVEMENT UNLOCKED: ${names}`, {
+      fontSize: '11px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      align: 'center', wordWrap: { width: bannerW - 80 },
+    }).setOrigin(0.5);
+
+    // Slide-in animation from left
+    text.setAlpha(0);
+    text.setX(cx - 60);
+    this.tweens.add({
+      targets: text,
+      alpha: 1,
+      x: cx,
+      duration: 600,
+      delay: 800,
+      ease: 'Back.easeOut',
+    });
+  }
+
   // ===== Button with pixel shadow + hover lift (matches GameScene) =====
   private createButton(x: number, y: number, label: string, color: number, callback: () => void): void {
     const width = 180;
@@ -222,7 +259,7 @@ export class GameOverScene extends Phaser.Scene {
 
   private startNewRun(): void {
     this.scene.stop('GameScene');
-    this.scene.start('GameScene', { action: 'new_run' });
+    this.scene.start('DeckSelectScene');
   }
 
   private goHome(): void {
