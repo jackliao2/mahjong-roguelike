@@ -8,7 +8,7 @@ import { tileKey, getTileDisplay } from '@/game/tiles';
 import { TILE_WIDTH, TILE_HEIGHT } from '@/render/tileRenderer';
 import { generateRewards, Reward } from '@/roguelike/rewards';
 import { addRelicToRun, addCustomTileToRun, applyYakuBoost, advanceRound, checkRunComplete, persistRun, endRun, loadYakuBonuses } from '@/roguelike/run';
-import { loadMeta } from '@/data/storage';
+import { loadMeta, loadRun, clearRun } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
 
 type GamePhase = 'idle' | 'drew' | 'won' | 'survived' | 'lost' | 'reward';
@@ -42,6 +42,7 @@ export class GameScene extends Phaser.Scene {
     this.soundManager = new SoundManager(this);
 
     if (data?.action === 'new_run') {
+      clearRun(); // fresh run — discard any saved state
       this.startNewRun();
     } else if (!this.state) {
       this.startNewRun();
@@ -61,9 +62,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startNewRun(): void {
-    const runState = createRunState(5);
+    // Try to resume a persisted run (preserves round, score, relics, customTiles)
+    const savedRun = loadRun();
+    const runState = savedRun ?? createRunState(5);
     this.state = {
-      wall: new TileWall(),
+      wall: new TileWall(runState.customTiles),
       hand: createHand(),
       runState,
       phase: 'idle',
@@ -385,7 +388,7 @@ export class GameScene extends Phaser.Scene {
   private proceedAfterReward(): void {
     // Advance to next round
     this.state.runState = advanceRound(this.state.runState);
-    this.state.wall = new TileWall();
+    this.state.wall = new TileWall(this.state.runState.customTiles);
     this.state.hand = createHand();
     this.state.discardedTiles = [];
     this.state.roundScore = 0;

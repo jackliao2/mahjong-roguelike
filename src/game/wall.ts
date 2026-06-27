@@ -1,13 +1,29 @@
-import { Tile } from '@/types';
+import { Tile, CustomTile } from '@/types';
 import { createFullTileSet } from './tiles';
 
 export class TileWall {
   private wall: Tile[] = [];
   private drawIndex = 0;
-  private deadWall: Tile[] = []; // for kan/dora (not used in MVP but structure ready)
+  private deadWall: Tile[] = [];
 
-  constructor() {
-    this.wall = this.shuffle(createFullTileSet());
+  constructor(customTiles: CustomTile[] = []) {
+    // Start with standard 136-tile set
+    let tiles = createFullTileSet();
+
+    // Inject custom tiles (replace one copy of their base tile type)
+    for (const custom of customTiles) {
+      // Remove one matching base tile from the set, add the custom tile
+      const baseKey = `${custom.baseTile.suit}-${custom.baseTile.rank}`;
+      const replaceIdx = tiles.findIndex(t => `${t.suit}-${t.rank}` === baseKey);
+      if (replaceIdx !== -1) {
+        tiles[replaceIdx] = { ...custom.baseTile, id: custom.id };
+      } else {
+        // No matching tile to replace — just add it
+        tiles.push({ ...custom.baseTile, id: custom.id });
+      }
+    }
+
+    this.wall = this.shuffle(tiles);
     this.drawIndex = 0;
   }
 
