@@ -156,6 +156,20 @@
         <td>No</td>
       </tr>
       <tr>
+        <td><strong>sessionStorage</strong></td>
+        <td>Temporary in-game UI state (e.g., active tooltip, scene transition)</td>
+        <td>Your browser only (cleared when tab closes)</td>
+        <td>No</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td><strong>Service Worker cache</strong></td>
+        <td>PWA offline assets (cached game files for offline play)</td>
+        <td>Your browser only</td>
+        <td>No</td>
+        <td>No</td>
+      </tr>
+      <tr>
         <td><strong>Umami Analytics</strong></td>
         <td>Aggregate, anonymous page view statistics</td>
         <td>Umami server (no user ID)</td>
@@ -186,7 +200,9 @@
     <li><code>mjrg_meta</code> — Meta-progression (total runs, wins, best score, achievements)</li>
     <li><code>mjrg_yaku_bonuses</code> — Active yaku boost bonuses</li>
   </ul>
-  <p>You can clear these at any time via your browser's developer tools (Application &rarr; Local Storage) or browser settings (Clear browsing data &rarr; Cookies and site data).</p>
+  <p>The Game may also use <strong>sessionStorage</strong> for ephemeral UI state (such as which tooltip is currently shown or which scene is in transition). sessionStorage behaves like localStorage but is automatically cleared when you close the browser tab. It is never transmitted to any server and is not a cookie.</p>
+  <p>As a <strong>Progressive Web App (PWA)</strong>, the Game registers a service worker that caches static assets (HTML, CSS, JavaScript, images) in a Cache API storage. This enables offline play after the first visit. This cache is also browser-local, not transmitted, and not a cookie. You can clear it via your browser's "Site data" settings.</p>
+  <p>You can clear all of these at any time via your browser's developer tools (Application &rarr; Local Storage / Session Storage / Cache Storage) or browser settings (Clear browsing data &rarr; Cookies and site data).</p>
 
   <h2>5. Umami Analytics (Cookie-Free)</h2>
   <p>Our analytics provider, <a href="https://umami.is" target="_blank" rel="noopener">Umami</a>, is specifically designed to work without cookies. Here's how it differs from Google Analytics:</p>
@@ -212,16 +228,41 @@
   </ul>
   <p>We do not control and are not responsible for third-party cookies. To block all third-party cookies, enable "Block third-party cookies" in your browser settings.</p>
 
-  <h2>7. How to Manage Your Data</h2>
-  <p>Since we don't use cookies, managing your data is straightforward:</p>
+  <h2>7. Server Logs (Hosting Provider)</h2>
+  <p>While we do not set cookies, our hosting provider (Vercel or Cloudflare Pages) automatically records standard server request logs when you load the Game. These logs typically include:</p>
   <ul>
-    <li><strong>To clear game progress:</strong> Open your browser settings &rarr; Clear browsing data &rarr; select "Cookies and site data" &rarr; clear. Or use the "Reset Progress" button in the Game.</li>
-    <li><strong>To block analytics:</strong> Install an ad blocker (uBlock Origin, AdGuard) or add the Umami domain to your blocklist. This will not affect gameplay.</li>
-    <li><strong>To block Google Fonts:</strong> Use a browser extension or disable web fonts in your browser settings. The Game will fall back to system fonts.</li>
-    <li><strong>To browse in private:</strong> Use Incognito/Private Browsing mode. Your game progress will not be saved when you close the window.</li>
+    <li>IP address (used for security/abuse detection, not linked to identity)</li>
+    <li>Timestamp of the request</li>
+    <li>URL requested and HTTP method</li>
+    <li>User-Agent string (browser and operating system)</li>
+    <li>Referrer URL</li>
+    <li>Response status code</li>
+  </ul>
+  <p>These logs are <strong>not cookies</strong> — they are server-side records controlled by the hosting provider, not by your browser. They are retained for up to 30 days for security and operational purposes, then automatically deleted. We do not have direct access to these logs for analytics; they are used solely for infrastructure protection and abuse mitigation.</p>
+  <p>For details on how your hosting provider handles logs, see <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's Privacy Policy</a> or <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a>.</p>
+
+  <h2>8. How to Manage Your Data</h2>
+  <p>Since we don't use cookies, managing your data is straightforward. Here are browser-specific guides for clearing site data (which includes localStorage, sessionStorage, service worker cache, and any third-party cookies):</p>
+
+  <h3>8.1 Browser-Specific Instructions</h3>
+  <ul>
+    <li><strong><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener">Google Chrome</a></strong> — Settings &rarr; Privacy and security &rarr; Clear browsing data &rarr; select "Cookies and other site data" and "Cached images and files."</li>
+    <li><strong><a href="https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox" target="_blank" rel="noopener">Mozilla Firefox</a></strong> — Settings &rarr; Privacy &amp; Security &rarr; Cookies and Site Data &rarr; Clear Data.</li>
+    <li><strong><a href="https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac" target="_blank" rel="noopener">Apple Safari</a></strong> — Preferences &rarr; Privacy &rarr; Manage Website Data &rarr; Remove All.</li>
+    <li><strong><a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener">Microsoft Edge</a></strong> — Settings &rarr; Cookies and site permissions &rarr; Manage and delete cookies and site data.</li>
+    <li><strong><a href="https://support.brave.com/hc/en-us/articles/360050642132-How-Do-I-Clear-My-Browsing-Data" target="_blank" rel="noopener">Brave</a></strong> — Settings &rarr; Additional Settings &rarr; Privacy and security &rarr; Clear browsing data.</li>
   </ul>
 
-  <h2>8. Regulatory Compliance</h2>
+  <h3>8.2 Quick Actions</h3>
+  <ul>
+    <li><strong>To clear game progress:</strong> Use the "Reset Progress" button in the Game's settings menu, or clear site data via your browser as described above.</li>
+    <li><strong>To block analytics:</strong> Install an ad blocker (uBlock Origin, AdGuard) or add the Umami domain to your blocklist. This will not affect gameplay.</li>
+    <li><strong>To block Google Fonts:</strong> Use a browser extension (e.g., uBlock Origin's "Block remote fonts") or disable web fonts in your browser settings. The Game will fall back to system fonts.</li>
+    <li><strong>To disable service worker / PWA:</strong> Use your browser's developer tools (Application &rarr; Service Workers &rarr; Unregister). The Game will still work but will not be available offline.</li>
+    <li><strong>To browse privately:</strong> Use Incognito/Private Browsing mode. Your game progress will not be saved when you close the window.</li>
+  </ul>
+
+  <h2>9. Regulatory Compliance</h2>
   <p>Our cookie-free approach ensures compliance with:</p>
   <ul>
     <li><strong>EU ePrivacy Directive</strong> — No non-essential cookies means no consent banner is required.</li>
@@ -241,7 +282,7 @@
   </ul>
   <p>Until then, you can enjoy the Game knowing no cookies are tracking you.</p>
 
-  <h2>10. Contact Us</h2>
+  <h2>11. Contact Us</h2>
   <p>Questions about our cookie-free approach? Contact us:</p>
   <ul>
     <li><strong>Email:</strong> <a href="mailto:privacy@mahjongroguelike.com">privacy@mahjongroguelike.com</a></li>
