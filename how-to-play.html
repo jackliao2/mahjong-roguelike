@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Play Mahjong - Beginner's Guide to Riichi Rules</title>
+<meta name="description" content="A complete beginner's guide to riichi mahjong rules. Learn the tiles, how to form a winning hand, the major yaku patterns, and how scoring works.">
+<meta name="keywords" content="how to play mahjong, riichi rules, mahjong guide, mahjong for beginners, mahjong tiles, mahjong yaku, mahjong scoring">
+<meta property="og:title" content="How to Play Mahjong - Beginner's Guide to Riichi Rules">
+<meta property="og:description" content="Learn riichi mahjong from scratch: tiles, hands, yaku, and scoring explained for beginners.">
+<meta property="og:image" content="https://mahjongroguelike.com/og-image.png">
+<meta property="og:url" content="https://mahjongroguelike.com/how-to-play.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to Play Mahjong - Beginner's Guide to Riichi Rules">
+<meta name="twitter:description" content="Learn riichi mahjong from scratch: tiles, hands, yaku, and scoring explained for beginners.">
+<meta name="twitter:image" content="https://mahjongroguelike.com/og-image.png">
+<link rel="canonical" href="https://mahjongroguelike.com/how-to-play.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wood-dark: #2B1810;
+    --wood-mid: #3D2418;
+    --wood-light: #5C3825;
+    --amber: #D4A574;
+    --amber-bright: #E8C088;
+    --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28;
+    --cream: #F5E6D3;
+    --cream-dim: #C9B89A;
+    --gold: #E5B567;
+    --ink: #1A0E08;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px),
+      radial-gradient(ellipse at top, var(--wood-mid) 0%, var(--wood-dark) 70%);
+    color: var(--cream);
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+
+  /* ===== Top Nav ===== */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--ink);
+    border-bottom: 4px solid var(--vermillion);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--vermillion-dark);
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .logo-mark {
+    display: inline-block; width: 22px; height: 22px;
+    background: var(--vermillion);
+    border: 2px solid var(--cream);
+    box-shadow: 2px 2px 0 var(--ink);
+    position: relative;
+  }
+  .logo-mark::after {
+    content: "中"; position: absolute; inset: 0;
+    color: var(--cream); font-family: 'Press Start 2P', monospace;
+    font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .nav-links a {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--cream); text-decoration: none; padding: 8px 12px;
+    border: 2px solid transparent; transition: all 0.15s ease;
+  }
+  .nav-links a:hover { color: var(--amber-bright); border-color: var(--amber); background: var(--wood-mid); }
+
+  /* ===== Page Hero ===== */
+  .page-hero {
+    position: relative;
+    padding: 70px 24px 50px;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 40%, rgba(199,62,58,0.18) 0%, transparent 60%);
+    border-bottom: 4px solid var(--ink);
+    overflow: hidden;
+  }
+  .page-hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 4px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0 16px, transparent 16px 32px);
+  }
+  .breadcrumb {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--cream-dim); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--amber-bright); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .page-eyebrow {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--vermillion); letter-spacing: 2px; margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(22px, 4.6vw, 40px);
+    color: var(--cream);
+    text-shadow: 4px 4px 0 var(--vermillion-dark), 8px 8px 0 var(--ink);
+    line-height: 1.3;
+    margin-bottom: 18px;
+  }
+  .page-title .accent { color: var(--amber-bright); }
+  .page-sub {
+    font-size: 16px; color: var(--cream-dim);
+    max-width: 640px; margin: 0 auto;
+  }
+
+  /* ===== Layout ===== */
+  .layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 50px 24px;
+  }
+
+  /* Table of contents */
+  .toc {
+    position: sticky; top: 90px;
+    align-self: start;
+    background: var(--wood-mid);
+    border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink), inset 0 0 0 2px var(--amber);
+    padding: 22px 20px;
+  }
+  .toc h3 {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--amber-bright); margin-bottom: 16px;
+    border-bottom: 2px solid var(--wood-light); padding-bottom: 10px;
+  }
+  .toc ul { list-style: none; }
+  .toc li { margin-bottom: 10px; }
+  .toc a {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--cream-dim); text-decoration: none;
+    line-height: 1.5; display: block; padding: 4px 0;
+    transition: color 0.15s ease;
+  }
+  .toc a:hover { color: var(--amber-bright); }
+  .toc .toc-sub a { padding-left: 12px; font-size: 8px; }
+
+  /* Main content */
+  .content { min-width: 0; }
+
+  .content section {
+    margin-bottom: 60px;
+    scroll-margin-top: 90px;
+  }
+  .content h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(16px, 2.4vw, 22px);
+    color: var(--amber-bright);
+    text-shadow: 3px 3px 0 var(--ink);
+    margin-bottom: 8px;
+    padding-bottom: 14px;
+    border-bottom: 4px solid var(--vermillion);
+    display: inline-block;
+    line-height: 1.4;
+  }
+  .section-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--vermillion);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+  .content h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--cream);
+    margin-top: 32px;
+    margin-bottom: 14px;
+    text-shadow: 2px 2px 0 var(--ink);
+  }
+  .content p {
+    font-size: 15px;
+    color: var(--cream-dim);
+    margin-bottom: 16px;
+  }
+  .content strong { color: var(--amber-bright); font-weight: 600; }
+  .content ul, .content ol {
+    margin: 0 0 18px 22px;
+    color: var(--cream-dim);
+    font-size: 15px;
+  }
+  .content li { margin-bottom: 8px; line-height: 1.7; }
+  .content a { color: var(--amber-bright); }
+
+  /* Pixel callout box */
+  .callout-box {
+    background: var(--wood-mid);
+    border: 4px solid var(--ink);
+    box-shadow: 5px 5px 0 var(--ink), inset 0 0 0 2px var(--vermillion);
+    padding: 20px 22px;
+    margin: 24px 0;
+    position: relative;
+  }
+  .callout-box::before {
+    content: "TIP";
+    position: absolute; top: -14px; left: 16px;
+    background: var(--vermillion); color: var(--cream);
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    padding: 5px 10px; border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink);
+  }
+  .callout-box p:last-child { margin-bottom: 0; }
+
+  /* Tile showcase */
+  .tile-showcase {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin: 18px 0 24px;
+  }
+  .mini-tile {
+    width: 44px; height: 60px;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink), inset 0 -5px 0 var(--cream-dim), inset 0 3px 0 #fff;
+    border-radius: 4px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .mini-tile .num {
+    font-family: 'Press Start 2P', monospace; font-size: 14px;
+    color: var(--vermillion); line-height: 1;
+  }
+  .mini-tile .suit {
+    font-family: 'Press Start 2P', monospace; font-size: 12px;
+    color: var(--wood-dark); margin-top: 5px; line-height: 1;
+  }
+  .mini-tile.green .num, .mini-tile.green .suit { color: #2E7D32; }
+  .mini-tile.blue .num, .mini-tile.blue .suit { color: #1A5F8C; }
+  .mini-tile.honor .num { font-size: 18px; }
+
+  .tile-row {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin: 12px 0 6px; align-items: center;
+  }
+  .tile-row-label {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--amber-bright); margin-right: 8px;
+    min-width: 90px;
+  }
+
+  /* Meld example */
+  .meld-example {
+    background: var(--ink);
+    border: 3px solid var(--amber);
+    padding: 18px;
+    margin: 16px 0;
+    box-shadow: 4px 4px 0 var(--vermillion-dark);
+  }
+  .meld-example .label {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--vermillion); margin-bottom: 10px; letter-spacing: 1px;
+  }
+  .meld-example .desc {
+    color: var(--cream-dim); font-size: 14px; margin-top: 10px;
+  }
+
+  /* Scoring table */
+  .score-table {
+    width: 100%; border-collapse: collapse;
+    margin: 20px 0;
+    border: 4px solid var(--ink);
+    box-shadow: 5px 5px 0 var(--ink);
+    background: var(--wood-mid);
+  }
+  .score-table th, .score-table td {
+    padding: 12px 14px;
+    text-align: left;
+    border: 2px solid var(--wood-light);
+    font-size: 14px;
+  }
+  .score-table th {
+    background: var(--vermillion);
+    color: var(--cream);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+  .score-table td { color: var(--cream-dim); }
+  .score-table td:first-child {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px; color: var(--amber-bright);
+  }
+  .score-table tr:nth-child(even) td { background: rgba(0,0,0,0.15); }
+
+  /* Han/Fu cards */
+  .concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin: 20px 0;
+  }
+  .concept-card {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink), inset 0 0 0 2px var(--amber);
+    padding: 20px;
+  }
+  .concept-card h4 {
+    font-family: 'Press Start 2P', monospace; font-size: 11px;
+    color: var(--amber-bright); margin-bottom: 10px;
+  }
+  .concept-card p { font-size: 13px; color: var(--cream-dim); margin: 0; }
+
+  /* Bottom CTA */
+  .bottom-cta {
+    background: var(--ink);
+    border-top: 4px solid var(--vermillion);
+    border-bottom: 4px solid var(--vermillion);
+    padding: 50px 24px;
+    text-align: center;
+  }
+  .bottom-cta h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(16px, 2.6vw, 22px);
+    color: var(--cream);
+    text-shadow: 3px 3px 0 var(--vermillion-dark);
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  .bottom-cta p { color: var(--cream-dim); margin-bottom: 24px; font-size: 15px; }
+  .btn {
+    font-family: 'Press Start 2P', monospace; font-size: 13px;
+    text-decoration: none; display: inline-block;
+    padding: 16px 26px; border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    cursor: pointer; line-height: 1; margin: 0 6px;
+  }
+  .btn-primary { background: var(--vermillion); color: var(--cream); text-shadow: 2px 2px 0 var(--vermillion-dark); }
+  .btn-primary:hover { transform: translate(2px, 2px); box-shadow: 4px 4px 0 var(--ink); background: var(--amber); color: var(--ink); }
+  .btn-secondary { background: transparent; color: var(--cream); border-color: var(--amber); box-shadow: 6px 6px 0 var(--vermillion-dark); }
+  .btn-secondary:hover { background: var(--amber); color: var(--ink); transform: translate(2px, 2px); box-shadow: 4px 4px 0 var(--vermillion-dark); }
+
+  /* Footer */
+  footer {
+    background: var(--ink);
+    border-top: 4px solid var(--amber);
+    padding: 30px 24px;
+    color: var(--cream-dim);
+    text-align: center;
+    font-size: 11px;
+    font-family: 'Press Start 2P', monospace;
+    line-height: 1.8;
+  }
+  footer a { color: var(--amber-bright); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; gap: 24px; padding: 30px 18px; }
+    .toc { position: static; }
+  }
+  @media (max-width: 375px) {
+    .nav-links a { font-size: 7px; padding: 6px 8px; }
+    .content h2 { font-size: 15px; }
+    .content p, .content li { font-size: 14px; }
+    .mini-tile { width: 36px; height: 50px; }
+    .mini-tile .num { font-size: 12px; }
+    .mini-tile .suit { font-size: 10px; }
+    .tile-row-label { min-width: 70px; font-size: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <a href="/" class="logo">
+      <span class="logo-mark"></span>
+      <span>MJ ROGUELIKE</span>
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="/">Home</a>
+      <a href="/how-to-play.html">How to Play</a>
+      <a href="/yaku-list.html">Yaku List</a>
+      <a href="/play.html">Play</a>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <p class="breadcrumb"><a href="/">Home</a> &gt; How to Play</p>
+    <p class="page-eyebrow">BEGINNER'S GUIDE</p>
+    <h1 class="page-title">How to Play <span class="accent">Mahjong</span></h1>
+    <p class="page-sub">Everything you need to know to play your first hand of riichi mahjong &mdash; from tiles to scoring, explained for total beginners.</p>
+  </section>
+
+  <div class="layout">
+
+    <!-- Table of Contents -->
+    <aside class="toc" aria-label="Table of contents">
+      <h3>CONTENTS</h3>
+      <ul>
+        <li><a href="#tile-basics">1. Tile Basics</a></li>
+        <li class="toc-sub"><a href="#suits">Number Suits</a></li>
+        <li class="toc-sub"><a href="#honors">Honor Tiles</a></li>
+        <li><a href="#forming-hand">2. Forming a Hand</a></li>
+        <li class="toc-sub"><a href="#melds">Meld Types</a></li>
+        <li class="toc-sub"><a href="#winning">Winning Shape</a></li>
+        <li><a href="#yaku">3. Winning Patterns</a></li>
+        <li><a href="#scoring">4. Scoring Basics</a></li>
+        <li class="toc-sub"><a href="#han">Han</a></li>
+        <li class="toc-sub"><a href="#fu">Fu</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main content -->
+    <main class="content">
+
+      <!-- Section 1: Tile Basics -->
+      <section id="tile-basics">
+        <p class="section-num">SECTION 01</p>
+        <h2>Tile Basics</h2>
+        <p>A riichi mahjong set has <strong>34 unique tile types</strong>, with 4 copies of each &mdash; <strong>136 tiles total</strong>. Every tile belongs to one of two big families: the numbered suits and the honors.</p>
+
+        <h3 id="suits">The Three Number Suits</h3>
+        <p>Each suit runs from 1 to 9. The 1 and 9 tiles are called <strong>terminals</strong>; the 2-8 tiles are called <strong>simples</strong>.</p>
+
+        <div class="tile-row">
+          <span class="tile-row-label">MAN</span>
+          <div class="mini-tile"><span class="num">1</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">4</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">5</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">6</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">7</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">8</span><span class="suit">萬</span></div>
+          <div class="mini-tile"><span class="num">9</span><span class="suit">萬</span></div>
+        </div>
+
+        <div class="tile-row">
+          <span class="tile-row-label">PIN</span>
+          <div class="mini-tile"><span class="num">1</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">2</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">3</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">4</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">7</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">8</span><span class="suit">筒</span></div>
+          <div class="mini-tile"><span class="num">9</span><span class="suit">筒</span></div>
+        </div>
+
+        <div class="tile-row">
+          <span class="tile-row-label">SOU</span>
+          <div class="mini-tile green"><span class="num">1</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">2</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">3</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">4</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">5</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">6</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">7</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">8</span><span class="suit">索</span></div>
+          <div class="mini-tile green"><span class="num">9</span><span class="suit">索</span></div>
+        </div>
+
+        <h3 id="honors">Honor Tiles</h3>
+        <p>Honors never form sequences &mdash; they only form triplets or pairs. They split into winds and dragons.</p>
+
+        <div class="tile-row">
+          <span class="tile-row-label">WINDS</span>
+          <div class="mini-tile honor"><span class="num">東</span></div>
+          <div class="mini-tile honor"><span class="num">南</span></div>
+          <div class="mini-tile honor"><span class="num">西</span></div>
+          <div class="mini-tile honor"><span class="num">北</span></div>
+        </div>
+        <div class="tile-row">
+          <span class="tile-row-label">DRAGONS</span>
+          <div class="mini-tile honor"><span class="num">白</span></div>
+          <div class="mini-tile honor"><span class="num">發</span></div>
+          <div class="mini-tile honor"><span class="num">中</span></div>
+        </div>
+
+        <div class="callout-box">
+          <p><strong>Quick tip:</strong> The 1s, 9s, and all honor tiles are called <strong>jihai</strong> or "terminal and honor tiles." They're worth more in some yaku but harder to use &mdash; beginners often start by avoiding them.</p>
+        </div>
+      </section>
+
+      <!-- Section 2: Forming a Hand -->
+      <section id="forming-hand">
+        <p class="section-num">SECTION 02</p>
+        <h2>Forming a Hand</h2>
+        <p>A complete mahjong hand is <strong>14 tiles</strong> arranged as <strong>4 melds plus 1 pair</strong>. Each player starts with 13 tiles and draws one per turn, then discards one &mdash; you win by drawing (or being dealt) the 14th tile that completes the shape.</p>
+
+        <h3 id="melds">The Three Meld Types</h3>
+        <p>A meld is a group of 3 tiles. There are three kinds:</p>
+
+        <div class="meld-example">
+          <p class="label">SEQUENCE (CHII) &mdash; 3 consecutive tiles, same suit</p>
+          <div class="tile-showcase" style="margin: 0;">
+            <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">4</span><span class="suit">萬</span></div>
+          </div>
+          <p class="desc">Only number suits can form sequences. Honor tiles cannot.</p>
+        </div>
+
+        <div class="meld-example">
+          <p class="label">TRIPLET (PON) &mdash; 3 identical tiles</p>
+          <div class="tile-showcase" style="margin: 0;">
+            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+          </div>
+          <p class="desc">Any tile, including honors, can form a triplet.</p>
+        </div>
+
+        <div class="meld-example">
+          <p class="label">KAN (KAN) &mdash; 4 identical tiles</p>
+          <div class="tile-showcase" style="margin: 0;">
+            <div class="mini-tile"><span class="num">中</span></div>
+            <div class="mini-tile"><span class="num">中</span></div>
+            <div class="mini-tile"><span class="num">中</span></div>
+            <div class="mini-tile"><span class="num">中</span></div>
+          </div>
+          <p class="desc">A kan counts as a triplet but uses 4 tiles &mdash; you draw a replacement tile so your hand still totals 14.</p>
+        </div>
+
+        <h3 id="winning">The Winning Shape</h3>
+        <p>Every standard winning hand looks like this:</p>
+
+        <div class="meld-example">
+          <p class="label">4 MELDS + 1 PAIR = WIN</p>
+          <div class="tile-showcase" style="margin: 0;">
+            <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">4</span><span class="suit">萬</span></div>
+            <div class="mini-tile green"><span class="num">3</span><span class="suit">索</span></div>
+            <div class="mini-tile green"><span class="num">4</span><span class="suit">索</span></div>
+            <div class="mini-tile green"><span class="num">5</span><span class="suit">索</span></div>
+            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">7</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">8</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">9</span><span class="suit">筒</span></div>
+            <div class="mini-tile honor"><span class="num">白</span></div>
+            <div class="mini-tile honor"><span class="num">白</span></div>
+          </div>
+        </div>
+
+        <p>There's one important exception: the <strong>seven pairs</strong> yaku (chiitoitsu) lets you win with 7 unrelated pairs instead of the standard 4 melds + pair. See the <a href="/yaku-list.html#chiitoitsu">yaku list</a> for details.</p>
+
+        <div class="callout-box">
+          <p><strong>The 14-tile rule:</strong> When you have 13 tiles and are waiting for one more to win, you are in <strong>tenpai</strong> (ready). When you actually have all 14, you have <strong>agari</strong> (a win).</p>
+        </div>
+      </section>
+
+      <!-- Section 3: Yaku -->
+      <section id="yaku">
+        <p class="section-num">SECTION 03</p>
+        <h2>Winning Patterns (Yaku)</h2>
+        <p>In riichi mahjong, you can't just complete any hand &mdash; your winning hand must contain at least one <strong>yaku</strong>: a recognized winning pattern. Each yaku is worth a number of <strong>han</strong>, and you can stack multiple yaku in the same hand for big scores.</p>
+
+        <p>Here are three yaku every beginner should learn first:</p>
+
+        <div class="concept-grid">
+          <div class="concept-card">
+            <h4>Riichi &mdash; 1 han</h4>
+            <p>Declare "ready" when one tile away from winning. Your hand locks in, but you earn a guaranteed yaku.</p>
+          </div>
+          <div class="concept-card">
+            <h4>Tanyao &mdash; 1 han</h4>
+            <p>All your tiles are 2-8. No terminals (1s, 9s) and no honors. The easiest "open" yaku.</p>
+          </div>
+          <div class="concept-card">
+            <h4>Pinfu &mdash; 1 han</h4>
+            <p>All four melds are sequences, with a two-sided wait for the winning tile. Pure and clean.</p>
+          </div>
+        </div>
+
+        <p>There are dozens more &mdash; from <strong>Yakuhai</strong> (a triplet of dragons or your seat wind) up to the legendary <strong>Kokushi Musou</strong> (thirteen orphans). Browse the full list with han values and examples on the <a href="/yaku-list.html">yaku encyclopedia</a>.</p>
+      </section>
+
+      <!-- Section 4: Scoring -->
+      <section id="scoring">
+        <p class="section-num">SECTION 04</p>
+        <h2>Scoring Basics</h2>
+        <p>Your final score comes from two numbers: <strong>han</strong> (pattern difficulty) and <strong>fu</strong> (hand structure value). Together they determine your point total.</p>
+
+        <h3 id="han">Han &mdash; Pattern Value</h3>
+        <p>Each yaku is worth 1 to 6 han. Multiple yaku add together. At 5 han you reach <strong>haneman</strong>, and beyond that special tier names kick in.</p>
+
+        <table class="score-table">
+          <thead>
+            <tr><th>Han</th><th>Tier Name</th><th>Base Points</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1-4</td><td>Normal</td><td>Calculated from han &amp; fu</td></tr>
+            <tr><td>5</td><td>Mangan</td><td>2,000</td></tr>
+            <tr><td>6-7</td><td>Haneman</td><td>3,000</td></tr>
+            <tr><td>8-10</td><td>Baiman</td><td>4,000</td></tr>
+            <tr><td>11-12</td><td>Sanbaiman</td><td>6,000</td></tr>
+            <tr><td>13+</td><td>Yakuman</td><td>8,000 (limit)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="fu">Fu &mdash; Structure Value</h3>
+        <p>Fu measures how "complex" your melds are. Triplets are worth more than sequences. Closed triplets are worth more than open ones. Honor triplets are worth the most.</p>
+
+        <div class="concept-grid">
+          <div class="concept-card">
+            <h4>Base: 20 fu</h4>
+            <p>Every winning hand starts at 20 fu just for winning.</p>
+          </div>
+          <div class="concept-card">
+            <h4>Sequences: 0 fu</h4>
+            <p>Sequences add no fu &mdash; they're the cheapest meld.</p>
+          </div>
+          <div class="concept-card">
+            <h4>Triplets: 4-32 fu</h4>
+            <p>Depends on open/closed and whether it's a simple, terminal, or honor tile.</p>
+          </div>
+          <div class="concept-card">
+            <h4>Pair: 0-4 fu</h4>
+            <p>Dragon pairs and seat-wind pairs add 2 fu each.</p>
+          </div>
+        </div>
+
+        <div class="callout-box">
+          <p><strong>The shortcut:</strong> Don't worry about calculating fu by hand at first. The game handles scoring for you. What matters is recognizing yaku and stacking them &mdash; the more yaku, the higher your score climbs.</p>
+        </div>
+
+        <p>Ready to put it all together? Jump into a game and start building your first hand.</p>
+
+        <div style="margin-top: 32px; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;">
+          <a href="/play.html" class="btn btn-primary">Play Now</a>
+          <a href="/yaku-list.html" class="btn btn-secondary">View All Yaku</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <section class="bottom-cta">
+    <h2>Ready to Deal In?</h2>
+    <p>Practice what you just learned. No install, no account.</p>
+    <a href="/play.html" class="btn btn-primary">Play Mahjong Roguelike</a>
+  </section>
+
+  <footer>
+    <p>&copy; 2026 MAHJONG ROGUELIKE</p>
+    <p style="margin-top:10px;">
+      <a href="/">Home</a> &middot;
+      <a href="/how-to-play.html">How to Play</a> &middot;
+      <a href="/yaku-list.html">Yaku List</a> &middot;
+      <a href="/play.html">Play</a>
+    </p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mahjong Roguelike - Play</title>
+<meta name="description" content="Play Mahjong Roguelike in your browser - a pixel-art roguelike that teaches riichi mahjong through deckbuilding and relic drafting.">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Mahjong Roguelike - Play">
+<meta property="og:description" content="Play Mahjong Roguelike in your browser - pixel-art riichi mahjong with roguelike deckbuilding.">
+<meta property="og:image" content="https://mahjongroguelike.com/og-image.png">
+<meta property="og:url" content="https://mahjongroguelike.com/play.html">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://mahjongroguelike.com/play.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wood-dark: #2B1810;
+    --amber: #D4A574;
+    --amber-bright: #E8C088;
+    --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28;
+    --cream: #F5E6D3;
+    --cream-dim: #C9B89A;
+    --ink: #1A0E08;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wood-dark);
+    color: var(--cream);
+  }
+
+  /* Minimal top bar */
+  .game-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 48px;
+    background: var(--ink);
+    border-bottom: 4px solid var(--vermillion);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+  }
+  .game-topbar a {
+    font-family: 'Press Start 2P', 'Inter', monospace;
+    font-size: 11px;
+    color: var(--amber-bright);
+    text-decoration: none;
+    text-shadow: 2px 2px 0 var(--vermillion-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .game-topbar a:hover { color: var(--cream); }
+  .game-topbar .home-link::before {
+    content: "<";
+    display: inline-block;
+    color: var(--vermillion);
+    font-weight: bold;
+  }
+  .game-topbar .game-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--cream);
+    text-shadow: 2px 2px 0 var(--vermillion-dark);
+    letter-spacing: 1px;
+  }
+
+  /* Full-screen game container */
+  #game-container {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--wood-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #game-container canvas {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Loading placeholder before Phaser boots */
+  .loading-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    color: var(--cream);
+    text-align: center;
+    padding: 20px;
+  }
+  .loading-screen h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(18px, 4vw, 32px);
+    color: var(--cream);
+    text-shadow: 3px 3px 0 var(--vermillion-dark), 6px 6px 0 var(--ink);
+    line-height: 1.4;
+  }
+  .loading-screen h1 .accent { color: var(--amber-bright); }
+  .loading-screen p {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--cream-dim);
+    letter-spacing: 1px;
+  }
+  .loading-bar {
+    width: 220px;
+    max-width: 80vw;
+    height: 16px;
+    background: var(--ink);
+    border: 3px solid var(--amber);
+    box-shadow: 4px 4px 0 var(--vermillion-dark);
+    overflow: hidden;
+    position: relative;
+  }
+  .loading-bar::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 40%;
+    background: var(--vermillion);
+    animation: loadPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes loadPulse {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(250%); }
+  }
+
+  @media (max-width: 375px) {
+    .game-topbar .game-title { font-size: 9px; }
+    .game-topbar a { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="game-topbar">
+    <a href="/" class="home-link" aria-label="Back to home">Back to Home</a>
+    <span class="game-title">MAHJONG ROGUELIKE</span>
+    <a href="/how-to-play.html">How to Play</a>
+  </header>
+
+  <div id="game-container">
+    <div class="loading-screen" id="loading-screen">
+      <h1>MAHJONG<br><span class="accent">ROGUELIKE</span></h1>
+      <div class="loading-bar" aria-hidden="true"></div>
+      <p>Loading game...</p>
+    </div>
+    <!-- Phaser will mount its canvas here at runtime -->
+  </div>
+
+  <script type="module">
+    import { createGame } from '/src/main.ts';
+    const container = document.getElementById('game-container');
+    const loadingScreen = document.getElementById('loading-screen');
+    if (container) {
+      createGame(container);
+      // Remove loading screen once Phaser is ready
+      setTimeout(() => { if (loadingScreen) loadingScreen.remove(); }, 500);
+    }
+  </script>
+</body>
+</html>
