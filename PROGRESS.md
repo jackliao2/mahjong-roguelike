@@ -24,25 +24,38 @@
 - [x] Game page (/play.html) with Phaser mount
 - [x] SEO files: robots.txt, sitemap.xml
 - [x] .gitignore configured
+- [x] M2: Win/lose flow, yaku scoring UI, tenpai hints
+- [x] M3: Reward selection screen (3 random cards: relic/customTile/yakuBoost)
+- [x] M3: 10 relics implemented (Amber Lantern, Bamboo Flute, Ink Brush, Lucky Coin, etc.)
+- [x] M3: 5 custom tiles (Red 5s, Golden Dragon, Lucky East)
+- [x] M3: GameOverScene with full run stats + meta stats
+- [x] M3: Run persistence (localStorage save/resume)
+- [x] M3: Yaku boost rewards (+1 han to unlocked yaku)
+- [x] M4: Meta-progression system (6 achievements, 5 starting decks)
+- [x] SEO landing page (index.html) with animated pixel tiles
+- [x] How to Play page (/how-to-play.html)
+- [x] Yaku List page (/yaku-list.html) with 15 yaku, anchor-linked
+- [x] Game page (/play.html) with Phaser mount
+- [x] SEO files: robots.txt, sitemap.xml
+- [x] .gitignore configured
 
 ### In Progress
-- [ ] M1 verification: test in browser, fix any rendering issues
-- [ ] npm install completing
+- [ ] M5: Sound effects, mobile responsive, deploy prep
 
 ### Blocked
-- (none currently)
+- GitHub push (needs repo creation on github.com/jackliao2)
 
 ### Next 3 Tasks
-1. Verify M1 in browser: render 13 tiles, draw/discard, win detection
-2. Start M2: implement 5 core yaku scoring in-game UI, round structure, win/lose screens
-3. Start M3: reward selection screen, relic system, custom tile effects
+1. M5: Add sound effects (free assets from OpenGameArt)
+2. M5: Mobile responsive testing
+3. M5: Deploy to Vercel + submit to itch.io
 
 ### Milestone Status
-- **M1 (Skeleton)**: ~90% complete — needs browser verification
-- **M2 (Scoring)**: ~40% complete — yaku logic done, needs in-game scoring UI
-- **M3 (Roguelike Layer)**: 0% — reward/relic systems defined but not built
-- **M4 (Meta-progression)**: 0%
-- **M5 (Polish & Launch)**: 5% — landing page done, needs deploy
+- **M1 (Skeleton)**: 100% complete
+- **M2 (Scoring)**: 100% complete
+- **M3 (Roguelike Layer)**: 100% complete
+- **M4 (Meta-progression)**: 100% complete (achievements + deck unlocks defined)
+- **M5 (Polish & Launch)**: 30% — landing page done, game playable, needs sound/deploy
 
 ### Technical Decisions
 - Phaser 3 over Godot: web-first, better SEO landing page integration
