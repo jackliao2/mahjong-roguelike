@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service - Mahjong Roguelike</title>
+<meta name="description" content="Terms of Service for Mahjong Roguelike. Rules for using our free browser-based mahjong roguelike game, including acceptable use, intellectual property, and disclaimers.">
+<meta name="keywords" content="terms of service, terms of use, mahjong roguelike terms, browser game terms">
+<meta property="og:title" content="Terms of Service - Mahjong Roguelike">
+<meta property="og:description" content="Rules for using our free browser-based mahjong roguelike game.">
+<meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
+<meta property="og:url" content="https://mahjongroguelike.com/terms.html">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://mahjongroguelike.com/terms.html">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2B1810">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Mahjong Roguelike Team">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wood-dark: #2B1810; --wood-mid: #3D2418; --wood-light: #5C3825;
+    --amber: #D4A574; --amber-bright: #E8C088; --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28; --cream: #F5E6D3; --cream-dim: #C9B89A;
+    --gold: #E5B567; --ink: #1A0E08;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif; background: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px),
+      radial-gradient(ellipse at top, var(--wood-mid) 0%, var(--wood-dark) 70%);
+    color: var(--cream); min-height: 100vh; line-height: 1.7;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 100; background: var(--ink);
+    border-bottom: 4px solid var(--vermillion);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5); padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace; font-size: 14px;
+    color: var(--amber-bright); text-shadow: 2px 2px 0 var(--vermillion-dark);
+    display: flex; align-items: center; gap: 10px; text-decoration: none;
+  }
+  .logo-mark {
+    display: inline-block; width: 22px; height: 22px;
+    background: var(--vermillion); border: 2px solid var(--cream);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .nav-links a {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--cream-dim); text-decoration: none; padding: 8px 12px;
+    border: 2px solid transparent; transition: all 0.15s;
+  }
+  .nav-links a:hover { color: var(--amber-bright); border-color: var(--amber); background: var(--wood-mid); }
+  .container { max-width: 820px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 {
+    font-family: 'Press Start 2P', monospace; font-size: 28px;
+    color: var(--amber-bright); text-shadow: 3px 3px 0 var(--vermillion-dark);
+    margin-bottom: 8px; line-height: 1.4;
+  }
+  .last-updated { color: var(--cream-dim); font-size: 14px; margin-bottom: 32px; }
+  h2 { font-size: 22px; color: var(--amber); margin-top: 36px; margin-bottom: 12px; border-bottom: 2px solid var(--wood-light); padding-bottom: 6px; }
+  p { margin-bottom: 14px; color: var(--cream); }
+  ul { margin-bottom: 14px; padding-left: 24px; }
+  li { margin-bottom: 6px; color: var(--cream); }
+  strong { color: var(--amber-bright); }
+  .callout {
+    background: var(--wood-mid); border-left: 4px solid var(--vermillion);
+    padding: 16px 20px; margin: 20px 0; border-radius: 0 4px 4px 0;
+  }
+  a { color: var(--amber-bright); } a:hover { text-decoration: underline; }
+  .toc { background: var(--wood-mid); border: 2px solid var(--wood-light); border-radius: 4px; padding: 20px 24px; margin-bottom: 32px; }
+  .toc h2 { margin-top: 0; border: none; font-size: 16px; }
+  .toc ol { padding-left: 20px; } .toc li { margin-bottom: 4px; } .toc a { font-size: 14px; }
+  footer { background: var(--ink); border-top: 4px solid var(--vermillion); padding: 24px; text-align: center; color: var(--cream-dim); font-size: 13px; }
+  footer a { color: var(--amber-bright); text-decoration: none; } footer a:hover { text-decoration: underline; }
+  @media (max-width: 600px) { h1 { font-size: 20px; } .nav-links a { font-size: 7px; padding: 6px 8px; } }
+</style>
+<!-- Structured Data: BreadcrumbList -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mahjongroguelike.com/" },
+    { "@type": "ListItem", "position": 2, "name": "Terms of Service", "item": "https://mahjongroguelike.com/terms.html" }
+  ]
+}
+</script>
+<!-- Structured Data: WebPage -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Terms of Service - Mahjong Roguelike",
+  "description": "Terms of Service for Mahjong Roguelike. Rules for using our free browser-based mahjong roguelike game.",
+  "url": "https://mahjongroguelike.com/terms.html",
+  "publisher": { "@type": "Organization", "name": "Mahjong Roguelike" }
+}
+</script>
+<!-- Analytics: Umami -->
+<script async src="https://analytics.umami.is/script.js" data-website-id="YOUR_UMAMI_ID"></script>
+</head>
+<body>
+
+<nav class="topbar">
+  <a href="/" class="logo"><span class="logo-mark"></span> Mahjong Roguelike</a>
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="/">Home</a><a href="/how-to-play.html">How to Play</a><a href="/yaku-list.html">Yaku List</a><a href="/play.html">Play</a>
+  </nav>
+</nav>
+
+<div class="container">
+  <h1>Terms of Service</h1>
+  <p class="last-updated">Last updated: June 27, 2026</p>
+
+  <div class="callout">
+    <strong>The short version:</strong> Mahjong Roguelike is a free browser game. Play it, enjoy it, share it. Don't cheat, don't try to hack it, don't copy our code without permission. The Game is provided "as is" without warranties. We can change or stop the Game at any time.
+  </div>
+
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#acceptance">Acceptance of Terms</a></li>
+      <li><a href="#description">Description of Service</a></li>
+      <li><a href="#eligibility">Eligibility</a></li>
+      <li><a href="#acceptable-use">Acceptable Use</a></li>
+      <li><a href="#accounts">Accounts</a></li>
+      <li><a href="#intellectual-property">Intellectual Property</a></li>
+      <li><a href="#user-content">User-Generated Content</a></li>
+      <li><a href="#monetization">Monetization &amp; Premium Features</a></li>
+      <li><a href="#disclaimers">Disclaimers</a></li>
+      <li><a href="#liability">Limitation of Liability</a></li>
+      <li><a href="#indemnification">Indemnification</a></li>
+      <li><a href="#termination">Termination</a></li>
+      <li><a href="#governing-law">Governing Law</a></li>
+      <li><a href="#changes">Changes to These Terms</a></li>
+      <li><a href="#contact">Contact Us</a></li>
+    </ol>
+  </div>
+
+  <h2 id="acceptance">1. Acceptance of Terms</h2>
+  <p>By accessing or playing Mahjong Roguelike (the "Game") at <a href="https://mahjongroguelike.com">mahjongroguelike.com</a>, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Game.</p>
+  <p>These Terms constitute a legally binding agreement between you and the Mahjong Roguelike team ("we", "us", or "our"). If you are using the Game on behalf of an organization, you represent that you have the authority to bind that organization.</p>
+
+  <h2 id="description">2. Description of Service</h2>
+  <p>Mahjong Roguelike is a free, browser-based video game that combines Japanese riichi mahjong rules with roguelike deckbuilding mechanics. The Game is provided as a web application and requires no download, installation, or account. Game progress is stored locally in your browser.</p>
+  <p>We reserve the right to modify, suspend, or discontinue the Game at any time, with or without notice. We are not liable to you or any third party for any modification, suspension, or discontinuation of the Game.</p>
+
+  <h2 id="eligibility">3. Eligibility</h2>
+  <p>The Game is available to users of all ages. There is no age restriction because:</p>
+  <ul>
+    <li>The Game contains no mature, violent, or inappropriate content.</li>
+    <li>No personal data is collected from any user.</li>
+    <li>No account creation or registration is required.</li>
+  </ul>
+  <p>By using the Game, you represent that you are legally capable of agreeing to these Terms. If you are under 18, you should review these Terms with a parent or guardian, though no consent is required because no data is collected.</p>
+
+  <h2 id="acceptable-use">4. Acceptable Use</h2>
+  <p>You agree to use the Game only for lawful purposes. You agree NOT to:</p>
+  <ul>
+    <li>Use bots, scripts, or automated tools to manipulate the Game, game scores, or leaderboards.</li>
+    <li>Attempt to hack, reverse engineer, decompile, or otherwise extract source code from the Game (except as permitted by applicable law).</li>
+    <li>Exploit bugs, glitches, or unintended behavior for unfair advantage.</li>
+    <li>Use the Game to violate any local, state, national, or international law.</li>
+    <li>Interfere with or disrupt the servers or networks hosting the Game.</li>
+    <li>Attempt to gain unauthorized access to any portion of the Game, other accounts, or computer systems.</li>
+    <li>Reproduce, duplicate, copy, sell, resell, or exploit any portion of the Game for commercial purposes without our written permission.</li>
+    <li>Introduce malware, viruses, or other malicious code to the Game.</li>
+  </ul>
+  <p>Violations may result in termination of access and, where applicable, legal action.</p>
+
+  <h2 id="accounts">5. Accounts</h2>
+  <p><strong>No account is required.</strong> The Game is fully playable without registration. All game progress is stored in your browser's localStorage and is not synchronized to any server. If you clear your browser data or switch devices, your progress will be lost. We are not responsible for lost game progress.</p>
+
+  <h2 id="intellectual-property">6. Intellectual Property</h2>
+  <p>The Game, including its code, graphics, tile designs, sound effects, yaku system, game mechanics, text content, and visual design, is the intellectual property of the Mahjong Roguelike team and is protected by copyright, trademark, and other applicable laws.</p>
+  <h3>6.1 What You Can Do</h3>
+  <ul>
+    <li>Play the Game for personal, non-commercial use.</li>
+    <li>Share links to the Game on social media, forums, and with friends.</li>
+    <li>Stream or record gameplay videos and monetize them through platform programs (YouTube, Twitch, etc.), provided you credit the Game.</li>
+    <li>Create fan content (art, guides, wikis) based on the Game, provided it is non-commercial and credits the original.</li>
+  </ul>
+  <h3>6.2 What You Cannot Do</h3>
+  <ul>
+    <li>Copy, redistribute, or host the Game on another website without written permission.</li>
+    <li>Use the Game's assets (tile designs, UI, code) in your own projects without a license.</li>
+    <li>Claim the Game or its components as your own.</li>
+    <li>Use the Game's name, logo, or branding to imply endorsement or affiliation.</li>
+  </ul>
+  <p>The Game's source code may be available on GitHub under a specific license. Refer to the repository's LICENSE file for details.</p>
+
+  <h2 id="user-content">7. User-Generated Content</h2>
+  <p>The Game does not currently support user-generated content. All content within the Game (tiles, yaku, relics, etc.) is created by the development team. If user-generated content features are added in the future, we will update these Terms accordingly.</p>
+
+  <h2 id="monetization">8. Monetization &amp; Premium Features</h2>
+  <p>The base Game is free to play. In the future, we may offer:</p>
+  <ul>
+    <li><strong>Premium unlock ($4.99)</strong> — Unlocks all characters, custom tile skins, and daily challenge mode.</li>
+    <li><strong>Steam port ($9.99)</strong> — A buy-to-own desktop version with additional features.</li>
+    <li><strong>Display advertising</strong> — Banner ads may be shown on the web version. Ads will be clearly labeled and will not interfere with gameplay.</li>
+  </ul>
+  <p>Any premium purchases will be processed through a trusted third-party payment provider (e.g., Steam, Stripe). We do not store payment information. Refunds are subject to the respective platform's refund policy.</p>
+  <p>The free web version will always remain playable, and no pay-to-win mechanics will be introduced.</p>
+
+  <h2 id="disclaimers">9. Disclaimers</h2>
+  <p>THE GAME IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, OR THAT THE GAME WILL BE UNINTERRUPTED, ERROR-FREE, OR FREE OF HARMFUL COMPONENTS.</p>
+  <p>We do not warrant that:</p>
+  <ul>
+    <li>The Game will meet your specific requirements or expectations.</li>
+    <li>The Game will be available at all times without interruption.</li>
+    <li>Game progress saved in your browser will never be lost or corrupted.</li>
+    <li>The Game is free of bugs, errors, or compatibility issues on all devices.</li>
+  </ul>
+  <p>Your use of the Game is at your sole risk.</p>
+
+  <h2 id="liability">10. Limitation of Liability</h2>
+  <p>TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE MAHJONG ROGUELIKE TEAM, ITS MEMBERS, AFFILIATES, OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF DATA, GAME PROGRESS, OR PROFITS, ARISING OUT OF OR RELATED TO YOUR USE OF OR INABILITY TO USE THE GAME.</p>
+  <p>Because the Game is free and no personal data is collected, our total liability for any claim arising from these Terms or your use of the Game shall not exceed USD $1.00.</p>
+  <p>This limitation of liability applies regardless of the legal theory pursued and whether or not we have been advised of the possibility of such damages.</p>
+
+  <h2 id="indemnification">11. Indemnification</h2>
+  <p>You agree to indemnify and hold harmless the Mahjong Roguelike team and its members from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from your violation of these Terms or your misuse of the Game.</p>
+
+  <h2 id="termination">12. Termination</h2>
+  <p>You may stop using the Game at any time. We may terminate or restrict access to the Game at any time, without notice, for any reason, including violation of these Terms. Upon termination, your right to use the Game ceases immediately. Since no account exists, "termination" means we may block your IP address or browser from accessing the Game.</p>
+
+  <h2 id="governing-law">13. Governing Law</h2>
+  <p>These Terms shall be governed by and construed in accordance with applicable international laws, without regard to conflict of law principles. Any disputes arising under these Terms shall be resolved through good-faith communication first, and if unresolved, through binding arbitration.</p>
+
+  <h2 id="changes">14. Changes to These Terms</h2>
+  <p>We may update these Terms from time to time. When we do, we will:</p>
+  <ul>
+    <li>Update the "Last updated" date at the top of this page.</li>
+    <li>Notify users of material changes through the Game's <a href="/changelog.html">changelog</a>.</li>
+  </ul>
+  <p>Your continued use of the Game after changes take effect constitutes acceptance of the updated Terms. If you disagree with changes, you must stop using the Game.</p>
+
+  <h2 id="contact">15. Contact Us</h2>
+  <p>If you have questions about these Terms, please contact us:</p>
+  <ul>
+    <li><strong>Email:</strong> <a href="mailto:legal@mahjongroguelike.com">legal@mahjongroguelike.com</a></li>
+    <li><strong>GitHub:</strong> <a href="https://github.com/jackliao2/mahjong-roguelike" target="_blank" rel="noopener">github.com/jackliao2/mahjong-roguelike</a></li>
+  </ul>
+</div>
+
+<footer>
+  <p>&copy; 2026 MAHJONG ROGUELIKE</p>
+  <p style="margin-top:10px;">
+    <a href="/">Home</a> &middot;
+    <a href="/how-to-play.html">How to Play</a> &middot;
+    <a href="/yaku-list.html">Yaku List</a> &middot;
+    <a href="/play.html">Play</a> &middot;
+    <a href="/privacy.html">Privacy</a> &middot;
+    <a href="/terms.html">Terms</a> &middot;
+    <a href="/cookies.html">Cookies</a>
+  </p>
+</footer>
+
+</body>
+</html>
