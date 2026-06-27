@@ -116,6 +116,35 @@
     line-height: 1.4;
   }
   .loading-screen h1 .accent { color: var(--amber-bright); }
+  /* Pixel lantern decoration above title */
+  .pixel-lantern {
+    width: 28px;
+    height: 36px;
+    position: relative;
+    image-rendering: pixelated;
+    margin-bottom: 8px;
+  }
+  .pixel-lantern::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 13px;
+    width: 2px; height: 8px;
+    background: var(--amber);
+  }
+  .pixel-lantern::after {
+    content: "";
+    position: absolute;
+    top: 8px; left: 4px;
+    width: 20px; height: 24px;
+    background: var(--vermillion);
+    border: 2px solid var(--vermillion-dark);
+    box-shadow: 0 0 16px 4px rgba(199, 62, 58, 0.4);
+    animation: lanternGlow 1.8s ease-in-out infinite;
+  }
+  @keyframes lanternGlow {
+    0%, 100% { box-shadow: 0 0 12px 3px rgba(199, 62, 58, 0.3); }
+    50% { box-shadow: 0 0 20px 6px rgba(229, 181, 103, 0.5); }
+  }
   .loading-screen p {
     font-family: 'Press Start 2P', monospace;
     font-size: 10px;
@@ -161,6 +190,7 @@
 
   <div id="game-container">
     <div class="loading-screen" id="loading-screen">
+      <div class="pixel-lantern" aria-hidden="true"></div>
       <h1>MAHJONG<br><span class="accent">ROGUELIKE</span></h1>
       <div class="loading-bar" aria-hidden="true"></div>
       <p>Loading game...</p>

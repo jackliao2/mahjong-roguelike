@@ -23,6 +23,8 @@ const COLORS = {
 /**
  * Generate a pixel-art mahjong tile texture in Phaser.
  * Each tile is rendered as a small canvas with the tile symbol.
+ * Red five tiles get a special red-tinted background.
+ * Custom tiles get a golden border.
  */
 export function generateTileTexture(scene: Phaser.Scene, tile: Tile): string {
   const key = `tile-${tileKey(tile)}`;
@@ -31,9 +33,14 @@ export function generateTileTexture(scene: Phaser.Scene, tile: Tile): string {
   const display = getTileDisplay(tile);
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
 
-  // Tile background with pixel-art bevel
-  // Main body
-  g.fillStyle(COLORS.tileBg, 1);
+  // Detect red five (custom tile with id starting 'red-five-')
+  const isRedFive = tile.id.startsWith('red-five-');
+  // Detect golden/custom tile (any non-red custom tile)
+  const isCustomTile = tile.id.startsWith('golden-') || tile.id.startsWith('lucky-');
+
+  // Tile background — red fives get a pinkish tint, custom tiles get a golden tint
+  const bgColor = isRedFive ? 0xf5d5d0 : isCustomTile ? 0xfff4d0 : COLORS.tileBg;
+  g.fillStyle(bgColor, 1);
   g.fillRect(2, 2, TILE_WIDTH - 4, TILE_HEIGHT - 4);
 
   // Top highlight (pixel bevel)
@@ -46,13 +53,33 @@ export function generateTileTexture(scene: Phaser.Scene, tile: Tile): string {
   g.fillRect(2, TILE_HEIGHT - 4, TILE_WIDTH - 4, 2);
   g.fillRect(TILE_WIDTH - 4, 2, 2, TILE_HEIGHT - 4);
 
-  // Border
-  g.lineStyle(2, COLORS.tileBorder, 1);
+  // Border — red fives get red border, custom tiles get gold border
+  if (isRedFive) {
+    g.lineStyle(2, COLORS.dragon, 1);
+  } else if (isCustomTile) {
+    g.lineStyle(2, 0xe5b567, 1);
+  } else {
+    g.lineStyle(2, COLORS.tileBorder, 1);
+  }
   g.strokeRect(1, 1, TILE_WIDTH - 2, TILE_HEIGHT - 2);
 
   // Draw suit-specific symbol
-  const colorCode = getColorForSuit(display.suit);
+  // Red fives: always render the 5 in red regardless of suit
+  const colorCode = isRedFive ? COLORS.dragon : getColorForSuit(display.suit);
   drawTileSymbol(g, tile, colorCode);
+
+  // Red five: add a small "DORA" indicator dot in the corner
+  if (isRedFive) {
+    g.fillStyle(COLORS.dragon, 1);
+    g.fillCircle(TILE_WIDTH - 7, 7, 2);
+  }
+  // Custom tiles: add a small star sparkle in the corner
+  if (isCustomTile) {
+    g.fillStyle(0xe5b567, 1);
+    g.fillRect(TILE_WIDTH - 8, 5, 2, 2);
+    g.fillRect(TILE_WIDTH - 6, 7, 2, 2);
+    g.fillRect(TILE_WIDTH - 8, 9, 2, 2);
+  }
 
   g.generateTexture(key, TILE_WIDTH, TILE_HEIGHT);
   g.destroy();

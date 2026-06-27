@@ -98,47 +98,29 @@ export class GameScene extends Phaser.Scene {
 
   // ========== UI CREATION ==========
 
+  private scoreProgressBar!: Phaser.GameObjects.Rectangle;
+  private scoreProgressBg!: Phaser.GameObjects.Rectangle;
+  private handAreaBg!: Phaser.GameObjects.Container;
+  private discardArea!: Phaser.GameObjects.Container;
+
   private createUI(): void {
-    // Top bar - score panel
-    const topBg = this.add.rectangle(0, 0, 1024, 60, 0x1a0f08, 0.95)
-      .setOrigin(0, 0)
-      .setStrokeStyle(2, 0xd4a574);
+    // ===== Decorative background (wood grain texture) =====
+    this.createWoodBackground();
 
-    this.uiText.round = this.add.text(20, 12, '', {
-      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace',
-    });
-    this.uiText.score = this.add.text(180, 12, '', {
-      fontSize: '16px', color: '#d4a574', fontFamily: 'monospace',
-    });
-    this.uiText.target = this.add.text(380, 12, '', {
-      fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace',
-    });
-    this.uiText.wall = this.add.text(620, 12, '', {
-      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
-    });
-    this.uiText.phase = this.add.text(820, 12, '', {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
-    });
+    // ===== Top bar - redesigned with sections =====
+    this.createTopBar();
 
-    // Relics display (top bar right)
-    this.uiText.relics = this.add.text(820, 34, '', {
-      fontSize: '11px', color: '#d4a574', fontFamily: 'monospace',
-    });
+    // ===== Score progress bar (below top bar) =====
+    this.createScoreProgressBar();
 
-    // Sound toggle button (top-right corner)
-    this.createSoundToggleButton();
+    // ===== Hand area background (wooden tray for tiles) =====
+    this.createHandArea();
 
-    // Message area (center)
-    this.messageText = this.add.text(512, 220, '', {
-      fontSize: '24px', color: '#f5e6d3', fontFamily: 'monospace',
-      align: 'center',
-    }).setOrigin(0.5);
+    // ===== Discard area (right side, shows recent discards) =====
+    this.createDiscardArea();
 
-    // Yaku info display (below message)
-    this.yakuInfoText = this.add.text(512, 300, '', {
-      fontSize: '14px', color: '#d4a574', fontFamily: 'monospace',
-      align: 'center',
-    }).setOrigin(0.5);
+    // ===== Message area (center, with decorative frame) =====
+    this.createMessageArea();
 
     // Action buttons
     this.createButton('draw', 512, 420, 'DRAW TILE', () => this.drawTile());
@@ -158,23 +140,218 @@ export class GameScene extends Phaser.Scene {
     key: string, x: number, y: number, label: string,
     callback: () => void, highlight: boolean = false
   ): void {
-    const width = 140;
-    const height = 44;
+    const width = 160;
+    const height = 48;
+    // Pixel-art shadow (offset black rectangle behind)
+    const shadow = this.add.rectangle(4, 4, width, height, 0x000000, 0.5);
+    // Main button bg with bevel
     const bg = this.add.rectangle(0, 0, width, height, highlight ? 0xc73e3a : 0xd4a574)
-      .setStrokeStyle(2, 0x2b1810);
+      .setStrokeStyle(3, 0x2b1810);
+    // Top highlight (pixel bevel)
+    const highlight_strip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.4);
     const text = this.add.text(0, 0, label, {
-      fontSize: '14px', color: '#2b1810', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: highlight ? '#f5e6d3' : '#2b1810',
+      fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const container = this.add.container(x, y, [bg, text])
+    const container = this.add.container(x, y, [shadow, bg, highlight_strip, text])
       .setSize(width, height)
       .setInteractive({ useHandCursor: true });
 
-    container.on('pointerover', () => { bg.setScale(1.05); text.setScale(1.05); });
-    container.on('pointerout', () => { bg.setScale(1); text.setScale(1); });
-    container.on('pointerdown', callback);
+    container.on('pointerover', () => {
+      container.setScale(1.05);
+      container.setY(y - 2);
+    });
+    container.on('pointerout', () => {
+      container.setScale(1);
+      container.setY(y);
+    });
+    container.on('pointerdown', () => {
+      this.soundManager.playClick();
+      callback();
+    });
 
     this.actionButtons[key] = container;
+  }
+
+  // ===== Wood grain decorative background =====
+  private createWoodBackground(): void {
+    // Base dark wood color
+    this.add.rectangle(0, 0, 1024, 720, 0x2b1810).setOrigin(0);
+    // Wood grain stripes (subtle horizontal lines)
+    for (let y = 0; y < 720; y += 4) {
+      const alpha = 0.04 + Math.random() * 0.04;
+      this.add.rectangle(0, y, 1024, 2, 0x5c3825, alpha).setOrigin(0);
+    }
+    // Corner decorative elements (lanterns)
+    this.createLantern(50, 100);
+    this.createLantern(974, 100);
+  }
+
+  private createLantern(x: number, y: number): void {
+    // Hanging lantern decoration
+    const rope = this.add.rectangle(x, y - 40, 2, 40, 0x8b6f47);
+    const lantern = this.add.ellipse(x, y, 28, 36, 0xc73e3a)
+      .setStrokeStyle(2, 0x9b2b28);
+    // Lantern glow
+    const glow = this.add.ellipse(x, y, 50, 50, 0xc73e3a, 0.15);
+    // Top and bottom caps
+    this.add.rectangle(x, y - 18, 16, 4, 0x2b1810);
+    this.add.rectangle(x, y + 18, 12, 3, 0xe5b567);
+    // Sway animation
+    this.tweens.add({
+      targets: [rope, lantern, glow],
+      angle: 3,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  // ===== Redesigned top bar =====
+  private createTopBar(): void {
+    // Main top bar background
+    const topBg = this.add.rectangle(0, 0, 1024, 56, 0x1a0e08)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0xd4a574);
+    // Inner accent line
+    this.add.rectangle(0, 54, 1024, 2, 0xc73e3a).setOrigin(0);
+
+    // Round indicator (left, with icon)
+    this.add.text(20, 10, 'ROUND', {
+      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    });
+    this.uiText.round = this.add.text(20, 24, '', {
+      fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    });
+
+    // Score (with label)
+    this.add.text(140, 10, 'SCORE', {
+      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    });
+    this.uiText.score = this.add.text(140, 24, '', {
+      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    });
+
+    // Target (with label)
+    this.add.text(300, 10, 'TARGET', {
+      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    });
+    this.uiText.target = this.add.text(300, 24, '', {
+      fontSize: '18px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    });
+
+    // Wall remaining (with label)
+    this.add.text(460, 10, 'WALL', {
+      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    });
+    this.uiText.wall = this.add.text(460, 24, '', {
+      fontSize: '18px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+    });
+
+    // Phase (right side)
+    this.add.text(620, 10, 'PHASE', {
+      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    });
+    this.uiText.phase = this.add.text(620, 24, '', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    });
+
+    // Relics display (with icon)
+    this.add.text(780, 10, 'RELICS', {
+      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    });
+    this.uiText.relics = this.add.text(780, 24, '', {
+      fontSize: '14px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    });
+
+    // Sound toggle button (top-right corner)
+    this.createSoundToggleButton();
+  }
+
+  // ===== Score progress bar =====
+  private createScoreProgressBar(): void {
+    const barY = 62;
+    const barWidth = 980;
+    const barHeight = 8;
+    const barX = 22;
+
+    // Background
+    this.scoreProgressBg = this.add.rectangle(barX + barWidth / 2, barY, barWidth, barHeight, 0x1a0e08)
+      .setStrokeStyle(1, 0x5c3825);
+    // Fill (starts empty)
+    this.scoreProgressBar = this.add.rectangle(barX, barY - barHeight / 2, 0, barHeight, 0xe5b567)
+      .setOrigin(0, 0.5);
+  }
+
+  private updateScoreProgressBar(): void {
+    const rs = this.state.runState;
+    const ratio = Math.min(1, rs.score / rs.targetScore);
+    const maxWidth = 980;
+    this.scoreProgressBar.width = maxWidth * ratio;
+    // Color shift: amber -> red as it fills
+    const color = ratio >= 1 ? 0xc73e3a : 0xe5b567;
+    this.scoreProgressBar.fillColor = color;
+  }
+
+  // ===== Hand area (wooden tray) =====
+  private createHandArea(): void {
+    // Tray background — darker wood with inner shadow
+    const trayY = 600;
+    const trayWidth = 900;
+    const trayHeight = 90;
+    const trayX = 512 - trayWidth / 2;
+
+    // Outer shadow
+    this.add.rectangle(trayX + 4, trayY + 4, trayWidth, trayHeight, 0x000000, 0.4).setOrigin(0);
+    // Main tray
+    this.add.rectangle(trayX, trayY, trayWidth, trayHeight, 0x3d2418).setOrigin(0)
+      .setStrokeStyle(3, 0x2b1810);
+    // Inner highlight
+    this.add.rectangle(trayX + 2, trayY + 2, trayWidth - 4, 2, 0xd4a574, 0.3).setOrigin(0);
+    // Inner bottom shadow
+    this.add.rectangle(trayX + 2, trayY + trayHeight - 4, trayWidth - 4, 2, 0x000000, 0.4).setOrigin(0);
+
+    this.handAreaBg = this.add.container(0, 0);
+  }
+
+  // ===== Discard area (right panel) =====
+  private createDiscardArea(): void {
+    const panelX = 512 + 380;
+    const panelY = 300;
+    // Background panel
+    this.add.rectangle(panelX, panelY, 200, 280, 0x1a0e08, 0.7)
+      .setStrokeStyle(2, 0x5c3825);
+    // Label
+    this.add.text(panelX, panelY - 120, 'DISCARDS', {
+      fontSize: '11px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    // Divider line
+    this.add.rectangle(panelX, panelY - 105, 180, 1, 0x5c3825);
+
+    this.discardArea = this.add.container(panelX, panelY);
+  }
+
+  // ===== Message area (with frame) =====
+  private createMessageArea(): void {
+    // Decorative frame around message area
+    const frameY = 220;
+    this.add.rectangle(512, frameY, 600, 50, 0x1a0e08, 0.5)
+      .setStrokeStyle(2, 0xd4a574, 0.5);
+
+    this.messageText = this.add.text(512, frameY, '', {
+      fontSize: '24px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    // Yaku info — larger, framed
+    this.add.rectangle(512, 310, 700, 110, 0x1a0e08, 0.6)
+      .setStrokeStyle(2, 0xd4a574, 0.4);
+    this.yakuInfoText = this.add.text(512, 310, '', {
+      fontSize: '13px', color: '#e5b567', fontFamily: 'monospace',
+      align: 'center', lineSpacing: 4,
+    }).setOrigin(0.5);
   }
 
   private showButton(key: string): void {
@@ -362,9 +539,23 @@ export class GameScene extends Phaser.Scene {
     this.state.phase = 'won';
     this.soundManager.playWin();
 
-    // Build score breakdown display
-    const yakuNames = score.yakuList.map(y => `${y.yaku.name} (${y.han}h)`).join(', ');
+    // Visual pop on win — message scales in with bounce
     this.showMessage(`WIN! +${score.finalScore} pts`);
+    this.messageText.setScale(0.3);
+    this.tweens.add({
+      targets: this.messageText,
+      scale: 1,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+    // Flash effect — brief golden rectangle overlay
+    const flash = this.add.rectangle(512, 360, 1024, 720, 0xe5b567, 0.3);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: 500,
+      onComplete: () => flash.destroy(),
+    });
     this.showScoreBreakdown(score, isIppatsu);
 
     persistRun(this.state.runState);
@@ -586,14 +777,48 @@ export class GameScene extends Phaser.Scene {
   }
 
   private renderDiscards(): void {
-    const count = this.state.discardedTiles.length;
-    if (this.uiText['discardCount']) {
-      this.uiText['discardCount'].setText(`Discards: ${count}`);
-    } else {
-      this.uiText['discardCount'] = this.add.text(920, 80, `Discards: ${count}`, {
-        fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
-      });
-    }
+    // Clear existing discard tiles in the discard area container
+    this.discardArea.list.forEach(obj => obj.destroy());
+    this.discardArea.removeAll();
+
+    // Show last 6 discards in a 3x2 grid (smaller tiles)
+    const recent = this.state.discardedTiles.slice(-6);
+    const miniTileSize = 24;
+    const cols = 3;
+    const startX = -40;
+    const startY = -70;
+
+    recent.forEach((tile, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + col * (miniTileSize + 4);
+      const y = startY + row * (miniTileSize + 4);
+
+      // Mini tile background
+      const bg = this.add.rectangle(x, y, miniTileSize, miniTileSize, 0xf5e6d3)
+        .setStrokeStyle(1, 0x2b1810);
+      // Mini tile text (just the rank/suit shorthand)
+      const display = getTileDisplay(tile);
+      const label = tile.suit === 'wind' || tile.suit === 'dragon'
+        ? display.englishName.charAt(0)
+        : tile.rank.toString();
+      const textColor = tile.suit === 'dragon' ? '#c73e3a'
+        : tile.suit === 'wind' ? '#5c4033'
+        : tile.suit === 'man' ? '#1a1a2e'
+        : tile.suit === 'pin' ? '#2c5f8a'
+        : '#2d6a4f';
+      const txt = this.add.text(x, y, label, {
+        fontSize: '10px', color: textColor, fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+
+      this.discardArea.add([bg, txt]);
+    });
+
+    // Discard count label at bottom
+    const countText = this.add.text(0, 100, `${this.state.discardedTiles.length} tiles`, {
+      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
+    }).setOrigin(0.5);
+    this.discardArea.add(countText);
   }
 
   private showMessage(msg: string): void {
@@ -606,10 +831,10 @@ export class GameScene extends Phaser.Scene {
 
   private updateUI(): void {
     const rs = this.state.runState;
-    this.uiText.round.setText(`Round ${rs.round}/${rs.maxRounds}`);
-    this.uiText.score.setText(`Score: ${rs.score}`);
-    this.uiText.target.setText(`Target: ${rs.targetScore}`);
-    this.uiText.wall.setText(`Wall: ${this.state.wall.remaining}`);
+    this.uiText.round.setText(`${rs.round}/${rs.maxRounds}`);
+    this.uiText.score.setText(`${rs.score}`);
+    this.uiText.target.setText(`${rs.targetScore}`);
+    this.uiText.wall.setText(`${this.state.wall.remaining}`);
 
     const phaseLabels: Record<GamePhase, string> = {
       idle: 'Your Turn', drew: 'Discard or Win', won: 'Round Won!',
@@ -619,14 +844,13 @@ export class GameScene extends Phaser.Scene {
 
     // Relics display
     if (rs.relics.length > 0) {
-      this.uiText.relics.setText(`Relics: ${rs.relics.length}`);
+      this.uiText.relics.setText(`${rs.relics.length}x`);
     } else {
-      this.uiText.relics.setText('');
+      this.uiText.relics.setText('-');
     }
 
-    if (this.uiText['discardCount']) {
-      this.uiText['discardCount'].setText(`Discards: ${this.state.discardedTiles.length}`);
-    }
+    // Update progress bar
+    this.updateScoreProgressBar();
 
     this.hideAllButtons();
     switch (this.state.phase) {

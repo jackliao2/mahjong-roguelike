@@ -9,6 +9,15 @@ const CARD_WIDTH = 200;
 const CARD_HEIGHT = 280;
 const CARD_SPACING = 30;
 
+// Per-type palette: border, accent (top strip), glow, bg tint, label color
+const TYPE_STYLE: Record<string, {
+  border: number; accent: number; glow: number; bgTint: number; label: string;
+}> = {
+  relic:      { border: 0xd4a574, accent: 0xe5b567, glow: 0xd4a574, bgTint: 0x2a1d10, label: 'RELIC' },
+  customTile: { border: 0xc73e3a, accent: 0xe55b56, glow: 0xc73e3a, bgTint: 0x2a1010, label: 'TILE' },
+  yakuBoost:  { border: 0x2d6a4f, accent: 0x4ade80, glow: 0x2d6a4f, bgTint: 0x0f2418, label: 'YAKU+' },
+};
+
 export class RewardScene extends Phaser.Scene {
   private runState!: RunState;
   private meta!: MetaProgression;
@@ -32,40 +41,73 @@ export class RewardScene extends Phaser.Scene {
     this.rewardCards = [];
     this.soundManager = new SoundManager(this);
 
-    // Dim background
-    this.add.rectangle(0, 0, 1024, 720, 0x000000, 0.7).setOrigin(0);
+    // ===== Wood-grain background (matches GameScene/GameOverScene) =====
+    this.add.rectangle(0, 0, 1024, 720, 0x2b1810).setOrigin(0);
+    for (let y = 0; y < 720; y += 4) {
+      const alpha = 0.04 + Math.random() * 0.04;
+      this.add.rectangle(0, y, 1024, 2, 0x5c3825, alpha).setOrigin(0);
+    }
+    // Dim overlay
+    this.add.rectangle(0, 0, 1024, 720, 0x000000, 0.55).setOrigin(0);
 
-    // Title
-    this.titleText = this.add.text(512, 80, 'CHOOSE YOUR REWARD', {
-      fontSize: '28px',
-      color: '#d4a574',
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
+    // ===== Decorative lanterns =====
+    this.createLantern(60, 90);
+    this.createLantern(964, 90);
+
+    // ===== Title with pixel shadow + subtitle =====
+    this.add.text(510, 76, 'CHOOSE YOUR REWARD', {
+      fontSize: '26px', color: '#1a0e08', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.titleText = this.add.text(512, 74, 'CHOOSE YOUR REWARD', {
+      fontSize: '26px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.add.text(512, 115, `Round ${data.runState.round} cleared! Pick one bonus.`, {
-      fontSize: '16px',
-      color: '#f5e6d3',
-      fontFamily: 'monospace',
+    this.add.text(512, 108, `Round ${data.runState.round} cleared — pick one bonus`, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    // Currency display
-    this.currencyText = this.add.text(512, 145, '', {
-      fontSize: '13px',
-      color: '#e5b567',
-      fontFamily: 'monospace',
+    // Currency display in a small framed box
+    this.add.rectangle(512, 142, 320, 28, 0x1a0f08, 0.7)
+      .setStrokeStyle(2, 0x5c3825);
+    this.currencyText = this.add.text(512, 142, '', {
+      fontSize: '12px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // Create 3 reward cards
+    // ===== Reward cards =====
     this.renderRewardCards();
 
-    // Skip button
+    // ===== Buttons =====
     this.createSkipButton();
-
-    // Reroll button
     this.createRerollButton();
 
     this.updateCurrencyDisplay();
+
+    // Title entrance animation
+    this.titleText.setScale(0.6);
+    this.tweens.add({
+      targets: this.titleText,
+      scale: 1,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+  }
+
+  // ===== Decorative lantern (matches other scenes) =====
+  private createLantern(x: number, y: number): void {
+    const rope = this.add.rectangle(x, y - 40, 2, 40, 0x8b6f47);
+    const lantern = this.add.ellipse(x, y, 28, 36, 0xc73e3a)
+      .setStrokeStyle(2, 0x9b2b28);
+    const glow = this.add.ellipse(x, y, 50, 50, 0xc73e3a, 0.15);
+    this.add.rectangle(x, y - 18, 16, 4, 0x2b1810);
+    this.add.rectangle(x, y + 18, 12, 3, 0xe5b567);
+    this.tweens.add({
+      targets: [rope, lantern, glow],
+      angle: 3,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   private renderRewardCards(): void {
@@ -80,99 +122,180 @@ export class RewardScene extends Phaser.Scene {
       const x = startX + index * (CARD_WIDTH + CARD_SPACING) + CARD_WIDTH / 2;
       const card = this.createRewardCard(x, 360, reward, index);
       this.rewardCards.push(card);
+
+      // Staggered entrance: cards drop in from above
+      card.setAlpha(0);
+      card.setY(360 - 40);
+      this.tweens.add({
+        targets: card,
+        alpha: 1,
+        y: 360,
+        duration: 350,
+        delay: index * 100,
+        ease: 'Back.easeOut',
+      });
     });
   }
 
   private createRewardCard(x: number, y: number, reward: Reward, index: number): Phaser.GameObjects.Container {
-    const typeColors: Record<string, number> = {
-      relic: 0xd4a574,
-      customTile: 0xc73e3a,
-      yakuBoost: 0x2d6a4f,
-    };
-    const typeLabels: Record<string, string> = {
-      relic: 'RELIC',
-      customTile: 'TILE',
-      yakuBoost: 'YAKU+',
-    };
+    const style = TYPE_STYLE[reward.type] || TYPE_STYLE.relic;
 
-    const bgColor = typeColors[reward.type] || 0xd4a574;
-    const cardBg = this.add.rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT, 0x1a0f08)
-      .setStrokeStyle(3, bgColor);
+    // Pixel shadow (offset)
+    const shadow = this.add.rectangle(4, 4, CARD_WIDTH, CARD_HEIGHT, 0x000000, 0.5);
+    // Card background with type tint
+    const cardBg = this.add.rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT, style.bgTint)
+      .setStrokeStyle(3, style.border);
+    // Top accent strip (type color band)
+    const topStrip = this.add.rectangle(0, -CARD_HEIGHT / 2 + 4, CARD_WIDTH - 6, 4, style.accent);
+    // Bottom accent strip
+    const bottomStrip = this.add.rectangle(0, CARD_HEIGHT / 2 - 4, CARD_WIDTH - 6, 2, style.border);
+    // Corner sparkles (decorative, local coords)
+    const sparkleL = this.add.rectangle(-CARD_WIDTH / 2 + 8, -CARD_HEIGHT / 2 + 12, 2, 2, style.accent);
+    const sparkleR = this.add.rectangle(CARD_WIDTH / 2 - 8, -CARD_HEIGHT / 2 + 12, 2, 2, style.accent);
 
-    // Type label
-    const typeLabel = this.add.text(0, -CARD_HEIGHT / 2 + 20, typeLabels[reward.type], {
-      fontSize: '14px',
-      color: '#d4a574',
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
+    // Type label (in the top accent band area)
+    const typeLabel = this.add.text(0, -CARD_HEIGHT / 2 + 22, style.label, {
+      fontSize: '13px', color: '#1a0e08', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // Reward name
-    const nameText = this.add.text(0, -CARD_HEIGHT / 2 + 60, this.wrapText(reward.name, 18), {
-      fontSize: '16px',
-      color: '#f5e6d3',
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
-      align: 'center',
-      wordWrap: { width: CARD_WIDTH - 20 },
+    const nameText = this.add.text(0, -CARD_HEIGHT / 2 + 58, this.wrapText(reward.name, 18), {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      align: 'center', wordWrap: { width: CARD_WIDTH - 20 },
     }).setOrigin(0.5);
+
+    // Decorative icon (drawn shape, type-specific)
+    const iconGfx = this.createTypeIcon(reward.type, style.accent);
 
     // Description
-    const descText = this.add.text(0, 0, this.wrapText(reward.description, 28), {
-      fontSize: '12px',
-      color: '#c9b89a',
-      fontFamily: 'monospace',
-      align: 'center',
-      wordWrap: { width: CARD_WIDTH - 30 },
+    const descText = this.add.text(0, 60, this.wrapText(reward.description, 28), {
+      fontSize: '11px', color: '#c9b89a', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: CARD_WIDTH - 24 },
     }).setOrigin(0.5);
 
-    // Decorative icon area (top)
-    const icon = this.add.text(0, -CARD_HEIGHT / 2 + 100, this.getIconForType(reward.type), {
-      fontSize: '40px',
-      color: '#d4a574',
-      fontFamily: 'monospace',
-    }).setOrigin(0.5);
+    // Hover glow (hidden initially via gameobject alpha; local coords at container origin)
+    const hoverGlow = this.add.rectangle(0, 0, CARD_WIDTH + 12, CARD_HEIGHT + 12, style.glow, 0.4)
+      .setStrokeStyle(3, style.glow, 1)
+      .setAlpha(0);
 
-    const container = this.add.container(x, y, [cardBg, typeLabel, nameText, icon, descText]);
+    const container = this.add.container(x, y, [
+      hoverGlow, shadow, cardBg, topStrip, bottomStrip,
+      sparkleL, sparkleR, typeLabel, nameText, iconGfx, descText,
+    ]);
     container.setSize(CARD_WIDTH, CARD_HEIGHT);
     container.setInteractive({ useHandCursor: true });
 
-    // Hover effects
+    // Hover effects: lift + glow + scale
     container.on('pointerover', () => {
       this.hoverIndex = index;
-      container.setScale(1.05);
+      this.tweens.add({
+        targets: container,
+        scale: 1.06,
+        y: y - 6,
+        duration: 150,
+        ease: 'Quad.easeOut',
+      });
+      this.tweens.add({
+        targets: hoverGlow,
+        alpha: 0.5,
+        duration: 150,
+      });
       cardBg.setStrokeStyle(4, 0xf5e6d3);
     });
 
     container.on('pointerout', () => {
       this.hoverIndex = -1;
-      container.setScale(1);
-      cardBg.setStrokeStyle(3, bgColor);
+      this.tweens.add({
+        targets: container,
+        scale: 1,
+        y: y,
+        duration: 150,
+        ease: 'Quad.easeOut',
+      });
+      this.tweens.add({
+        targets: hoverGlow,
+        alpha: 0,
+        duration: 150,
+      });
+      cardBg.setStrokeStyle(3, style.border);
     });
 
     container.on('pointerdown', () => {
       this.soundManager.playReward();
-      this.selectReward(reward);
+      // Click feedback: quick shrink-then-select
+      this.tweens.add({
+        targets: container,
+        scale: 0.95,
+        duration: 80,
+        yoyo: true,
+        onComplete: () => this.selectReward(reward),
+      });
     });
 
     return container;
   }
 
+  // ===== Draw a type-specific decorative icon (pixel art) =====
+  private createTypeIcon(type: string, color: number): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics();
+    g.fillStyle(color, 1);
+    if (type === 'relic') {
+      // Diamond / gem shape
+      const cy = -10;
+      g.fillRect(-2, cy - 14, 4, 4);
+      g.fillRect(-6, cy - 10, 12, 4);
+      g.fillRect(-10, cy - 6, 20, 4);
+      g.fillRect(-6, cy - 2, 12, 4);
+      g.fillRect(-2, cy + 2, 4, 4);
+      // Sparkle
+      g.fillRect(8, cy - 14, 2, 2);
+      g.fillRect(-10, cy + 2, 2, 2);
+    } else if (type === 'customTile') {
+      // Mini tile outline with corner star
+      g.lineStyle(2, color, 1);
+      g.strokeRect(-12, -22, 24, 30);
+      g.fillStyle(color, 0.3);
+      g.fillRect(-12, -22, 24, 30);
+      g.fillStyle(color, 1);
+      // Star in middle
+      g.fillRect(-1, -12, 2, 6);
+      g.fillRect(-3, -10, 6, 2);
+      g.fillRect(6, -18, 2, 2);
+    } else if (type === 'yakuBoost') {
+      // Plus sign in a circle
+      g.lineStyle(2, color, 1);
+      g.strokeCircle(0, -8, 14);
+      g.fillRect(-1, -14, 2, 12);
+      g.fillRect(-6, -9, 12, 2);
+    }
+    return g;
+  }
+
   private createSkipButton(): void {
-    const skipBg = this.add.rectangle(0, 0, 120, 36, 0x5c4033)
+    const width = 140;
+    const height = 40;
+    const x = 412;
+    const y = 640;
+    const shadow = this.add.rectangle(3, 3, width, height, 0x000000, 0.5);
+    const bg = this.add.rectangle(0, 0, width, height, 0x5c4033)
       .setStrokeStyle(2, 0x8b6f47);
+    const highlightStrip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.3);
     const skipText = this.add.text(0, 0, 'SKIP', {
-      fontSize: '14px',
-      color: '#f5e6d3',
-      fontFamily: 'monospace',
+      fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const container = this.add.container(412, 640, [skipBg, skipText])
-      .setSize(120, 36)
+    const container = this.add.container(x, y, [shadow, bg, highlightStrip, skipText])
+      .setSize(width, height)
       .setInteractive({ useHandCursor: true });
 
-    container.on('pointerover', () => skipBg.setScale(1.05));
-    container.on('pointerout', () => skipBg.setScale(1));
+    container.on('pointerover', () => {
+      container.setScale(1.05);
+      container.setY(y - 2);
+    });
+    container.on('pointerout', () => {
+      container.setScale(1);
+      container.setY(y);
+    });
     container.on('pointerdown', () => {
       this.soundManager.playClick();
       this.scene.resume('GameScene', { action: 'skip_reward' });
@@ -190,24 +313,34 @@ export class RewardScene extends Phaser.Scene {
     const cost = canFreeReroll ? 0 : 50;
     const canAfford = canFreeReroll || this.meta.currency >= cost;
 
-    const bg = this.add.rectangle(0, 0, 200, 36, canAfford ? 0x2d6a4f : 0x3a3a3a)
+    const width = 220;
+    const height = 40;
+    const x = 612;
+    const y = 640;
+
+    const shadow = this.add.rectangle(3, 3, width, height, 0x000000, 0.5);
+    const bg = this.add.rectangle(0, 0, width, height, canAfford ? 0x2d6a4f : 0x3a3a3a)
       .setStrokeStyle(2, canAfford ? 0x4ade80 : 0x666666);
+    const highlightStrip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.3);
     const label = canFreeReroll ? 'REROLL (FREE)' : `REROLL (${cost})`;
     const textColor = canAfford ? '#f5e6d3' : '#888888';
     const txt = this.add.text(0, 0, label, {
-      fontSize: '13px',
-      color: textColor,
-      fontFamily: 'monospace',
-      fontStyle: 'bold',
+      fontSize: '13px', color: textColor, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const container = this.add.container(612, 640, [bg, txt])
-      .setSize(200, 36);
+    const container = this.add.container(x, y, [shadow, bg, highlightStrip, txt])
+      .setSize(width, height);
 
     if (canAfford) {
       container.setInteractive({ useHandCursor: true });
-      container.on('pointerover', () => bg.setScale(1.05));
-      container.on('pointerout', () => bg.setScale(1));
+      container.on('pointerover', () => {
+        container.setScale(1.05);
+        container.setY(y - 2);
+      });
+      container.on('pointerout', () => {
+        container.setScale(1);
+        container.setY(y);
+      });
       container.on('pointerdown', () => this.doReroll());
     }
 
@@ -243,7 +376,7 @@ export class RewardScene extends Phaser.Scene {
     const freeText = this.runState.rerollTokens > 0
       ? `  |  Free rerolls: ${this.runState.rerollTokens}`
       : '';
-    this.currencyText.setText(`Currency: ${this.meta.currency}${freeText}`);
+    this.currencyText.setText(`CURRENCY: ${this.meta.currency}${freeText}`);
   }
 
   private selectReward(reward: Reward): void {
@@ -266,14 +399,5 @@ export class RewardScene extends Phaser.Scene {
     }
     if (current) lines.push(current);
     return lines.join('\n');
-  }
-
-  private getIconForType(type: string): string {
-    switch (type) {
-      case 'relic': return '*';
-      case 'customTile': return '[]';
-      case 'yakuBoost': return '+';
-      default: return '?';
-    }
   }
 }
