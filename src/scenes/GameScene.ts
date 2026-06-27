@@ -53,12 +53,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   // Called when scene resumes from RewardScene
-  private handleResume(sys: Phaser.Scenes.Systems, data: { action?: string; reward?: Reward }): void {
+  private handleResume(sys: Phaser.Scenes.Systems, data: { action?: string; reward?: Reward; excludeIds?: string[]; runState?: RunState }): void {
     if (data.action === 'reward_selected' && data.reward) {
       this.applyReward(data.reward);
+      this.proceedAfterReward();
+    } else if (data.action === 'skip_reward') {
+      this.proceedAfterReward();
+    } else if (data.action === 'reroll_rewards') {
+      // Player spent currency/token to reroll — regenerate rewards and relaunch RewardScene
+      if (data.runState) this.state.runState = data.runState;
+      const newRewards = generateRewards(
+        this.state.runState.relics.map(r => r.id),
+        this.state.runState.customTiles.map(t => t.id),
+        this.state.runState.unlockedYaku,
+        data.excludeIds || []
+      );
+      this.scene.launch('RewardScene', { runState: this.state.runState, rewards: newRewards });
     }
-    // Either way, advance to next round or end run
-    this.proceedAfterReward();
   }
 
   private startNewRun(): void {
@@ -113,6 +124,9 @@ export class GameScene extends Phaser.Scene {
     this.uiText.relics = this.add.text(820, 34, '', {
       fontSize: '11px', color: '#d4a574', fontFamily: 'monospace',
     });
+
+    // Sound toggle button (top-right corner)
+    this.createSoundToggleButton();
 
     // Message area (center)
     this.messageText = this.add.text(512, 220, '', {
@@ -175,6 +189,32 @@ export class GameScene extends Phaser.Scene {
     Object.values(this.actionButtons).forEach(btn => btn.setVisible(false));
   }
 
+  private soundToggleButton!: Phaser.GameObjects.Container;
+  private soundToggleText!: Phaser.GameObjects.Text;
+
+  private createSoundToggleButton(): void {
+    const x = 990;
+    const y = 30;
+    const bg = this.add.rectangle(0, 0, 36, 30, 0x2b1810)
+      .setStrokeStyle(2, 0xd4a574);
+    this.soundToggleText = this.add.text(0, 0, 'SFX', {
+      fontSize: '11px', color: '#d4a574', fontFamily: 'monospace',
+    }).setOrigin(0.5);
+
+    this.soundToggleButton = this.add.container(x, y, [bg, this.soundToggleText])
+      .setSize(36, 30)
+      .setInteractive({ useHandCursor: true });
+
+    this.soundToggleButton.on('pointerover', () => bg.setScale(1.05));
+    this.soundToggleButton.on('pointerout', () => bg.setScale(1));
+    this.soundToggleButton.on('pointerdown', () => {
+      const newState = !this.soundManager.isEnabled();
+      this.soundManager.setEnabled(newState);
+      this.soundToggleText.setColor(newState ? '#d4a574' : '#666666');
+      this.soundToggleText.setText(newState ? 'SFX' : 'OFF');
+    });
+  }
+
   // ========== GAME ACTIONS ==========
 
   private drawTile(): void {
@@ -188,6 +228,10 @@ export class GameScene extends Phaser.Scene {
 
     this.state.hand.drawnTile = tile;
     this.state.phase = 'drew';
+    // Increment riichi turn counter (for ippatsu: must win on the first turn after riichi)
+    if (this.state.runState.isRiichi) {
+      this.state.runState.riichiTurns += 1;
+    }
     this.soundManager.playDraw();
 
     const allTiles = getAllTiles(this.state.hand);
@@ -266,8 +310,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.state.runState.isRiichi = true;
+    this.state.runState.riichiTurns = 0; // reset ippatsu counter
+    // Reveal a dora indicator from the wall when riichi is declared
+    const doraIndicator = this.state.wall.revealDoraIndicator();
+    if (doraIndicator) {
+      this.state.runState.doraIndicators = this.state.wall.doraIndicators;
+    }
     this.soundManager.playRiichi();
-    this.showMessage('Riichi! Auto-draw enabled.');
+    const doraMsg = doraIndicator ? ` Dora: ${doraIndicator.suit}-${doraIndicator.rank}` : '';
+    this.showMessage(`Riichi! Auto-draw enabled. Ippatsu active!${doraMsg}`);
     this.showYakuInfo(`Waiting tiles: ${waiting.length}`);
     this.time.delayedCall(1500, () => this.showMessage(''));
     persistRun(this.state.runState);
@@ -285,13 +336,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     const yakuBonuses = loadYakuBonuses();
+    // Ippatsu: only if riichi was declared this round AND we won on the first turn after declaration
+    const isIppatsu = this.state.runState.isRiichi && this.state.runState.riichiTurns <= 1;
     const score = calculateScore(
       win,
       allTiles,
       this.state.runState.isRiichi,
       this.state.runState.relics,
       this.state.runState.unlockedYaku,
-      yakuBonuses
+      yakuBonuses,
+      this.state.runState.customTiles,
+      isIppatsu,
+      this.state.runState.doraIndicators
     );
 
     // Require at least 1 yaku to win
@@ -306,12 +362,59 @@ export class GameScene extends Phaser.Scene {
     this.state.phase = 'won';
     this.soundManager.playWin();
 
+    // Build score breakdown display
     const yakuNames = score.yakuList.map(y => `${y.yaku.name} (${y.han}h)`).join(', ');
     this.showMessage(`WIN! +${score.finalScore} pts`);
-    this.showYakuInfo(`${yakuNames}\nTotal: ${score.totalHan} han`);
+    this.showScoreBreakdown(score, isIppatsu);
 
     persistRun(this.state.runState);
     this.endRound(true);
+  }
+
+  /**
+   * Display a detailed score breakdown so players understand how their score is computed.
+   * Satisfies the "teach mahjong organically" constraint.
+   */
+  private showScoreBreakdown(score: import('@/types').ScoreResult, isIppatsu: boolean): void {
+    const b = score.breakdown;
+    const lines: string[] = [];
+
+    // Yaku list
+    if (score.yakuList.length > 0) {
+      const yakuLine = score.yakuList.map(y => `${y.yaku.name}(${y.han}h)`).join(' + ');
+      lines.push(`Yaku: ${yakuLine} = ${b.baseHan}h`);
+    }
+
+    // Bonus han
+    const bonusParts: string[] = [];
+    if (b.doraHan > 0) bonusParts.push(`Dora +${b.doraHan}h`);
+    if (b.ippatsuHan > 0) bonusParts.push(`Ippatsu +${b.ippatsuHan}h`);
+    if (b.uraDoraHan > 0) bonusParts.push(`Ura-dora +${b.uraDoraHan}h`);
+    if (bonusParts.length > 0) {
+      lines.push(`Bonus: ${bonusParts.join(' | ')}`);
+    }
+
+    lines.push(`Total: ${score.totalHan} han -> ${b.basePoints} base pts`);
+
+    // Multipliers
+    const multParts: string[] = [];
+    if (b.relicMultiplier > 0) multParts.push(`Relic x${(1 + b.relicMultiplier).toFixed(2)}`);
+    if (b.customTileMultiplier > 0) multParts.push(`Custom x${(1 + b.customTileMultiplier).toFixed(2)}`);
+    if (multParts.length > 0) {
+      lines.push(`Multipliers: ${multParts.join(' | ')}`);
+    }
+
+    // Flat bonuses
+    const flatParts: string[] = [];
+    if (b.relicFlat > 0) flatParts.push(`Relic +${b.relicFlat}`);
+    if (b.customTileFlat > 0) flatParts.push(`Custom +${b.customTileFlat}`);
+    if (flatParts.length > 0) {
+      lines.push(`Flat: ${flatParts.join(' | ')}`);
+    }
+
+    lines.push(`=> FINAL: ${score.finalScore} pts`);
+
+    this.yakuInfoText.setText(lines.join('\n'));
   }
 
   private endRound(won: boolean): void {
@@ -388,6 +491,10 @@ export class GameScene extends Phaser.Scene {
   private proceedAfterReward(): void {
     // Advance to next round
     this.state.runState = advanceRound(this.state.runState);
+    // Reset per-round riichi/dora state
+    this.state.runState.isRiichi = false;
+    this.state.runState.riichiTurns = 0;
+    this.state.runState.doraIndicators = [];
     this.state.wall = new TileWall(this.state.runState.customTiles);
     this.state.hand = createHand();
     this.state.discardedTiles = [];

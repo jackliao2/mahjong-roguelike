@@ -5,6 +5,7 @@ export class TileWall {
   private wall: Tile[] = [];
   private drawIndex = 0;
   private deadWall: Tile[] = [];
+  private doraRevealed: Tile[] = [];
 
   constructor(customTiles: CustomTile[] = []) {
     // Start with standard 136-tile set
@@ -54,4 +55,24 @@ export class TileWall {
     if (this.drawIndex >= this.wall.length) return null;
     return this.wall[this.drawIndex];
   }
+
+  /**
+   * Reveal a dora indicator from the wall (used when riichi is declared).
+   * Returns the indicator tile without removing it from the wall.
+   * In real mahjong, dora indicators come from the dead wall; here we peek
+   * a few tiles ahead to simulate flipping a dora indicator.
+   */
+  revealDoraIndicator(): Tile | null {
+    // Peek 4 tiles ahead as the "dora indicator" position (simulates dead wall)
+    const indicatorIdx = this.drawIndex + 4;
+    if (indicatorIdx >= this.wall.length) return null;
+    const indicator = this.wall[indicatorIdx];
+    this.doraRevealed.push(indicator);
+    return indicator;
+  }
+
+  get doraIndicators(): Tile[] {
+    return [...this.doraRevealed];
+  }
 }
+

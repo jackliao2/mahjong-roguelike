@@ -14,27 +14,33 @@ export interface Reward {
 
 /**
  * Generate 3 random rewards for the player to pick one.
+ * excludeIds: reward ids to exclude (used for rerolls to avoid showing the same rewards)
  */
 export function generateRewards(
   ownedRelicIds: string[] = [],
   ownedTileIds: string[] = [],
-  unlockedYakuIds: string[] = []
+  unlockedYakuIds: string[] = [],
+  excludeIds: string[] = []
 ): Reward[] {
   const rewards: Reward[] = [];
   const types: RewardType[] = ['relic', 'customTile', 'yakuBoost'];
+
+  // Combined exclusion list (owned + reroll-excluded)
+  const allExcludeRelic = [...ownedRelicIds, ...excludeIds];
+  const allExcludeTile = [...ownedTileIds, ...excludeIds];
 
   // Shuffle types and pick 3
   const shuffledTypes = [...types].sort(() => Math.random() - 0.5);
 
   for (const type of shuffledTypes) {
     if (rewards.length >= 3) break;
-    const reward = generateRewardByType(type, ownedRelicIds, ownedTileIds, unlockedYakuIds);
+    const reward = generateRewardByType(type, allExcludeRelic, allExcludeTile, unlockedYakuIds);
     if (reward) rewards.push(reward);
   }
 
   // Fill remaining slots with relics if needed
   while (rewards.length < 3) {
-    const relic = getRandomRelics(1, [...ownedRelicIds, ...rewards.filter(r => r.type === 'relic').map(r => (r.data as Relic).id)]);
+    const relic = getRandomRelics(1, [...allExcludeRelic, ...rewards.filter(r => r.type === 'relic').map(r => (r.data as Relic).id)]);
     if (relic.length > 0) {
       rewards.push({
         type: 'relic',

@@ -38,8 +38,16 @@ export interface Relic {
   id: string;
   name: string;
   description: string;
-  multiplier: number; // score multiplier
-  flatBonus: number; // flat score bonus
+  multiplier: number; // score multiplier (applied when condition is met, or always if no condition)
+  flatBonus: number; // flat score bonus (applied when condition is met, or always if no condition)
+  condition?: (ctx: RelicContext) => boolean; // optional condition; if absent, always applies
+}
+
+export interface RelicContext {
+  rawTiles: Tile[];
+  winningHand: WinningHand;
+  yakuList: { yaku: Yaku; han: number }[];
+  isRiichi: boolean;
 }
 
 export interface CustomTile {
@@ -49,6 +57,7 @@ export interface CustomTile {
   baseTile: Tile;
   bonusChips: number; // flat chip bonus
   multiplier: number; // score multiplier
+  isRed?: boolean; // marks red five dora tiles
 }
 
 export interface RunState {
@@ -60,6 +69,9 @@ export interface RunState {
   customTiles: CustomTile[];
   unlockedYaku: string[];
   isRiichi: boolean;
+  riichiTurns: number; // turns since riichi declared (for ippatsu)
+  doraIndicators: Tile[]; // revealed dora indicators from wall
+  rerollTokens: number; // currency-paid reward rerolls available this run
 }
 
 export interface MetaProgression {
@@ -78,4 +90,21 @@ export interface ScoreResult {
   finalScore: number;
   relicMultipliers: number;
   relicBonuses: number;
+  customTileBonus: number;
+  doraCount: number;
+  isIppatsu: boolean;
+  breakdown: ScoreBreakdown;
+}
+
+export interface ScoreBreakdown {
+  baseHan: number;
+  doraHan: number;
+  ippatsuHan: number;
+  uraDoraHan: number;
+  basePoints: number;
+  relicMultiplier: number;
+  relicFlat: number;
+  customTileFlat: number;
+  customTileMultiplier: number;
+  finalScore: number;
 }

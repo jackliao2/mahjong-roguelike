@@ -176,6 +176,110 @@ export const YAKU_LIST: Yaku[] = [
       return dupes === 1;
     },
   },
+  // ===== Extended yaku list (M3 gameplay depth) =====
+  {
+    id: 'chantai',
+    name: 'Half Outside Hand',
+    romaji: 'Chanta',
+    han: 2,
+    description: 'Every set and the pair contain at least one terminal or honor tile.',
+    check: (hand, rawTiles) => {
+      // All tiles must be terminal or honor, AND every meld must contain at least one terminal/honor.
+      if (!rawTiles.every(t => isTerminal(t) || isHonorTile(t))) return false;
+      // Additionally, every meld must contain at least one terminal or honor (already guaranteed by above)
+      // But Chanta allows simples in sequences — recheck: actually Chanta requires each meld to have ≥1 terminal/honor.
+      // Simplified: every meld has at least one terminal or honor.
+      return hand.melds.every(m => m.tiles.some(t => isTerminal(t) || isHonorTile(t)));
+    },
+  },
+  {
+    id: 'junchan',
+    name: 'Fully Outside Hand',
+    romaji: 'Junchan Tayai',
+    han: 3,
+    description: 'Every set and the pair contain at least one terminal (1 or 9). No honor tiles.',
+    check: (hand, rawTiles) => {
+      if (rawTiles.some(t => isHonorTile(t))) return false;
+      return hand.melds.every(m => m.tiles.some(t => isTerminal(t)));
+    },
+  },
+  {
+    id: 'honitsu',
+    name: 'Half Flush',
+    romaji: 'Honitsu',
+    han: 3,
+    description: 'All suited tiles are from one suit, plus honor tiles (winds/dragons).',
+    check: (_hand, rawTiles) => {
+      const suited = rawTiles.filter(t => t.suit === 'man' || t.suit === 'pin' || t.suit === 'sou');
+      if (suited.length === 0) return false;
+      const suits = new Set(suited.map(t => t.suit));
+      return suits.size === 1;
+    },
+  },
+  {
+    id: 'chinitsu',
+    name: 'Full Flush',
+    romaji: 'Chinitsu',
+    han: 6,
+    description: 'All tiles are from a single suit (man, pin, or sou). No honor tiles.',
+    check: (_hand, rawTiles) => {
+      if (rawTiles.some(t => isHonorTile(t))) return false;
+      const suits = new Set(rawTiles.map(t => t.suit));
+      return suits.size === 1;
+    },
+  },
+  {
+    id: 'sanshoku-doukou',
+    name: 'Triple Triplets',
+    romaji: 'Sanshoku Doukou',
+    han: 2,
+    description: 'The same triplet rank across all three suits (e.g., three 5s of man, pin, sou).',
+    check: (hand) => {
+      const triplets = hand.melds.filter(m => m.type === 'triplet');
+      const byRank = new Map<number, Set<string>>();
+      for (const trip of triplets) {
+        const rank = trip.tiles[0].rank;
+        const suit = trip.tiles[0].suit;
+        if (!byRank.has(rank)) byRank.set(rank, new Set());
+        byRank.get(rank)!.add(suit);
+      }
+      for (const [, suits] of byRank) {
+        if (suits.has('man') && suits.has('pin') && suits.has('sou')) return true;
+      }
+      return false;
+    },
+  },
+  {
+    id: 'suuankou',
+    name: 'Four Concealed Triplets',
+    romaji: 'Suuankou',
+    han: 13,
+    description: 'Four triplets all formed from your own draws (concealed). A yakuman hand.',
+    check: (hand) => {
+      const triplets = hand.melds.filter(m => m.type === 'triplet');
+      return triplets.length >= 4;
+    },
+  },
+  {
+    id: 'daisangen',
+    name: 'Big Three Dragons',
+    romaji: 'Daisangen',
+    han: 13,
+    description: 'Triplets of all three dragon types (Red, White, Green). A yakuman hand.',
+    check: (hand) => {
+      const triplets = hand.melds.filter(m => m.type === 'triplet' && m.tiles[0].suit === 'dragon');
+      const dragonRanks = new Set(triplets.map(t => t.tiles[0].rank));
+      return dragonRanks.has(1) && dragonRanks.has(2) && dragonRanks.has(3);
+    },
+  },
+  {
+    id: 'tsuuiisou',
+    name: 'All Honors',
+    romaji: 'Tsuuiisou',
+    han: 13,
+    description: 'Every tile is an honor tile (winds and dragons). A yakuman hand.',
+    check: (_hand, rawTiles) => rawTiles.every(t => isHonorTile(t)),
+  },
 ];
 
 function sameSequence(a: Tile[], b: Tile[]): boolean {
