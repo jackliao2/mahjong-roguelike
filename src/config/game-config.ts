@@ -58,6 +58,14 @@ export const GameConfig = {
     scoreMultiplier: 0.7, // 70% of normal target scores
     unlockedYaku: ['riichi', 'tanyao', 'pinfu', 'yakuhai'],
     completedKey: 'mjrg_beginner_done',
+    tutorialSteps: [
+      'Welcome! In Mahjong, you build a 14-tile hand. Each turn: draw a tile, then discard one. Goal: form a winning pattern called a YAKU.',
+      'Your hand: number suits (man/pin/sou 1-9), winds (E S W N), dragons (Rd Wh Gr). Hover any tile for details.',
+      'Click DRAW TILE (or press D) to draw from the wall.',
+      'Now click a tile to discard. Green border = keep, Red = discard. Tiles 2-8 are good for Tanyao!',
+      'To win, you need a YAKU pattern. Watch the progress bars below.',
+      'You are ready! Keep drawing and discarding. Press H to toggle hints. Good luck!',
+    ],
   },
 
   // ===== Scoring =====

@@ -43,6 +43,10 @@ export class GameScene extends Phaser.Scene {
   private showHints: boolean = true;
   private discardHints: Map<string, { keep: boolean; reason: string }> = new Map();
   private yakuRefPanel!: Phaser.GameObjects.Container;
+  // Beginner mode tutorial
+  private isBeginner: boolean = false;
+  private tutorialStep: number = -1; // -1 = disabled, 0-5 = steps
+  private tutorialOverlay!: Phaser.GameObjects.Container;
 
   constructor() {
     super('GameScene');
@@ -51,6 +55,8 @@ export class GameScene extends Phaser.Scene {
   create(data?: { action?: string; deckId?: string; difficulty?: string }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
+
+    this.isBeginner = data?.difficulty === 'beginner';
 
     if (data?.action === 'new_run') {
       clearRun(); // fresh run — discard any saved state
@@ -65,6 +71,9 @@ export class GameScene extends Phaser.Scene {
     // First-time player onboarding (shown once, then dismissed)
     if (!localStorage.getItem(GameConfig.storageKeys.onboarded)) {
       this.showOnboardingHint();
+    } else if (this.isBeginner && this.tutorialStep === -1) {
+      // Show guided tutorial for beginner mode (after onboarding, if applicable)
+      this.time.delayedCall(600, () => this.startTutorial());
     }
 
     // Keyboard shortcuts
@@ -152,10 +161,118 @@ export class GameScene extends Phaser.Scene {
           overlay.destroy();
           panel.destroy();
           btnContainer.destroy();
+          // Start beginner tutorial after onboarding
+          if (this.isBeginner) {
+            this.time.delayedCall(400, () => this.startTutorial());
+          }
         },
       });
     });
     void btnBg;
+  }
+
+  // ===== Guided tutorial for beginner mode =====
+  private startTutorial(): void {
+    this.tutorialStep = 0;
+    this.showTutorialOverlay();
+  }
+
+  private showTutorialOverlay(): void {
+    const steps = GameConfig.beginner.tutorialSteps;
+    const step = this.tutorialStep;
+    if (step < 0 || step >= steps.length) return;
+
+    // Destroy existing overlay
+    this.tutorialOverlay?.destroy();
+
+    const stepText = steps[step];
+    const isLast = step === steps.length - 1;
+
+    // Semi-transparent backdrop
+    const w = 1024, h = 720;
+    const overlay = this.add.rectangle(512, 360, w, h, 0x000000, 0.6).setDepth(900);
+
+    // Bottom banner for tutorial text
+    const bannerY = 510;
+    const bannerH = 100;
+    const bannerW = 800;
+    const banner = this.add.rectangle(512, bannerY, bannerW, bannerH, 0x1a0f08, 0.95)
+      .setStrokeStyle(3, 0xd4a574).setDepth(901);
+    this.add.rectangle(512, bannerY - bannerH / 2 + 4, bannerW - 10, 3, 0xe5b567).setDepth(902);
+
+    // Step indicator
+    this.add.text(512, bannerY - bannerH / 2 + 22, `STEP ${step + 1} / ${steps.length}`, {
+      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(902);
+
+    // Tutorial text
+    this.add.text(512, bannerY + 2, stepText, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: bannerW - 60 }, lineSpacing: 4,
+    }).setOrigin(0.5).setDepth(902);
+
+    // Arrow pointing to relevant area (roughly)
+    if (step === 2) {
+      // Point to draw button
+      this.createTutorialArrow(512, 420, bannerY - bannerH / 2);
+    } else if (step === 3) {
+      // Point to hand area
+      this.createTutorialArrow(512, 600, bannerY - bannerH / 2);
+    }
+
+    // Dismiss button
+    const btnW = isLast ? 200 : 160;
+    const btnH = 38;
+    const btnY = bannerY + bannerH / 2 - 2;
+    const btnX = 512;
+    const btnBg = this.add.rectangle(btnX, btnY, btnW, btnH, 0xc73e3a)
+      .setStrokeStyle(3, 0x2b1810).setDepth(902);
+    this.add.rectangle(btnX, btnY - btnH / 2 + 3, btnW - 6, 2, 0xffffff, 0.4).setDepth(903);
+    const label = isLast ? "LET'S GO!" : 'NEXT';
+    const btnText = this.add.text(btnX, btnY, label, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(903);
+
+    const btnContainer = this.add.container(btnX, btnY, [btnBg, btnText])
+      .setSize(btnW, btnH).setInteractive({ useHandCursor: true }).setDepth(904);
+
+    btnContainer.on('pointerover', () => btnContainer.setScale(1.05));
+    btnContainer.on('pointerout', () => btnContainer.setScale(1));
+    btnContainer.on('pointerdown', () => {
+      this.soundManager.playClick();
+      this.advanceTutorial();
+    });
+
+    this.tutorialOverlay = this.add.container(0, 0, [overlay, banner, btnContainer]);
+    this.tutorialOverlay.setDepth(900);
+  }
+
+  private createTutorialArrow(fromX: number, fromY: number, toY: number): void {
+    // Simple downward arrow
+    const g = this.add.graphics();
+    g.lineStyle(3, 0xe5b567, 0.8);
+    g.lineBetween(fromX, fromY, fromX, toY - 20);
+    // Arrow head
+    g.fillStyle(0xe5b567, 0.8);
+    g.fillTriangle(fromX, toY - 10, fromX - 8, toY - 28, fromX + 8, toY - 28);
+    g.setDepth(902);
+    // Pulse animation
+    this.tweens.add({
+      targets: g,
+      alpha: 0.4,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  private advanceTutorial(): void {
+    this.tutorialStep++;
+    if (this.tutorialStep >= GameConfig.beginner.tutorialSteps.length) {
+      this.tutorialOverlay?.destroy();
+      return;
+    }
+    this.showTutorialOverlay();
   }
 
   // Called when scene resumes from RewardScene
@@ -641,6 +758,11 @@ export class GameScene extends Phaser.Scene {
 
     this.renderHand();
     this.updateUI();
+
+    // Auto-advance tutorial: step 2 (draw tile) → step 3
+    if (this.tutorialStep === 2) {
+      this.advanceTutorial();
+    }
   }
 
   private discardTile(tileId: string): void {
@@ -685,6 +807,13 @@ export class GameScene extends Phaser.Scene {
     this.state.phase = 'idle';
     this.soundManager.playDiscard();
 
+    // Capture discard hint BEFORE renderHand clears it
+    let discardHint: { keep: boolean; reason: string } | undefined;
+    if (this.isBeginner && this.showHints) {
+      // Compute hints for the hand before discard (need the pre-discard hand)
+      discardHint = this.discardHints.get(discarded.id);
+    }
+
     if (this.state.wall.remaining === 0) {
       this.endRound(false);
       return;
@@ -705,6 +834,17 @@ export class GameScene extends Phaser.Scene {
 
     this.renderHand();
     this.updateUI();
+
+    // Beginner mode: show discard feedback
+    if (this.isBeginner && discardHint) {
+      this.showMessage(discardHint.keep ? `Kept: ${discardHint.reason}` : `Discarded: ${discardHint.reason}`);
+      this.time.delayedCall(2000, () => this.showMessage(''));
+    }
+
+    // Auto-advance tutorial: step 3 (discard) → step 4
+    if (this.tutorialStep === 3) {
+      this.advanceTutorial();
+    }
   }
 
   // ===== Undo the last discard (misclick protection) =====
@@ -980,7 +1120,9 @@ export class GameScene extends Phaser.Scene {
     // Compute discard hints when enabled and in discard phase
     this.discardHints = new Map();
     if (this.showHints && this.state.phase === 'drew') {
-      this.discardHints = getDiscardHints(hand.tiles, this.state.runState.unlockedYaku);
+      const allTiles = [...hand.tiles];
+      if (hand.drawnTile) allTiles.push(hand.drawnTile);
+      this.discardHints = getDiscardHints(allTiles, this.state.runState.unlockedYaku);
     }
 
     hand.tiles.forEach((tile, index) => {
@@ -1027,6 +1169,21 @@ export class GameScene extends Phaser.Scene {
       container.add(dot);
     }
 
+    // Beginner mode: show tile label (short name)
+    if (this.isBeginner) {
+      const label = this.getTileLabel(tile);
+      const labelColor = tile.suit === 'dragon' ? '#c73e3a'
+        : tile.suit === 'wind' ? '#5c4033'
+        : tile.suit === 'man' ? '#1a1a2e'
+        : tile.suit === 'pin' ? '#2c5f8a'
+        : '#2d6a4f';
+      const labelBg = this.add.rectangle(0, TILE_HEIGHT / 2 - 8, 28, 14, 0x000000, 0.6);
+      const labelText = this.add.text(0, TILE_HEIGHT / 2 - 8, label, {
+        fontSize: '9px', color: labelColor, fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      container.add([labelBg, labelText]);
+    }
+
     container.on('pointerover', () => {
       container.setY(y - 8);
       this.showTileTooltip(tile, x, y - TILE_HEIGHT - 20, hint?.reason);
@@ -1042,6 +1199,16 @@ export class GameScene extends Phaser.Scene {
     });
 
     return container;
+  }
+
+  /** Get a short label for beginner mode tile recognition */
+  private getTileLabel(tile: Tile): string {
+    if (tile.suit === 'man') return `${tile.rank}m`;
+    if (tile.suit === 'pin') return `${tile.rank}p`;
+    if (tile.suit === 'sou') return `${tile.rank}s`;
+    if (tile.suit === 'wind') return ['E', 'S', 'W', 'N'][tile.rank - 1] || '?';
+    if (tile.suit === 'dragon') return ['Rd', 'Wh', 'Gr'][tile.rank - 1] || '?';
+    return '?';
   }
 
   private showTileTooltip(tile: Tile, x: number, y: number, hintReason?: string): void {
