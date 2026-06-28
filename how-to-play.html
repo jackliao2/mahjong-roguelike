@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>How to Play Mahjong - Beginner's Guide to Riichi Rules</title>
-<meta name="description" content="A complete beginner's guide to riichi mahjong rules. Learn the tiles, how to form a winning hand, the major yaku patterns, and how scoring works.">
-<meta name="keywords" content="how to play mahjong, riichi rules, mahjong guide, mahjong for beginners, mahjong tiles, mahjong yaku, mahjong scoring">
-<meta property="og:title" content="How to Play Mahjong - Beginner's Guide to Riichi Rules">
+<title>How to Play Riichi Mahjong - Beginner's Guide to Rules, Tiles &amp; Yaku</title>
+<meta name="description" content="Learn how to play riichi mahjong from scratch. A complete beginner's guide covering the 136 tiles, winning hand shapes, yaku patterns, and scoring &mdash; explained step by step for total newcomers.">
+<meta name="keywords" content="how to play riichi mahjong, riichi mahjong rules, mahjong for beginners, japanese mahjong guide, mahjong tiles, mahjong yaku, mahjong scoring, learn mahjong">
+<meta property="og:title" content="How to Play Riichi Mahjong - Beginner's Guide">
 <meta property="og:description" content="Learn riichi mahjong from scratch: tiles, hands, yaku, and scoring explained for beginners.">
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/how-to-play.html">
 <meta property="og:type" content="article">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="How to Play Mahjong - Beginner's Guide to Riichi Rules">
+<meta name="twitter:title" content="How to Play Riichi Mahjong - Beginner's Guide">
 <meta name="twitter:description" content="Learn riichi mahjong from scratch: tiles, hands, yaku, and scoring explained for beginners.">
 <meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
 <link rel="canonical" href="https://mahjongroguelike.com/how-to-play.html">
@@ -23,6 +23,61 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to Play Riichi Mahjong - Beginner's Guide",
+  "description": "A complete beginner's guide to riichi mahjong covering tiles, hands, yaku, and scoring.",
+  "datePublished": "2026-06-28",
+  "dateModified": "2026-06-28",
+  "author": { "@type": "Organization", "name": "Mahjong Roguelike Team" },
+  "publisher": { "@type": "Organization", "name": "Mahjong Roguelike" },
+  "mainEntityOfPage": "https://mahjongroguelike.com/how-to-play.html"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to Play Riichi Mahjong",
+  "description": "Learn the rules of Japanese riichi mahjong from scratch, covering tiles, hand formation, yaku patterns, and scoring.",
+  "step": [
+    { "@type": "HowToStep", "position": 1, "name": "Learn the tiles", "text": "A riichi mahjong set has 34 unique tile types (3 number suits of 1-9, plus 4 winds and 3 dragons), 4 copies each, 136 total." },
+    { "@type": "HowToStep", "position": 2, "name": "Form a winning hand", "text": "A winning hand is 14 tiles: 4 melds (sequences or triplets) plus one pair. You start with 13 and draw a 14th to win." },
+    { "@type": "HowToStep", "position": 3, "name": "Score a yaku", "text": "Your hand must contain at least one yaku (winning pattern) to win. Easy yaku: Riichi, Tanyao, Pinfu, Yakuhai." },
+    { "@type": "HowToStep", "position": 4, "name": "Calculate your score", "text": "Each yaku adds han to your score. Final points = base fu x 2^(han+2), capped at mangan limits." }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is riichi mahjong hard to learn?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The basic rules of riichi mahjong can be learned in 20-30 minutes: form 4 melds plus a pair, declare riichi when ready, and recognize 3-4 easy yaku. Mastery takes longer, but you can play your first competent game within an hour of reading a beginner guide." }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does a game of riichi mahjong take?",
+      "acceptedAnswer": { "@type": "Answer", "text": "A full hanchan (East + South rounds) takes 60-90 minutes. A tonpusou (East-only) game takes 30-45 minutes. In our browser roguelike, individual rounds take 10-15 minutes." }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between riichi mahjong and Chinese mahjong?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Riichi mahjong (Japanese) adds the riichi declaration (bet on being one tile from winning), a richer yaku system, dora bonus tiles, and a more restrictive scoring system. Chinese mahjong variants tend to allow more open melds and have simpler scoring." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to memorize all the yaku?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. You can play competently knowing just 4 easy yaku: Riichi, Tanyao, Pinfu, and Yakuhai. The rest come naturally with experience. See our full yaku list for reference." }
+    }
+  ]
+}
+</script>
 <style>
   :root {
     --wood-dark: #2B1810;
@@ -324,6 +379,41 @@
   }
   .concept-card p { font-size: 13px; color: var(--cream-dim); margin: 0; }
 
+  /* FAQ section */
+  .faq-section {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink), inset 0 0 0 2px var(--amber);
+    padding: 36px 32px;
+    margin: 50px 0 60px;
+  }
+  .faq-section h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(16px, 2.4vw, 22px);
+    color: var(--amber-bright);
+    text-shadow: 3px 3px 0 var(--ink);
+    margin-bottom: 24px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .faq-item {
+    background: rgba(0,0,0,0.25);
+    border-left: 3px solid var(--vermillion);
+    padding: 16px 20px;
+    margin-bottom: 14px;
+  }
+  .faq-item:last-child { margin-bottom: 0; }
+  .faq-item h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--amber-bright);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .faq-item p { font-size: 15px; color: var(--cream); margin: 0; line-height: 1.75; }
+  .faq-item p strong { color: var(--amber-bright); }
+  .faq-item p a { color: var(--amber-bright); }
+
   /* Bottom CTA */
   .bottom-cta {
     background: var(--ink);
@@ -456,8 +546,8 @@
   <section class="page-hero">
     <p class="breadcrumb"><a href="/">Home</a> &gt; How to Play</p>
     <p class="page-eyebrow">BEGINNER'S GUIDE</p>
-    <h1 class="page-title">How to Play <span class="accent">Mahjong</span></h1>
-    <p class="page-sub">Everything you need to know to play your first hand of riichi mahjong &mdash; from tiles to scoring, explained for total beginners.</p>
+    <h1 class="page-title">How to Play <span class="accent">Riichi Mahjong</span></h1>
+    <p class="page-sub">Everything you need to know to play your first hand of riichi mahjong &mdash; from tiles to scoring, explained for total beginners in under 20 minutes.</p>
   </section>
 
   <div class="layout">
@@ -702,6 +792,46 @@
         <div style="margin-top: 32px; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;">
           <a href="/play.html" class="btn btn-primary">Play Now</a>
           <a href="/yaku-list.html" class="btn btn-secondary">View All Yaku</a>
+        </div>
+      </section>
+
+      <!-- ===== FAQ ===== -->
+      <section class="faq-section" aria-label="Frequently asked questions">
+        <h2>Riichi Mahjong FAQ</h2>
+
+        <div class="faq-item">
+          <h3>Is riichi mahjong hard to learn?</h3>
+          <p>The basic rules can be <strong>learned in 20-30 minutes</strong>: form 4 melds plus a pair, declare riichi when ready, and recognize 3-4 easy yaku. Mastery takes longer, but you can play your first competent game within an hour of reading this guide. The yaku system is the main learning curve &mdash; once you know <a href="/yaku-list.html">the 16 common yaku</a>, you're set.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How long does a game of riichi mahjong take?</h3>
+          <p>A full hanchan (East + South rounds) takes <strong>60-90 minutes</strong> with four players. A tonpusou (East-only) game takes 30-45 minutes. In our <a href="/play.html">browser roguelike</a>, individual rounds take 10-15 minutes &mdash; perfect for a coffee break.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What is the difference between riichi mahjong and Chinese mahjong?</h3>
+          <p>Riichi mahjong (Japanese) adds the <strong>riichi declaration</strong> (a 1,000-point bet that you're one tile from winning), a richer yaku system with ~40 patterns, dora bonus tiles, and a more restrictive scoring system that rewards closed hands. Chinese mahjong variants tend to allow more open melds and have simpler scoring with fewer patterns.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Do I need to memorize all the yaku?</h3>
+          <p>No. You can play competently knowing just <strong>4 easy yaku</strong>: Riichi, Tanyao, Pinfu, and Yakuhai. The rest come naturally with experience. Bookmark our <a href="/yaku-list.html">complete yaku list</a> and refer to it between rounds &mdash; in our browser game, the score panel shows which yaku your hand scored, so you learn by doing.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What does "riichi" mean?</h3>
+          <p><strong>Riichi</strong> (立直, "ready") is the signature mechanic of Japanese mahjong. When your hand is one tile away from winning (a state called <em>tenpai</em>), you can declare riichi by paying a 1,000-point deposit. Your hand locks in &mdash; you can no longer change it &mdash; but you gain a guaranteed yaku, access to ippatsu (one-draw win bonus), and ura-dora (hidden dora bonuses if you win).</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can I play riichi mahjong online for free?</h3>
+          <p>Yes &mdash; <a href="/play.html">Mahjong Roguelike</a> is a free browser game that teaches riichi mahjong through roguelike deckbuilding. No download, no account. For competitive multiplayer against humans, Mahjong Soul and Tenhou are the most popular free options, though both require an account.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What is the best way to learn riichi mahjong?</h3>
+          <p>Read this guide once to understand the tiles and rules. Then <strong>play immediately</strong> &mdash; even badly. Theory only sticks once you've held tiles in your hand. Our <a href="/play.html">browser game</a> is designed for exactly this: short rounds, instant feedback on which yaku you scored, and a score breakdown panel that teaches scoring as you play.</p>
         </div>
       </section>
 

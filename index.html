@@ -775,6 +775,51 @@
       animation: none !important;
     }
   }
+
+  /* ===== Not-Solitaire Disambiguation Banner ===== */
+  .disambig {
+    background: var(--ink);
+    border-top: 3px solid var(--vermillion-dark);
+    border-bottom: 3px solid var(--vermillion-dark);
+    padding: 18px 24px;
+    text-align: center;
+  }
+  .disambig-inner {
+    max-width: 880px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .disambig-icon {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: var(--vermillion);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .disambig-text {
+    font-size: 14px;
+    color: var(--cream-dim);
+    line-height: 1.6;
+  }
+  .disambig-text strong {
+    color: var(--amber-bright);
+    font-weight: 700;
+  }
+  .disambig-text a {
+    color: var(--amber-bright);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .disambig-text a:hover {
+    color: var(--cream);
+  }
+  @media (max-width: 640px) {
+    .disambig-text { font-size: 13px; }
+  }
 </style>
 <!-- Structured Data: VideoGame -->
 <script type="application/ld+json">
@@ -922,8 +967,8 @@
 
     <div class="hero-content">
       <span class="hero-tag">A Pixel-Art Roguelike</span>
-      <h1 class="hero-title">MAHJONG<br><span class="accent">ROGUELIKE</span></h1>
-      <p class="hero-subtitle">Learn mahjong the fun way &mdash; through roguelike deckbuilding. Build hands, score yaku, collect relics, and climb the spire of tiles.</p>
+      <h1 class="hero-title">LEARN<br><span class="accent">RIICHI MAHJONG</span></h1>
+      <p class="hero-subtitle">Learn riichi mahjong the fun way &mdash; through roguelike deckbuilding. Build hands, score yaku, collect relics, and climb the spire of tiles. Free, browser-based, no download.</p>
       <div class="hero-cta">
         <a href="/play.html" class="btn btn-primary">Play Now</a>
         <a href="/how-to-play.html" class="btn btn-secondary">How to Play</a>
@@ -932,6 +977,16 @@
 
     <div class="scroll-hint" aria-hidden="true">SCROLL DOWN<br>v</div>
   </section>
+
+  <!-- ===== Disambiguation: this is NOT solitaire ===== -->
+  <aside class="disambig" aria-label="Game type clarification">
+    <div class="disambig-inner">
+      <span class="disambig-icon" aria-hidden="true">!</span>
+      <p class="disambig-text">
+        <strong>Not mahjong solitaire.</strong> This is real Japanese riichi mahjong &mdash; the 4-player tile game from anime like <em>Akagi</em> and <em>Saki</em>, not the matching-pairs solitaire you find on most "mahjong" websites. Looking to <a href="/how-to-play.html">learn the real thing</a>? You're in the right place.
+      </p>
+    </div>
+  </aside>
 
   <!-- ===== How It Works ===== -->
   <section class="how-works" id="how-it-works" aria-labelledby="how-title">

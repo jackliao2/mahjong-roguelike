@@ -14,6 +14,7 @@ export default defineConfig({
         play: resolve(__dirname, 'play.html'),
         howToPlay: resolve(__dirname, 'how-to-play.html'),
         yakuList: resolve(__dirname, 'yaku-list.html'),
+        gamesLikeBalatro: resolve(__dirname, 'games-like-balatro.html'),
       },
     },
   },
