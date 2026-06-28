@@ -2,8 +2,10 @@ import Phaser from 'phaser';
 import { Tile } from '@/types';
 import { getTileDisplay, tileKey } from '@/game/tiles';
 
-export const TILE_WIDTH = 48;
-export const TILE_HEIGHT = 64;
+import { GameConfig } from '@/config/game-config';
+
+export const TILE_WIDTH = GameConfig.tiles.width;
+export const TILE_HEIGHT = GameConfig.tiles.height;
 export const TILE_SCALE = 1;
 
 // Colors matching the warm izakaya pixel-art palette
@@ -17,7 +19,7 @@ const COLORS = {
   sou: 0x2d6a4f,          // green for bamboo
   wind: 0x5c4033,         // brown for winds
   dragon: 0xc73e3a,       // red for dragons
-  accent: 0xd4a574,       // amber accent
+  accent: GameConfig.colors.amber,  // amber accent
 };
 
 /**

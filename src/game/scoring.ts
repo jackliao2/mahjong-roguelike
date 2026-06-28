@@ -1,10 +1,9 @@
 import { Tile, WinningHand, RunState, ScoreResult, ScoreBreakdown, Relic, RelicContext, CustomTile } from '@/types';
 import { checkAllYaku } from './yaku';
 import { evaluateRelics } from '@/roguelike/relics';
+import { GameConfig } from '@/config/game-config';
 
-const BASE_FU = 30; // basic fu value
-const MANGAN_HAN = 5; // mangan threshold
-const MANGAN_POINTS = 2000; // mangan base points
+const { baseFu, manganHan, manganPoints: manganBasePoints } = GameConfig.scoring;
 
 /**
  * Calculate the score for a winning hand.
@@ -78,11 +77,11 @@ export function calculateScore(
 
   // Calculate base points from han × fu
   let basePoints: number;
-  if (totalHan >= MANGAN_HAN) {
+  if (totalHan >= manganHan) {
     basePoints = manganPoints(totalHan);
   } else {
     // Normal calculation: fu × 2^(han+2)
-    basePoints = Math.min(BASE_FU * Math.pow(2, totalHan + 2), MANGAN_POINTS);
+    basePoints = Math.min(baseFu * Math.pow(2, totalHan + 2), manganBasePoints);
   }
 
   const breakdown: ScoreBreakdown = {
@@ -261,14 +260,11 @@ function applyAllBonuses(
  * Round 1 target is low enough to be winnable with a single basic yaku (e.g. Tanyao ≈ 480 pts).
  */
 export function calculateTargetScore(round: number, maxRounds: number): number {
-  // Base target: 500 points (a single 1-han win gives ~480 pts)
-  const base = 500;
-  const scalePerRound = 1.4;
-  const target = Math.floor(base * Math.pow(scalePerRound, round - 1));
+  const { baseScore, scoreMultiplier, bossRoundMultiplier } = GameConfig.rounds;
+  const target = Math.floor(baseScore * Math.pow(scoreMultiplier, round - 1));
 
-  // Final round (boss) gets an extra debuff multiplier
   if (round === maxRounds) {
-    return Math.floor(target * 1.3);
+    return Math.floor(target * bossRoundMultiplier);
   }
   return target;
 }
@@ -276,7 +272,7 @@ export function calculateTargetScore(round: number, maxRounds: number): number {
 /**
  * Initialize a new run state.
  */
-export function createRunState(maxRounds: number = 5): RunState {
+export function createRunState(maxRounds: number = GameConfig.rounds.maxRounds): RunState {
   return {
     round: 1,
     score: 0,

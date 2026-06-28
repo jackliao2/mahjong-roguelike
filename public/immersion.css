@@ -173,4 +173,118 @@ html {
   .lantern {
     animation: none;
   }
+  .mri-cookie-banner {
+    animation: none;
+  }
+}
+
+/* ===== 13. Cookie Consent Banner ===== */
+.mri-cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background: var(--ink, #1A0E08);
+  border-top: 3px solid var(--vermillion, #C73E3A);
+  box-shadow: 0 -4px 0 0 rgba(0,0,0,0.5);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  animation: mriBannerSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes mriBannerSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.mri-cookie-banner p {
+  font-size: 13px;
+  color: var(--cream-dim, #C9B89A);
+  max-width: 600px;
+  line-height: 1.6;
+  margin: 0;
+}
+.mri-cookie-banner p a {
+  color: var(--amber-bright, #E8C088);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.mri-cookie-banner p a:hover {
+  color: var(--cream, #F5E6D3);
+}
+.mri-cookie-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  background: var(--vermillion, #C73E3A);
+  color: var(--cream, #F5E6D3);
+  border: 3px solid var(--ink, #1A0E08);
+  box-shadow: 3px 3px 0 var(--vermillion-dark, #9B2B28);
+  padding: 10px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.mri-cookie-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--vermillion-dark, #9B2B28);
+}
+.mri-cookie-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--vermillion-dark, #9B2B28);
+}
+@media (max-width: 640px) {
+  .mri-cookie-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px 18px;
+  }
+  .mri-cookie-banner p {
+    font-size: 12px;
+  }
+}
+
+/* ===== 14. Ad Slot Placeholders ===== */
+/* Invisible until AdSense fills them. Uses responsive sizing so mobile
+   ads (320x50) and desktop ads (728x90) both work. */
+.mri-ad-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+.mri-ad-slot::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 14, 8, 0.3);
+  border: 1px dashed rgba(212, 165, 116, 0.15);
+  pointer-events: none;
+}
+.mri-ad-slot.game-ad {
+  margin: 0;
+  min-height: 60px;
+  background: var(--ink, #1A0E08);
+  border-top: 1px solid rgba(212, 165, 116, 0.1);
+  border-bottom: 1px solid rgba(212, 165, 116, 0.1);
+}
+.mri-ad-slot.content-ad {
+  max-width: 728px;
+  margin: 40px auto;
+  min-height: 90px;
+}
+.mri-ad-slot ins {
+  display: block;
+}
+@media (max-width: 768px) {
+  .mri-ad-slot { min-height: 50px; }
+  .mri-ad-slot.content-ad { min-height: 50px; margin: 28px auto; }
 }

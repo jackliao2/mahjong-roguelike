@@ -1,0 +1,7 @@
+# ads.txt — Mahjong Roguelike
+# AdSense placeholder. Replace YOUR_PUB_ID with your real publisher ID
+# after AdSense approval.
+#
+# google.com, PUB_ID, DIRECT, f08c47fec0942fa0
+#
+# Uncomment the line above and replace PUB_ID when approved.

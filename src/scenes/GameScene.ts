@@ -13,6 +13,7 @@ import { SoundManager } from '@/render/sound';
 import { getUnlockedDecks } from '@/roguelike/meta';
 import { getRelicById } from '@/roguelike/relics';
 import { trackRunStart, trackRoundComplete, trackRunComplete, trackRewardSelected, trackReroll, trackWin } from '@/data/analytics';
+import { GameConfig } from '@/config/game-config';
 
 type GamePhase = 'idle' | 'drew' | 'won' | 'survived' | 'lost' | 'reward';
 
@@ -57,7 +58,7 @@ export class GameScene extends Phaser.Scene {
     this.updateUI();
 
     // First-time player onboarding (shown once, then dismissed)
-    if (!localStorage.getItem('mjrg_onboarded')) {
+    if (!localStorage.getItem(GameConfig.storageKeys.onboarded)) {
       this.showOnboardingHint();
     }
 
@@ -100,26 +101,12 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 3, 0xe5b567).setDepth(1001);
 
     // Title
-    this.add.text(512, 360 - panelH / 2 + 36, 'WELCOME, TRAVELER', {
+    this.add.text(512, 360 - panelH / 2 + 36, GameConfig.ui.onboardingTitle, {
       fontSize: '22px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(1002);
 
     // Tips
-    const tips = [
-      'GOAL: Win rounds by forming a winning 14-tile hand.',
-      'Each win needs at least one YAKU (winning pattern).',
-      '',
-      'HOW TO PLAY:',
-      '1. DRAW a tile from the wall',
-      '2. Click a tile in your hand to DISCARD it',
-      '3. When ready, declare RIICHI (locks your hand)',
-      '4. WIN! when your hand is complete',
-      '',
-      'Easy yaku: Tanyao (simples 2-8) · Pinfu (sequences)',
-      '         Riichi (ready) · Yakuhai (dragon triplet)',
-      '',
-      'KEYBOARD: D=Draw  W=Win  R=Riichi  N=Next',
-    ];
+    const tips = GameConfig.ui.onboardingTips;
     this.add.text(512, 360 - 20, tips.join('\n'), {
       fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace',
       align: 'center', lineSpacing: 4,
@@ -133,7 +120,7 @@ export class GameScene extends Phaser.Scene {
     const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
       .setStrokeStyle(3, 0x2b1810).setDepth(1001);
     this.add.rectangle(512, btnY - btnH / 2 + 3, btnW - 6, 2, 0xffffff, 0.4).setDepth(1002);
-    const btnText = this.add.text(512, btnY, 'BEGIN', {
+    const btnText = this.add.text(512, btnY, GameConfig.ui.onboardingButton, {
       fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(1002);
 
@@ -144,7 +131,7 @@ export class GameScene extends Phaser.Scene {
     btnContainer.on('pointerout', () => btnContainer.setScale(1));
     btnContainer.on('pointerdown', () => {
       this.soundManager.playClick();
-      localStorage.setItem('mjrg_onboarded', '1');
+      localStorage.setItem(GameConfig.storageKeys.onboarded, '1');
       // Fade out overlay
       this.tweens.add({
         targets: [overlay, panel],
@@ -252,14 +239,14 @@ export class GameScene extends Phaser.Scene {
     this.createMessageArea();
 
     // Action buttons
-    this.createButton('draw', 512, 420, 'DRAW TILE', () => this.drawTile());
-    this.createButton('riichi', 340, 420, 'RIICHI', () => this.declareRiichi());
-    this.createButton('win', 684, 420, 'WIN!', () => this.declareWin(), true);
-    this.createButton('nextRound', 512, 420, 'NEXT ROUND', () => this.triggerRewardScreen());
-    this.createButton('newRun', 512, 420, 'NEW RUN', () => {
+    this.createButton('draw', 512, 420, GameConfig.ui.drawButton, () => this.drawTile());
+    this.createButton('riichi', 340, 420, GameConfig.ui.riichiButton, () => this.declareRiichi());
+    this.createButton('win', 684, 420, GameConfig.ui.winButton, () => this.declareWin(), true);
+    this.createButton('nextRound', 512, 420, GameConfig.ui.nextRoundButton, () => this.triggerRewardScreen());
+    this.createButton('newRun', 512, 420, GameConfig.ui.newRunButton, () => {
       this.scene.start('DeckSelectScene');
     });
-    this.createButton('undo', 824, 420, 'UNDO', () => this.undoDiscard());
+    this.createButton('undo', 824, 420, GameConfig.ui.undoButton, () => this.undoDiscard());
 
     // Register resume handler (only once)
     this.events.removeAllListeners('resume');
@@ -351,7 +338,7 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(0, 54, 1024, 2, 0xc73e3a).setOrigin(0);
 
     // Round indicator (left, with icon)
-    this.add.text(20, 10, 'ROUND', {
+    this.add.text(20, 10, GameConfig.ui.roundLabel, {
       fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
     });
     this.uiText.round = this.add.text(20, 24, '', {
@@ -359,7 +346,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Score (with label)
-    this.add.text(140, 10, 'SCORE', {
+    this.add.text(140, 10, GameConfig.ui.scoreLabel, {
       fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
     });
     this.uiText.score = this.add.text(140, 24, '', {
@@ -367,7 +354,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Target (with label)
-    this.add.text(300, 10, 'TARGET', {
+    this.add.text(300, 10, GameConfig.ui.targetLabel, {
       fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
     });
     this.uiText.target = this.add.text(300, 24, '', {

@@ -93,4 +93,32 @@
       el.classList.add('mri-visible');
     });
   }
+
+  // ===== 4. Cookie Consent Banner (GDPR/CCPA) =====
+  // Shows on first visit only. Dismissed flag stored in localStorage.
+  if (!localStorage.getItem('mjrg_cookies_accepted')) {
+    var banner = document.createElement('div');
+    banner.className = 'mri-cookie-banner';
+    banner.setAttribute('role', 'dialog');
+    banner.setAttribute('aria-label', 'Cookie consent');
+
+    var text = document.createElement('p');
+    text.innerHTML = 'This site uses <strong>privacy-friendly analytics</strong> (Umami, no cookies) and <strong>localStorage</strong> to save your game progress. No personal data is collected. By continuing, you agree to our <a href="/privacy.html">Privacy Policy</a> and <a href="/cookies.html">Cookie Policy</a>.';
+    banner.appendChild(text);
+
+    var btn = document.createElement('button');
+    btn.className = 'mri-cookie-btn';
+    btn.textContent = 'GOT IT';
+    btn.addEventListener('click', function () {
+      localStorage.setItem('mjrg_cookies_accepted', '1');
+      banner.style.animation = 'none';
+      banner.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      banner.style.opacity = '0';
+      banner.style.transform = 'translateY(100%)';
+      setTimeout(function () { banner.remove(); }, 350);
+    });
+    banner.appendChild(btn);
+
+    document.body.appendChild(banner);
+  }
 })();

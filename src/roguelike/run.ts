@@ -4,7 +4,9 @@ import { loadRun, saveRun, clearRun, loadMeta, saveMeta } from '@/data/storage';
 import { recordRunResult, getNewAchievements, Achievement, loadMetaProgression } from './meta';
 
 // Yaku han bonuses applied during the run (from yakuBoost rewards)
-const yakuBonusesKey = 'mjrg_yaku_bonuses';
+import { GameConfig } from '@/config/game-config';
+
+const yakuBonusesKey = GameConfig.storageKeys.yakuBonuses;
 
 export function createNewRun(maxRounds: number = 5): RunState {
   // Clear any stale yaku bonuses from a previous run (fixes cross-run persistence bug)

@@ -1,8 +1,7 @@
 import { MetaProgression, RunState } from '@/types';
+import { GameConfig } from '@/config/game-config';
 
-const RUN_KEY = 'mjrg_run';
-const META_KEY = 'mjrg_meta';
-const SETTINGS_KEY = 'mjrg_settings';
+const { run: RUN_KEY, meta: META_KEY, settings: SETTINGS_KEY } = GameConfig.storageKeys;
 
 export function saveRun(run: RunState): void {
   try {
