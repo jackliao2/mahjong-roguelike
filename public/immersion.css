@@ -1,0 +1,176 @@
+/* ============================================
+   Mahjong Roguelike — Shared Immersion Layer
+   Linked from all pages for ambient atmosphere
+   ============================================ */
+
+/* ===== 1. Page Load Fade-In ===== */
+html {
+  animation: mriPageFade 0.5s ease-out;
+}
+@keyframes mriPageFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 2. Ambient Dust Particles (drift upward like motes in lamplight) ===== */
+.mri-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+.mri-ambient .mri-mote {
+  position: absolute;
+  background: rgba(229, 181, 103, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(229, 181, 103, 0.4);
+  animation: mriMoteDrift linear infinite;
+}
+@keyframes mriMoteDrift {
+  0%   { transform: translateY(110vh) translateX(0);    opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.5; }
+  100% { transform: translateY(-10vh) translateX(30px); opacity: 0; }
+}
+
+/* ===== 3. Warm Top Glow (izakaya lamplight from above) ===== */
+.mri-glow {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 320px;
+  pointer-events: none;
+  z-index: 9996;
+  background: radial-gradient(ellipse at 50% -40%,
+    rgba(229, 181, 103, 0.08) 0%,
+    rgba(199, 62, 58, 0.03) 40%,
+    transparent 70%);
+}
+
+/* ===== 4. Paper Texture Overlay (subtle washi grain) ===== */
+.mri-texture {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9997;
+  background-image:
+    repeating-linear-gradient(45deg,
+      transparent 0, transparent 2px,
+      rgba(245, 230, 211, 0.012) 2px, rgba(245, 230, 211, 0.012) 3px),
+    repeating-linear-gradient(-45deg,
+      transparent 0, transparent 3px,
+      rgba(0, 0, 0, 0.015) 3px, rgba(0, 0, 0, 0.015) 4px);
+}
+
+/* ===== 5. Vignette (focus attention to center) ===== */
+.mri-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9995;
+  background: radial-gradient(ellipse at center,
+    transparent 55%,
+    rgba(0, 0, 0, 0.22) 100%);
+}
+
+/* ===== 6. Scroll Reveal (gentle fade-up on enter) ===== */
+.mri-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mri-reveal.mri-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== 7. Enhanced Card Hover (lift + brightness) ===== */
+.step-card,
+.yaku-card,
+.yaku-entry,
+.game-card,
+.concept-card,
+.faq-item,
+.deck-card {
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+.step-card:hover,
+.yaku-card:hover,
+.yaku-entry:hover,
+.game-card:hover,
+.concept-card:hover,
+.deck-card:hover {
+  filter: brightness(1.06);
+}
+/* Non-featured cards get a subtle lift */
+.game-card:not(.featured):hover,
+.step-card:hover,
+.concept-card:hover {
+  transform: translate(-2px, -2px);
+}
+
+/* ===== 8. Button Hover Glow ===== */
+.btn,
+.cta-btn,
+.cta-btn:hover {
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.15s ease;
+}
+.btn:hover,
+.cta-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* ===== 9. Link Focus Glow (accessibility) ===== */
+a:focus-visible,
+.btn:focus-visible,
+.cta-btn:focus-visible {
+  outline: 2px solid var(--amber-bright, #E8C088);
+  outline-offset: 3px;
+}
+
+/* ===== 10. Lantern Flicker Enhancement ===== */
+.lantern {
+  animation: lanternSway 6s ease-in-out infinite,
+             mriLanternFlicker 4s ease-in-out infinite;
+}
+@keyframes mriLanternFlicker {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 8px rgba(199, 62, 58, 0.4)); }
+  45%      { filter: brightness(1.12) drop-shadow(0 0 12px rgba(229, 181, 103, 0.55)); }
+  50%      { filter: brightness(0.96) drop-shadow(0 0 6px rgba(199, 62, 58, 0.3)); }
+  55%      { filter: brightness(1.08) drop-shadow(0 0 10px rgba(229, 181, 103, 0.5)); }
+}
+
+/* ===== 11. Smooth Scroll ===== */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ===== 12. Reduced Motion Respect ===== */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    animation: none;
+    scroll-behavior: auto;
+  }
+  .mri-ambient,
+  .mri-glow,
+  .mri-texture,
+  .mri-vignette {
+    display: none;
+  }
+  .mri-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .lantern {
+    animation: none;
+  }
+}
