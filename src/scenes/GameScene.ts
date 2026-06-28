@@ -14,6 +14,7 @@ import { getUnlockedDecks } from '@/roguelike/meta';
 import { getRelicById } from '@/roguelike/relics';
 import { trackRunStart, trackRoundComplete, trackRunComplete, trackRewardSelected, trackReroll, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
+import { getYakuProximity, getDiscardHints } from '@/game/yakuProximity';
 
 type GamePhase = 'idle' | 'drew' | 'won' | 'survived' | 'lost' | 'reward';
 
@@ -38,18 +39,22 @@ export class GameScene extends Phaser.Scene {
   // Undo state: snapshot of hand + drawnTile before the last discard (for misclick protection)
   private undoSnapshot: { handTiles: Tile[]; drawnTile: Tile | null } | null = null;
   private soundManager!: SoundManager;
+  // New-player guidance flags
+  private showHints: boolean = true;
+  private discardHints: Map<string, { keep: boolean; reason: string }> = new Map();
+  private yakuRefPanel!: Phaser.GameObjects.Container;
 
   constructor() {
     super('GameScene');
   }
 
-  create(data?: { action?: string; deckId?: string }): void {
+  create(data?: { action?: string; deckId?: string; difficulty?: string }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
 
     if (data?.action === 'new_run') {
       clearRun(); // fresh run — discard any saved state
-      this.startNewRun(data.deckId);
+      this.startNewRun(data.deckId, data.difficulty);
     } else if (!this.state) {
       this.startNewRun();
     }
@@ -85,6 +90,12 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'N':
           if (this.state.phase === 'won' || this.state.phase === 'survived') this.triggerRewardScreen();
+          break;
+        case 'H':
+          this.showHints = !this.showHints;
+          this.showMessage(this.showHints ? 'Hints: ON' : 'Hints: OFF');
+          this.time.delayedCall(1200, () => this.updateUI());
+          this.renderHand();
           break;
       }
     });
@@ -168,10 +179,18 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private startNewRun(deckId?: string): void {
+  private startNewRun(deckId?: string, difficulty?: string): void {
     // Try to resume a persisted run (preserves round, score, relics, customTiles)
     const savedRun = loadRun();
-    const runState = savedRun ?? createRunState(5);
+    const isBeginner = difficulty === 'beginner';
+    const maxRounds = isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
+    const runState = savedRun ?? createRunState(maxRounds);
+
+    // Apply beginner mode settings
+    if (isBeginner && !savedRun) {
+      runState.unlockedYaku = [...GameConfig.beginner.unlockedYaku];
+      runState.targetScore = Math.floor(runState.targetScore * GameConfig.beginner.scoreMultiplier);
+    }
 
     // Apply starting relics from the selected deck (only for fresh runs)
     if (!savedRun && deckId) {
@@ -387,6 +406,10 @@ export class GameScene extends Phaser.Scene {
 
     // Sound toggle button (top-right corner)
     this.createSoundToggleButton();
+    // Hint toggle button (next to SFX)
+    this.createHintToggleButton();
+    // Yaku reference panel (right side, always visible for new players)
+    this.createYakuRefPanel();
   }
 
   // ===== Score progress bar =====
@@ -508,6 +531,83 @@ export class GameScene extends Phaser.Scene {
       this.soundManager.setEnabled(newState);
       this.soundToggleText.setColor(newState ? '#d4a574' : '#666666');
       this.soundToggleText.setText(newState ? 'SFX' : 'OFF');
+    });
+  }
+
+  private hintToggleButton!: Phaser.GameObjects.Container;
+  private hintToggleText!: Phaser.GameObjects.Text;
+
+  private createHintToggleButton(): void {
+    const x = 948;
+    const y = 30;
+    const bg = this.add.rectangle(0, 0, 36, 30, 0x2b1810)
+      .setStrokeStyle(2, 0xd4a574);
+    this.hintToggleText = this.add.text(0, 0, 'HINT', {
+      fontSize: '10px', color: '#d4a574', fontFamily: 'monospace',
+    }).setOrigin(0.5);
+
+    this.hintToggleButton = this.add.container(x, y, [bg, this.hintToggleText])
+      .setSize(36, 30)
+      .setInteractive({ useHandCursor: true });
+
+    this.hintToggleButton.on('pointerover', () => bg.setScale(1.05));
+    this.hintToggleButton.on('pointerout', () => bg.setScale(1));
+    this.hintToggleButton.on('pointerdown', () => {
+      this.showHints = !this.showHints;
+      this.hintToggleText.setColor(this.showHints ? '#d4a574' : '#666666');
+      this.hintToggleText.setText(this.showHints ? 'HINT' : 'OFF');
+      this.renderHand();
+      this.updateUI();
+    });
+  }
+
+  /** Always-visible cheat sheet for the 4 easiest yaku */
+  private createYakuRefPanel(): void {
+    const panelX = 936;
+    const panelY = 400;
+    const panelW = 170;
+    const panelH = 320;
+
+    this.yakuRefPanel = this.add.container(0, 0);
+    this.yakuRefPanel.setDepth(50);
+
+    // Panel background
+    this.add.rectangle(panelX, panelY, panelW, panelH, 0x1a0e08, 0.85)
+      .setStrokeStyle(2, 0xd4a574, 0.5)
+      .setDepth(50);
+
+    // Title
+    this.add.text(panelX, panelY - panelH / 2 + 18, 'YAKU REF', {
+      fontSize: '9px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(51);
+
+    const yakuCards = [
+      { name: 'Tanyao', han: '1', desc: 'All tiles 2-8\nNo terminals\nor honors' },
+      { name: 'Pinfu', han: '1', desc: '4 sequences\n+ any pair\n(not dragon)' },
+      { name: 'Riichi', han: '1', desc: 'Declare when\n1 tile from\nwinning' },
+      { name: 'Yakuhai', han: '1', desc: 'Triplet of\nany dragon\ntile' },
+    ];
+
+    const cardH = 62;
+    const startY = panelY - panelH / 2 + 52;
+    yakuCards.forEach((card, i) => {
+      const cy = startY + i * (cardH + 6);
+      // Card bg
+      this.add.rectangle(panelX, cy, panelW - 16, cardH, 0x2b1810, 0.7)
+        .setStrokeStyle(1, 0xd4a574, 0.3)
+        .setDepth(51);
+      // Name + han
+      this.add.text(panelX - panelW / 2 + 16, cy - 16, card.name, {
+        fontSize: '10px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setDepth(52);
+      this.add.text(panelX + panelW / 2 - 16, cy - 16, `${card.han} han`, {
+        fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+      }).setOrigin(1, 0).setDepth(52);
+      // Description
+      this.add.text(panelX - panelW / 2 + 16, cy + 4, card.desc, {
+        fontSize: '8px', color: '#c9b89a', fontFamily: 'monospace',
+        lineSpacing: 2,
+      }).setDepth(52);
     });
   }
 
@@ -806,6 +906,10 @@ export class GameScene extends Phaser.Scene {
       // Run won!
       const { meta, newAchievements } = endRun(this.state.runState, true);
       trackRunComplete(true, this.state.runState.score, this.state.runState.round);
+      // Mark beginner mode as completed
+      if (this.state.runState.maxRounds === GameConfig.beginner.maxRounds) {
+        localStorage.setItem(GameConfig.beginner.completedKey, '1');
+      }
       this.scene.launch('GameOverScene', { runState: this.state.runState, won: true, meta, newAchievements });
       this.scene.pause();
       return;
@@ -873,22 +977,30 @@ export class GameScene extends Phaser.Scene {
     const startX = 512 - totalWidth / 2;
     const y = 620;
 
+    // Compute discard hints when enabled and in discard phase
+    this.discardHints = new Map();
+    if (this.showHints && this.state.phase === 'drew') {
+      this.discardHints = getDiscardHints(hand.tiles, this.state.runState.unlockedYaku);
+    }
+
     hand.tiles.forEach((tile, index) => {
       const x = startX + index * (TILE_WIDTH + tileSpacing);
-      const sprite = this.createTileSprite(tile, x, y);
+      const hint = this.discardHints.get(tile.id);
+      const sprite = this.createTileSprite(tile, x, y, false, hint);
       this.tileSprites.push(sprite);
     });
 
     if (hand.drawnTile) {
       const drawnX = startX + hand.tiles.length * (TILE_WIDTH + tileSpacing) + 20;
-      const sprite = this.createTileSprite(hand.drawnTile, drawnX, y, true);
+      const hint = this.discardHints.get(hand.drawnTile.id);
+      const sprite = this.createTileSprite(hand.drawnTile, drawnX, y, true, hint);
       this.tileSprites.push(sprite);
     }
 
     this.renderDiscards();
   }
 
-  private createTileSprite(tile: Tile, x: number, y: number, isDrawn: boolean = false): Phaser.GameObjects.Container {
+  private createTileSprite(tile: Tile, x: number, y: number, isDrawn: boolean = false, hint?: { keep: boolean; reason: string }): Phaser.GameObjects.Container {
     const textureKey = `tile-${tileKey(tile)}`;
     const sprite = this.add.image(0, 0, textureKey);
     const shadow = this.add.rectangle(2, 4, TILE_WIDTH, TILE_HEIGHT, 0x000000, 0.3);
@@ -903,9 +1015,21 @@ export class GameScene extends Phaser.Scene {
       container.addAt(highlight, 0);
     }
 
+    // Discard hint border: green = keep, red = discard
+    if (hint) {
+      const borderColor = hint.keep ? 0x4a9e4a : 0xc73e3a;
+      const border = this.add.rectangle(0, 0, TILE_WIDTH + 2, TILE_HEIGHT + 2)
+        .setStrokeStyle(2, borderColor, 0.8)
+        .setFillStyle(0x000000, 0);
+      container.addAt(border, 0);
+      // Small dot indicator at top-left
+      const dot = this.add.rectangle(-TILE_WIDTH / 2 + 4, -TILE_HEIGHT / 2 + 4, 6, 6, borderColor);
+      container.add(dot);
+    }
+
     container.on('pointerover', () => {
       container.setY(y - 8);
-      this.showTileTooltip(tile, x, y - TILE_HEIGHT - 20);
+      this.showTileTooltip(tile, x, y - TILE_HEIGHT - 20, hint?.reason);
     });
     container.on('pointerout', () => {
       container.setY(y);
@@ -920,15 +1044,20 @@ export class GameScene extends Phaser.Scene {
     return container;
   }
 
-  private showTileTooltip(tile: Tile, x: number, y: number): void {
+  private showTileTooltip(tile: Tile, x: number, y: number, hintReason?: string): void {
     this.hideTooltip();
     const display = getTileDisplay(tile);
 
-    this.tooltipBg = this.add.rectangle(x, y, 180, 70, 0x1a0f08, 0.95)
+    const tooltipLines = [display.englishName, `(${display.romaji})`, display.westernHint];
+    if (hintReason) {
+      tooltipLines.push('', hintReason);
+    }
+
+    this.tooltipBg = this.add.rectangle(x, y, 200, 70 + (hintReason ? 30 : 0), 0x1a0f08, 0.95)
       .setStrokeStyle(2, 0xd4a574)
       .setDepth(1000);
 
-    this.tooltipText = this.add.text(x, y, `${display.englishName}\n(${display.romaji})\n${display.westernHint}`, {
+    this.tooltipText = this.add.text(x, y, tooltipLines.join('\n'), {
       fontSize: '12px', color: '#f5e6d3', fontFamily: 'monospace', align: 'center',
     }).setOrigin(0.5).setDepth(1001);
   }
@@ -1033,6 +1162,21 @@ export class GameScene extends Phaser.Scene {
       case 'lost':
         this.showButton('newRun');
         break;
+    }
+
+    // Show yaku proximity hints when enabled (only for idle/drew phases)
+    if (this.showHints && (this.state.phase === 'idle' || this.state.phase === 'drew')) {
+      const proximity = getYakuProximity(this.state.hand.tiles, rs.unlockedYaku);
+      if (proximity.length > 0) {
+        const top3 = proximity.slice(0, 3);
+        const lines = top3.map(p => {
+          const filled = Math.round(p.score / 10);
+          const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
+          const pct = p.score >= 100 ? 'READY!' : `${p.score}%`;
+          return `${p.yakuName}: [${bar}] ${pct}`;
+        });
+        this.yakuInfoText.setText(lines.join('\n'));
+      }
     }
   }
 }

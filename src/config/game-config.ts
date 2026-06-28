@@ -52,6 +52,14 @@ export const GameConfig = {
     bossRoundMultiplier: 1.5,
   },
 
+  // ===== Beginner Mode =====
+  beginner: {
+    maxRounds: 3,
+    scoreMultiplier: 0.7, // 70% of normal target scores
+    unlockedYaku: ['riichi', 'tanyao', 'pinfu', 'yakuhai'],
+    completedKey: 'mjrg_beginner_done',
+  },
+
   // ===== Scoring =====
   scoring: {
     baseFu: 30,

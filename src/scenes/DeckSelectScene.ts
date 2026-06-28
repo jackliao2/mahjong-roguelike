@@ -3,14 +3,18 @@ import { MetaProgression } from '@/types';
 import { StartingDeck, getUnlockedDecks, STARTING_DECKS } from '@/roguelike/meta';
 import { getRelicById } from '@/roguelike/relics';
 import { SoundManager } from '@/render/sound';
+import { GameConfig } from '@/config/game-config';
 
 const CARD_W = 220;
 const CARD_H = 300;
 const CARD_SPACING = 24;
 
+type Difficulty = 'beginner' | 'normal';
+
 export class DeckSelectScene extends Phaser.Scene {
   private meta!: MetaProgression;
   private selectedDeckId: string = 'default';
+  private difficulty: Difficulty = 'normal';
   private soundManager!: SoundManager;
 
   constructor() {
@@ -53,6 +57,9 @@ export class DeckSelectScene extends Phaser.Scene {
       duration: 400,
       ease: 'Back.easeOut',
     });
+
+    // ===== Difficulty selector =====
+    this.createDifficultySelector();
 
     // Load meta progression
     this.meta = JSON.parse(localStorage.getItem('mjrg_meta') || '{}');
@@ -222,6 +229,73 @@ export class DeckSelectScene extends Phaser.Scene {
     g.fillRect(x - 10, y + 2, 2, 2);
   }
 
+  // ===== Difficulty selector toggle =====
+  private createDifficultySelector(): void {
+    const beginnerDone = localStorage.getItem(GameConfig.beginner.completedKey) === '1';
+    const centerX = 512;
+    const y = 140;
+
+    // Label
+    this.add.text(centerX, y - 8, 'DIFFICULTY', {
+      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    // Beginner button
+    const btnW = 140;
+    const btnH = 32;
+    const gap = 8;
+    const beginnerX = centerX - btnW / 2 - gap / 2;
+    const normalX = centerX + btnW / 2 + gap / 2 + 1;
+
+    this.createDiffButton(beginnerX, y + 16, 'BEGINNER', 'beginner',
+      '3 rounds · 4 yaku\nEasier targets');
+    this.createDiffButton(normalX, y + 16, 'NORMAL', 'normal',
+      beginnerDone ? '5 rounds · all yaku\nStandard difficulty' : 'Complete Beginner\nmode to unlock');
+
+    // Show "recommended" hint for new players
+    if (!beginnerDone) {
+      this.add.text(centerX, y + 44, '(Recommended for new players)', {
+        fontSize: '9px', color: '#e5b567', fontFamily: 'monospace',
+      }).setOrigin(0.5);
+    }
+
+    this.difficulty = 'normal';
+  }
+
+  private createDiffButton(x: number, y: number, label: string, diff: Difficulty, desc: string): void {
+    const beginnerDone = localStorage.getItem(GameConfig.beginner.completedKey) === '1';
+    const isNormal = diff === 'normal';
+    const locked = isNormal && !beginnerDone;
+    const selected = this.difficulty === diff;
+
+    const bgColor = selected ? 0xc73e3a : (locked ? 0x1a0f08 : 0x2b1810);
+    const borderColor = selected ? 0xe5b567 : (locked ? 0x5c3825 : 0xd4a574);
+    const textColor = locked ? '#5c3825' : (selected ? '#f5e6d3' : '#d4a574');
+
+    const lockIcon = locked ? '[ ] ' : '';
+    const bg = this.add.rectangle(0, 0, 140, 32, bgColor)
+      .setStrokeStyle(selected ? 3 : 2, borderColor);
+    const txt = this.add.text(0, 0, lockIcon + label, {
+      fontSize: '12px', color: textColor, fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    const container = this.add.container(x, y, [bg, txt])
+      .setSize(140, 32);
+
+    if (!locked) {
+      container.setInteractive({ useHandCursor: true });
+      container.on('pointerover', () => container.setScale(1.05));
+      container.on('pointerout', () => container.setScale(1));
+      container.on('pointerdown', () => {
+        this.soundManager.playClick();
+        this.difficulty = diff;
+        // Re-render to update selection
+        this.children.removeAll();
+        this.create();
+      });
+    }
+  }
+
   private createStartButton(): void {
     const x = 624;
     const y = 640;
@@ -249,7 +323,7 @@ export class DeckSelectScene extends Phaser.Scene {
     });
     container.on('pointerdown', () => {
       this.soundManager.playClick();
-      this.scene.start('GameScene', { action: 'new_run', deckId: this.selectedDeckId });
+      this.scene.start('GameScene', { action: 'new_run', deckId: this.selectedDeckId, difficulty: this.difficulty });
     });
   }
 
