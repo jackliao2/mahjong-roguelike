@@ -1,8 +1,7 @@
 User-agent: *
 Allow: /
-Disallow: /play.html
-
-# Crawl-delay for game resources
-Crawl-delay: 1
 
 Sitemap: https://mahjongroguelike.com/sitemap.xml
+
+# Disallow game state pages (no value for search engines)
+Disallow: /play.html

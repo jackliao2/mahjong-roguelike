@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 - Page Not Found | Mahjong Roguelike</title>
+<meta name="description" content="Oops! This page doesn't exist. Return to Mahjong Roguelike and learn riichi mahjong through roguelike gameplay.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mahjongroguelike.com/404.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wood-dark: #2B1810;
+    --wood-mid: #3D2418;
+    --wood-light: #5C3825;
+    --amber: #D4A574;
+    --amber-bright: #E8C088;
+    --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28;
+    --cream: #F5E6D3;
+    --cream-dim: #C9B89A;
+    --gold: #E5B567;
+    --ink: #1A0E08;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px),
+      radial-gradient(ellipse at top, var(--wood-mid) 0%, var(--wood-dark) 70%);
+    color: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .wrapper {
+    max-width: 600px;
+    padding: 40px 24px;
+  }
+  .pixel-font {
+    font-family: 'Press Start 2P', monospace;
+    letter-spacing: 1px;
+  }
+  .error-code {
+    font-size: 72px;
+    color: var(--vermillion);
+    text-shadow: 4px 4px 0 var(--vermillion-dark), 8px 8px 0 rgba(0,0,0,0.3);
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+  .error-subtitle {
+    font-size: 14px;
+    color: var(--amber);
+    margin-bottom: 32px;
+  }
+  .error-desc {
+    font-size: 16px;
+    color: var(--cream-dim);
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+  .tile-deco {
+    display: inline-block;
+    width: 48px;
+    height: 60px;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+    margin: 0 6px 24px;
+    position: relative;
+    line-height: 60px;
+    font-size: 24px;
+    font-family: 'Press Start 2P', monospace;
+    color: var(--vermillion);
+  }
+  .tile-deco:nth-child(2) { color: var(--ink); font-size: 20px; }
+  .tile-deco:nth-child(3) { color: var(--vermillion); }
+  .btn-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    padding: 14px 28px;
+    border: 3px solid var(--amber);
+    color: var(--cream);
+    background: var(--vermillion);
+    text-decoration: none;
+    box-shadow: 4px 4px 0 var(--vermillion-dark);
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background: var(--amber-bright);
+    color: var(--ink);
+    border-color: var(--gold);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--vermillion-dark);
+  }
+  .btn.secondary {
+    background: transparent;
+    border-color: var(--wood-light);
+    color: var(--cream-dim);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+  }
+  .btn.secondary:hover {
+    background: var(--wood-mid);
+    color: var(--cream);
+    border-color: var(--amber);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div>
+    <div class="tile-deco">1</div>
+    <div class="tile-deco">m</div>
+    <div class="tile-deco">9</div>
+  </div>
+  <div class="error-code pixel-font">404</div>
+  <div class="error-subtitle pixel-font">HAND NOT FOUND</div>
+  <p class="error-desc">
+    This tile isn't in your hand. The page you're looking for may have been discarded,<br>
+    or it never existed in the wall.
+  </p>
+  <div class="btn-group">
+    <a href="/" class="btn">BACK TO HOME</a>
+    <a href="/play.html" class="btn secondary">PLAY NOW</a>
+  </div>
+</div>
+</body>
+</html>

@@ -16,6 +16,7 @@
 <meta name="twitter:title" content="Mahjong Roguelike - Learn Riichi Mahjong Through Roguelike Gameplay">
 <meta name="twitter:description" content="Learn mahjong the fun way - through roguelike deckbuilding.">
 <meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mahjongroguelike.com/">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2B1810">
@@ -356,6 +357,23 @@
     color: var(--ink);
     transform: translate(2px, 2px);
     box-shadow: 4px 4px 0 var(--vermillion-dark);
+  }
+  .btn-continue {
+    background: transparent;
+    color: var(--amber-bright);
+    border-color: var(--gold);
+    box-shadow: 6px 6px 0 var(--wood-light);
+    animation: pulseBorder 2s ease-in-out infinite;
+  }
+  @keyframes pulseBorder {
+    0%, 100% { border-color: var(--gold); }
+    50% { border-color: var(--amber); }
+  }
+  .btn-continue:hover {
+    background: var(--gold);
+    color: var(--ink);
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0 var(--wood-light);
   }
 
   /* Scroll hint */
@@ -1175,5 +1193,25 @@
       });
     }
   </script>
+
+  <!-- Continue Run: show button if saved run exists -->
+  <script>
+  (function() {
+    try {
+      var saved = localStorage.getItem('mjrg_run');
+      if (saved && JSON.parse(saved)) {
+        var cta = document.querySelector('.hero-cta');
+        if (cta) {
+          var btn = document.createElement('a');
+          btn.href = '/play.html';
+          btn.className = 'btn btn-continue';
+          btn.textContent = 'Continue Run';
+          cta.insertBefore(btn, cta.firstChild);
+        }
+      }
+    } catch(e) {}
+  })();
+  </script>
+
 </body>
 </html>

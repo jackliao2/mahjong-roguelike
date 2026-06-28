@@ -525,6 +525,7 @@ export class GameScene extends Phaser.Scene {
     this.createSoundToggleButton();
     // Hint toggle button (next to SFX)
     this.createHintToggleButton();
+    this.createHelpButton();
     // Yaku reference panel (right side, always visible for new players)
     this.createYakuRefPanel();
   }
@@ -675,6 +676,28 @@ export class GameScene extends Phaser.Scene {
       this.hintToggleText.setText(this.showHints ? 'HINT' : 'OFF');
       this.renderHand();
       this.updateUI();
+    });
+  }
+
+  /** Help button linking to the how-to-play guide */
+  private createHelpButton(): void {
+    const x = 900;
+    const y = 30;
+    const bg = this.add.rectangle(0, 0, 36, 30, 0x2b1810)
+      .setStrokeStyle(2, 0x5c3825);
+    const text = this.add.text(0, 0, '?', {
+      fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    const container = this.add.container(x, y, [bg, text])
+      .setSize(36, 30)
+      .setInteractive({ useHandCursor: true });
+
+    container.on('pointerover', () => { bg.setScale(1.05); text.setColor('#d4a574'); });
+    container.on('pointerout', () => { bg.setScale(1); text.setColor('#8b6f47'); });
+    container.on('pointerdown', () => {
+      this.soundManager.playClick();
+      window.open('/how-to-play.html', '_blank');
     });
   }
 

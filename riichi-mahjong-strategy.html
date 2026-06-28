@@ -17,6 +17,7 @@
 <meta name="twitter:title" content="Riichi Mahjong Strategy: 10 Tips to Win More Hands">
 <meta name="twitter:description" content="Master riichi mahjong with 10 actionable strategy tips. Learn tile efficiency, defense, riichi decisions, and when to push vs fold.">
 <meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mahjongroguelike.com/riichi-mahjong-strategy.html">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2B1810">
@@ -289,6 +290,52 @@
     line-height: 1.5;
   }
   .faq-item p { font-size: 15px; color: var(--cream); margin: 0; }
+
+  /* ===== Related Articles ===== */
+  .related-articles {
+    margin: 40px 0;
+    padding: 32px 24px;
+    background: rgba(43, 24, 16, 0.5);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+  }
+  .related-articles h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--amber-bright);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .related-card {
+    padding: 20px;
+    background: var(--ink);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: block;
+  }
+  .related-card:hover {
+    border-color: var(--amber);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .related-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .related-card p {
+    font-size: 14px;
+    color: var(--cream-dim);
+    margin: 0;
+  }
 
   /* ===== CTA ===== */
   .cta-box {
@@ -573,6 +620,25 @@
   <p><strong>Use our roguelike as a training ground.</strong> <a href="/play.html">Mahjong Roguelike</a> is a free browser game that wraps riichi mahjong in a roguelike framework. It's not a substitute for playing against humans, but it's an excellent way to practice yaku recognition, tile efficiency, and hand building in a low-pressure environment. The roguelike format also teaches you to adapt to constraints — a skill that transfers directly to real play.</p>
 
   <p>Most importantly, don't expect to win overnight. Riichi mahjong has a steep learning curve, and even strong players lose 60-70% of their hands. The goal isn't to win every hand — it's to win more hands than you lose, and to lose fewer points on the hands you don't win. That's the real measure of improvement.</p>
+
+  <!-- ===== Related Articles ===== -->
+  <div class="related-articles">
+    <h2>Related Articles</h2>
+    <div class="related-grid">
+      <a href="/riichi-vs-chinese-mahjong.html" class="related-card">
+        <h3>Riichi vs Chinese</h3>
+        <p>What's the difference? Compare rules, tiles, scoring, and which to learn first.</p>
+      </a>
+      <a href="/mahjong-brain-benefits.html" class="related-card">
+        <h3>Brain Benefits</h3>
+        <p>7 science-backed cognitive benefits of playing mahjong regularly.</p>
+      </a>
+      <a href="/yaku-list.html" class="related-card">
+        <h3>Yaku List</h3>
+        <p>Complete reference of all 20+ riichi yaku with han values and descriptions.</p>
+      </a>
+    </div>
+  </div>
 
   <!-- ===== CTA ===== -->
   <div class="cta-box">

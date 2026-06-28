@@ -17,6 +17,7 @@
 <meta name="twitter:title" content="Riichi vs Chinese Mahjong: What's the Difference? (2026 Guide)">
 <meta name="twitter:description" content="A complete comparison of Japanese riichi mahjong and Chinese mahjong — rules, tiles, scoring, and which one to learn first.">
 <meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mahjongroguelike.com/riichi-vs-chinese-mahjong.html">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2B1810">
@@ -342,6 +343,52 @@
     line-height: 1.5;
   }
   .faq-item p { font-size: 15px; color: var(--cream); margin: 0; }
+
+  /* ===== Related Articles ===== */
+  .related-articles {
+    margin: 40px 0;
+    padding: 32px 24px;
+    background: rgba(43, 24, 16, 0.5);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+  }
+  .related-articles h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--amber-bright);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .related-card {
+    padding: 20px;
+    background: var(--ink);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: block;
+  }
+  .related-card:hover {
+    border-color: var(--amber);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .related-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .related-card p {
+    font-size: 14px;
+    color: var(--cream-dim);
+    margin: 0;
+  }
 
   /* ===== CTA ===== */
   .cta-box {
@@ -793,6 +840,25 @@
   <div class="faq-item">
     <h3>What are the main differences between riichi and Chinese mahjong scoring?</h3>
     <p>The main differences are: (1) Riichi uses a han/fu system where han (yaku count) and fu (mini-points) multiply to determine the score, with mangan caps at 5, 8, and 13+ han. (2) Chinese mahjong uses a simpler fan/points system where each fan (winning pattern) has a fixed point value, and there is no cap on maximum score. (3) Riichi's scoring is more granular and rewards defensive play, while Chinese mahjong's scoring is more straightforward and rewards aggressive hand-building. (4) Riichi has dora tiles (bonus han from revealed indicators) — Chinese mahjong has no equivalent mechanic.</p>
+  </div>
+
+  <!-- ===== Related Articles ===== -->
+  <div class="related-articles">
+    <h2>Related Articles</h2>
+    <div class="related-grid">
+      <a href="/riichi-mahjong-strategy.html" class="related-card">
+        <h3>Strategy Guide</h3>
+        <p>10 practical tips to win more hands — from tile efficiency to defense basics.</p>
+      </a>
+      <a href="/mahjong-brain-benefits.html" class="related-card">
+        <h3>Brain Benefits</h3>
+        <p>7 science-backed cognitive benefits of playing mahjong regularly.</p>
+      </a>
+      <a href="/how-to-play.html" class="related-card">
+        <h3>How to Play</h3>
+        <p>Complete beginner's guide: tiles, hands, yaku, and scoring from scratch.</p>
+      </a>
+    </div>
   </div>
 
   <!-- ===== CTA ===== -->

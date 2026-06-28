@@ -19,6 +19,7 @@ const PRECACHE_URLS = [
   '/terms.html',
   '/cookies.html',
   '/manifest.json',
+  '/favicon.svg',
   '/og-image.svg',
   '/immersion.css',
   '/immersion.js',

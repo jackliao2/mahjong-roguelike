@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <style>
+      @font-face { font-family: 'Pixel'; src: local('Press Start 2P'), local('monospace'); }
+    </style>
+  </defs>
+  <!-- Tile background -->
+  <rect x="1" y="1" width="30" height="30" rx="2" fill="#F5E6D3" stroke="#2B1810" stroke-width="2"/>
+  <!-- Inner border -->
+  <rect x="4" y="4" width="24" height="24" rx="1" fill="none" stroke="#2B1810" stroke-width="1"/>
+  <!-- Red center mark (dragon tile) -->
+  <rect x="10" y="10" width="12" height="12" fill="#C73E3A"/>
+  <text x="16" y="21" text-anchor="middle" font-family="monospace" font-size="14" font-weight="bold" fill="#F5E6D3">中</text>
+</svg>
