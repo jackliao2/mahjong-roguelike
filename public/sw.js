@@ -2,7 +2,7 @@
 // Strategy: cache-first for same-origin assets, network-first for HTML navigations
 // with cache fallback. This enables offline play after the first visit.
 
-const CACHE_NAME = 'mahjong-roguelike-v3';
+const CACHE_NAME = 'mahjong-roguelike-v4';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -10,6 +10,9 @@ const PRECACHE_URLS = [
   '/how-to-play.html',
   '/yaku-list.html',
   '/games-like-balatro.html',
+  '/riichi-vs-chinese-mahjong.html',
+  '/mahjong-brain-benefits.html',
+  '/riichi-mahjong-strategy.html',
   '/license.html',
   '/contact.html',
   '/privacy.html',
