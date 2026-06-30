@@ -116,6 +116,11 @@ function pinfuProximity(tiles: Tile[]): { score: number; hint: string } {
  * Analyze each tile in hand and determine if it contributes to any yaku.
  * Returns a map of tileId → { keep: boolean, reason: string }
  * Used by the discard hint system to color-code tiles.
+ *
+ * Keep threshold is deliberately conservative: a tile is marked "keep" only
+ * when it clearly helps a yaku. Everything else is a valid discard candidate
+ * (shown with a red border). The recommendation glow picks the *worst* keeper
+ * or the best discard among those candidates.
  */
 export function getDiscardHints(
   handTiles: Tile[],
@@ -125,45 +130,65 @@ export function getDiscardHints(
 
   for (const tile of handTiles) {
     let keep = false;
-    let reason = 'No clear yaku contribution.';
+    let reason = 'Loose tile — safe to discard.';
 
-    // Tanyao: simple tiles are keepers, terminals/honors are discard
+    const sameTypeCount = handTiles.filter(t => t.suit === tile.suit && t.rank === tile.rank).length;
+    const sameSuit = handTiles.filter(t => t.suit === tile.suit && t.id !== tile.id);
+    const hasRank = (r: number) => sameSuit.some(t => t.rank === r);
+    const hasShape = sameTypeCount >= 2
+      || (tile.suit !== 'wind' && tile.suit !== 'dragon' && (
+        hasRank(tile.rank - 1) || hasRank(tile.rank + 1)
+        || hasRank(tile.rank - 2) || hasRank(tile.rank + 2)
+      ));
+
+    // Yakuhai: a dragon pair/triplet is valuable
+    if (unlockedYakuIds.includes('yakuhai') && tile.suit === 'dragon') {
+      if (sameTypeCount >= 2) {
+        keep = true;
+        reason = sameTypeCount >= 3
+          ? 'Dragon triplet — Yakuhai ready!'
+          : 'Dragon pair — one more for Yakuhai.';
+        hints.set(tile.id, { keep, reason });
+        continue;
+      }
+      // A lone dragon is still a discard unless Tanyao wants it gone
+      reason = 'Lone dragon — hard to complete Yakuhai.';
+    }
+
+    // Tanyao: simple tiles (2-8) are keepers if they also help form a shape;
+    // isolated simples are not automatically precious.
     if (unlockedYakuIds.includes('tanyao')) {
-      if (isSimple(tile)) {
-        keep = true;
-        reason = 'Simple tile — good for Tanyao.';
-      } else if (isTerminal(tile) || isHonorTile(tile)) {
-        // Check if this terminal/honor might be part of another yaku
-        if (tile.suit === 'dragon' && unlockedYakuIds.includes('yakuhai')) {
-          const sameDragon = handTiles.filter(t => t.suit === 'dragon' && t.rank === tile.rank).length;
-          if (sameDragon >= 2) {
-            keep = true;
-            reason = 'Part of a dragon pair/triplet — good for Yakuhai.';
-            hints.set(tile.id, { keep, reason });
-            continue;
-          }
+      if (isTerminal(tile) || isHonorTile(tile)) {
+        keep = false;
+        reason = 'Terminal or honor — breaks Tanyao.';
+      } else if (isSimple(tile)) {
+        if (!hasShape) {
+          keep = false;
+          reason = 'Simple but isolated — Tanyao wants simples, but this needs neighbors.';
+        } else {
+          keep = true;
+          reason = 'Simple tile — good for Tanyao.';
         }
-        reason = 'Terminal or honor tile — breaks Tanyao.';
       }
     }
 
-    // Yakuhai: dragons are keepers
-    if (!keep && unlockedYakuIds.includes('yakuhai') && tile.suit === 'dragon') {
-      keep = true;
-      reason = 'Dragon tile — potential Yakuhai.';
-    }
-
-    // Pinfu: tiles in sequences are keepers
-    if (!keep && unlockedYakuIds.includes('pinfu')) {
-      const sameSuit = handTiles.filter(t => t.suit === tile.suit && t.id !== tile.id);
-      const hasPrev = sameSuit.some(t => t.rank === tile.rank - 1);
-      const hasNext = sameSuit.some(t => t.rank === tile.rank + 1);
-      const hasTwoPrev = sameSuit.some(t => t.rank === tile.rank - 2);
-      const hasTwoNext = sameSuit.some(t => t.rank === tile.rank + 2);
-      if (hasPrev || hasNext || (hasTwoPrev && hasPrev) || (hasTwoNext && hasNext)) {
+    // Pinfu: keep tiles that are already in a run or a strong partial run
+    if (unlockedYakuIds.includes('pinfu') && tile.suit !== 'wind' && tile.suit !== 'dragon') {
+      const inSequence = hasRank(tile.rank - 1) && hasRank(tile.rank + 1);
+      const inPartial = hasRank(tile.rank - 1) || hasRank(tile.rank + 1);
+      if (inSequence) {
         keep = true;
-        reason = 'Part of a potential sequence — good for Pinfu.';
+        reason = 'Inside a run — great for Pinfu.';
+      } else if (inPartial) {
+        keep = true;
+        reason = 'Next to another tile — could become a run.';
       }
+    }
+
+    // A lone pair (especially a simple pair) is worth keeping for the required pair slot
+    if (sameTypeCount === 2 && (tile.suit === 'wind' || tile.suit === 'dragon' || isTerminal(tile))) {
+      keep = true;
+      reason = 'Useful pair — every winning hand needs one.';
     }
 
     hints.set(tile.id, { keep, reason });

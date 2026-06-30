@@ -38,6 +38,7 @@ export function loadMeta(): MetaProgression {
     unlockedDecks: ['default'],
     currency: 0,
     achievements: [],
+    purchasedUnlocks: [],
   };
 }
 

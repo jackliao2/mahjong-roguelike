@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog | Mahjong Roguelike</title>
+<meta name="description" content="Guides, strategy tips, and deep dives into riichi mahjong. Learn tile efficiency, defense, yaku strategy, and the cognitive benefits of playing mahjong.">
+<meta name="keywords" content="mahjong blog, riichi mahjong guide, mahjong strategy, mahjong tips, learn mahjong">
+<meta property="og:title" content="Blog | Mahjong Roguelike">
+<meta property="og:description" content="Guides, strategy tips, and deep dives into riichi mahjong. Learn tile efficiency, defense, yaku strategy, and the cognitive benefits of playing mahjong.">
+<meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
+<meta property="og:url" content="https://mahjongroguelike.com/blog.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Blog | Mahjong Roguelike">
+<meta name="twitter:description" content="Guides, strategy tips, and deep dives into riichi mahjong.">
+<meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mahjongroguelike.com/blog.html">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2B1810">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "name": "Mahjong Roguelike Blog",
+  "description": "Guides, strategy tips, and deep dives into riichi mahjong.",
+  "url": "https://mahjongroguelike.com/blog.html",
+  "publisher": { "@type": "Organization", "name": "Mahjong Roguelike" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://mahjongroguelike.com/" },
+    { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://mahjongroguelike.com/blog.html" }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/immersion.css">
+<script defer src="/immersion.js"></script>
+<!-- Ad slot — Adsense units live on content/blog pages, not on the game landing page -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --wood-dark: #2B1810;
+    --wood-mid: #3D2418;
+    --wood-light: #5C3825;
+    --amber: #D4A574;
+    --amber-bright: #E8C088;
+    --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28;
+    --cream: #F5E6D3;
+    --cream-dim: #C9B89A;
+    --gold: #E5B567;
+    --ink: #1A0E08;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px),
+      radial-gradient(ellipse at top, var(--wood-mid) 0%, var(--wood-dark) 70%);
+    color: var(--cream);
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+
+  /* ===== Top Nav ===== */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--ink);
+    border-bottom: 4px solid var(--vermillion);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--vermillion-dark);
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .logo-mark {
+    display: inline-block; width: 22px; height: 22px;
+    background: var(--vermillion);
+    border: 2px solid var(--cream);
+    box-shadow: 2px 2px 0 var(--ink);
+    position: relative;
+  }
+  .logo-mark::after {
+    content: "中"; position: absolute; inset: 0;
+    color: var(--cream); font-family: 'Press Start 2P', monospace;
+    font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .nav-links a {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--cream); text-decoration: none; padding: 8px 12px;
+    border: 2px solid transparent; transition: all 0.15s ease;
+  }
+  .nav-links a:hover { color: var(--amber-bright); border-color: var(--amber); background: var(--wood-mid); }
+  .nav-links a.active { color: var(--amber-bright); border-color: var(--amber); }
+
+  /* ===== Page Hero ===== */
+  .page-hero {
+    position: relative;
+    padding: 80px 24px 56px;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 40%, rgba(199,62,58,0.18) 0%, transparent 60%);
+    border-bottom: 4px solid var(--ink);
+    overflow: hidden;
+  }
+  .page-hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 4px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0 16px, transparent 16px 32px);
+  }
+  .breadcrumb {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--cream-dim); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--amber-bright); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .page-eyebrow {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--vermillion); letter-spacing: 2px; margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(22px, 4.4vw, 38px);
+    color: var(--cream);
+    text-shadow: 4px 4px 0 var(--vermillion-dark), 8px 8px 0 var(--ink);
+    line-height: 1.3;
+    margin-bottom: 18px;
+  }
+  .page-title .accent { color: var(--amber-bright); }
+  .page-sub {
+    font-size: 17px; color: var(--cream-dim);
+    max-width: 720px; margin: 0 auto;
+  }
+
+  /* ===== Ad slot (top banner) ===== */
+  .ad-banner {
+    max-width: 960px;
+    margin: 24px auto 0;
+    padding: 0 24px;
+    min-height: 90px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ad-banner .ad-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px; color: var(--cream-dim); opacity: 0.6;
+    letter-spacing: 1px;
+  }
+
+  /* ===== Article grid ===== */
+  .blog-wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  .blog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .post-card {
+    background: var(--wood-mid);
+    border: 3px solid var(--wood-light);
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 24px;
+    display: flex; flex-direction: column;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+  .post-card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--vermillion);
+  }
+  .post-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--amber);
+  }
+  .post-card:hover::before { background: var(--gold); }
+  .post-tag {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--gold); letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .post-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 15px; color: var(--cream);
+    line-height: 1.5; margin-bottom: 12px;
+  }
+  .post-card:hover .post-title { color: var(--amber-bright); }
+  .post-excerpt {
+    font-size: 14px; color: var(--cream-dim);
+    margin-bottom: 18px; flex-grow: 1;
+  }
+  .post-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Press Start 2P', monospace; font-size: 8px;
+    color: var(--cream-dim); opacity: 0.8;
+    padding-top: 14px;
+    border-top: 1px solid var(--wood-light);
+  }
+  .post-meta .read-time { color: var(--amber); }
+
+  /* ===== In-content ad ===== */
+  .ad-incontent {
+    max-width: 1080px;
+    margin: 40px auto 0;
+    padding: 0 24px;
+    min-height: 100px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ad-incontent .ad-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px; color: var(--cream-dim); opacity: 0.6;
+    letter-spacing: 1px;
+  }
+
+  /* ===== Newsletter / CTA ===== */
+  .blog-cta {
+    max-width: 720px;
+    margin: 64px auto 0;
+    padding: 32px 24px;
+    text-align: center;
+    background: var(--wood-mid);
+    border: 3px solid var(--amber);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .blog-cta h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px; color: var(--amber-bright);
+    margin-bottom: 12px;
+  }
+  .blog-cta p {
+    font-size: 15px; color: var(--cream-dim);
+    margin-bottom: 20px;
+  }
+  .btn {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace; font-size: 11px;
+    padding: 14px 24px; text-decoration: none;
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform 0.1s ease;
+  }
+  .btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+  .btn-primary { background: var(--vermillion); color: var(--cream); border-color: var(--vermillion-dark); }
+  .btn-secondary { background: var(--wood-light); color: var(--cream); }
+
+  /* ===== Footer ===== */
+  footer {
+    background: var(--ink);
+    border-top: 4px solid var(--vermillion);
+    padding: 32px 24px;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px; color: var(--cream-dim);
+    line-height: 2;
+  }
+  footer a { color: var(--amber-bright); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    .blog-grid { grid-template-columns: 1fr; }
+    .nav-links { gap: 12px; }
+    .nav-links a { font-size: 9px; padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="logo">
+    <span class="logo-mark"></span>
+    <span>MJ ROGUELIKE</span>
+  </a>
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="/">Home</a>
+    <a href="/how-to-play.html">How to Play</a>
+    <a href="/yaku-list.html">Yaku List</a>
+    <a href="/blog.html" class="active">Blog</a>
+    <a href="/play.html">Play</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <p class="breadcrumb"><a href="/">Home</a> &gt; Blog</p>
+  <p class="page-eyebrow">GUIDES &middot; STRATEGY &middot; CULTURE</p>
+  <h1 class="page-title">The <span class="accent">Blog</span></h1>
+  <p class="page-sub">Strategy guides, cultural deep-dives, and science-backed reads on the world of riichi mahjong. New to the game? Start with the basics. Already building hands? Level up your defense.</p>
+</section>
+
+<!-- Top banner ad (content pages only) -->
+<div class="ad-banner" aria-label="Advertisement">
+  <span class="ad-label">ADVERTISEMENT</span>
+  <!-- <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXX" data-ad-slot="XXXX" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script> -->
+</div>
+
+<main class="blog-wrap">
+  <div class="blog-grid">
+
+    <a class="post-card" href="/how-to-play.html">
+      <span class="post-tag">BEGINNER GUIDE</span>
+      <h2 class="post-title">How to Play Riichi Mahjong: A Complete Beginner's Guide</h2>
+      <p class="post-excerpt">Learn riichi mahjong from scratch. The 136 tiles, winning hand shapes, yaku patterns, and scoring — explained step by step for total newcomers. No prior experience needed.</p>
+      <div class="post-meta">
+        <span>UPDATED JUN 2026</span>
+        <span class="read-time">~12 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/yaku-list.html">
+      <span class="post-tag">REFERENCE</span>
+      <h2 class="post-title">Complete Riichi Mahjong Yaku List (All 40+ Patterns)</h2>
+      <p class="post-excerpt">Every riichi mahjong yaku in one place — English names, romaji, han values, and clear descriptions. From Riichi and Tanyao to Kokushi and Chuuren Poutou. Bookmark this page.</p>
+      <div class="post-meta">
+        <span>UPDATED JUN 2026</span>
+        <span class="read-time">~15 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/riichi-mahjong-strategy.html">
+      <span class="post-tag">STRATEGY</span>
+      <h2 class="post-title">Riichi Mahjong Strategy: 10 Tips to Win More Hands</h2>
+      <p class="post-excerpt">Master riichi mahjong with 10 actionable strategy tips. Learn tile efficiency, defense, riichi decisions, and when to push vs fold. From beginner fundamentals to intermediate play.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUN 2026</span>
+        <span class="read-time">~14 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/riichi-vs-chinese-mahjong.html">
+      <span class="post-tag">CULTURE</span>
+      <h2 class="post-title">Riichi vs Chinese Mahjong: What's the Difference? (2026 Guide)</h2>
+      <p class="post-excerpt">A complete guide to the differences between Japanese and Chinese mahjong — tile sets, rules, scoring, and which variant you should learn first. Plus where they overlap.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUN 2026</span>
+        <span class="read-time">~11 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/mahjong-brain-benefits.html">
+      <span class="post-tag">SCIENCE</span>
+      <h2 class="post-title">7 Cognitive Benefits of Playing Mahjong (Backed by Science)</h2>
+      <p class="post-excerpt">Is mahjong good for your brain? Discover 7 science-backed cognitive benefits — from dementia prevention and improved memory to sharper decision-making and better mental health.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUN 2026</span>
+        <span class="read-time">~10 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/games-like-balatro.html">
+      <span class="post-tag">GAMES</span>
+      <h2 class="post-title">12 Games Like Balatro &amp; Slay the Spire to Play in 2026</h2>
+      <p class="post-excerpt">Looking for games like Balatro or Slay the Spire? Here are 12 of the best roguelike deckbuilders, dice-rollers, and card-based strategy games to play in 2026 — including a free browser option.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUN 2026</span>
+        <span class="read-time">~13 MIN READ</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- In-content ad (between grid and CTA) -->
+  <div class="ad-incontent" aria-label="Advertisement">
+    <span class="ad-label">ADVERTISEMENT</span>
+    <!-- <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXX" data-ad-slot="YYYY" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script> -->
+  </div>
+
+  <section class="blog-cta">
+    <h2>Ready to Play?</h2>
+    <p>Put these guides into practice. Free, no install, plays right in your browser.</p>
+    <a href="/play.html" class="btn btn-primary">Play Mahjong Roguelike</a>
+  </section>
+</main>
+
+<footer>
+  <p>&copy; 2026 Mahjong Roguelike &middot; <a href="/">Home</a> &middot; <a href="/how-to-play.html">How to Play</a> &middot; <a href="/yaku-list.html">Yaku List</a> &middot; <a href="/blog.html">Blog</a> &middot; <a href="/play.html">Play</a></p>
+  <p><a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/cookies.html">Cookies</a> &middot; <a href="/license.html">License</a> &middot; <a href="/contact.html">Contact</a></p>
+</footer>
+
+</body>
+</html>

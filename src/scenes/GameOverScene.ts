@@ -47,7 +47,7 @@ export class GameOverScene extends Phaser.Scene {
       ? `You conquered all ${runState.maxRounds} rounds`
       : `Fell on round ${runState.round} of ${runState.maxRounds}`;
     this.add.text(512, 132, subtitle, {
-      fontSize: '13px',
+      fontSize: '16px',
       color: '#c9b89a',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
@@ -122,7 +122,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // Section header: THIS RUN
     this.add.text(cx, cy - panelH / 2 + 22, 'THIS RUN', {
-      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
+      fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
     }).setOrigin(0.5);
 
     // Run stats - 2-column layout
@@ -137,7 +137,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // Section header: META
     this.add.text(cx, cy + 28, 'META PROGRESSION', {
-      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
+      fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
     }).setOrigin(0.5);
 
     // Meta stats - 2-column layout
@@ -154,10 +154,10 @@ export class GameOverScene extends Phaser.Scene {
   // ===== Single labeled stat row =====
   private createStatRow(x: number, y: number, label: string, value: string, valueColor: string): void {
     this.add.text(x - 70, y, label, {
-      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
+      fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
     }).setOrigin(0, 0.5);
     this.add.text(x + 70, y, value, {
-      fontSize: '14px', color: valueColor, fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '17px', color: valueColor, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(1, 0.5);
   }
 
@@ -179,10 +179,10 @@ export class GameOverScene extends Phaser.Scene {
 
     for (let i = 0; i < 3; i++) {
       this.add.text(colX[i], y - 12, labels[i], {
-        fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+        fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
       }).setOrigin(0.5);
       this.add.text(colX[i], y + 8, `${counts[i]}`, {
-        fontSize: '20px', color: colors[i], fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '24px', color: colors[i], fontFamily: 'monospace', fontStyle: 'bold',
       }).setOrigin(0.5);
     }
 
@@ -190,7 +190,7 @@ export class GameOverScene extends Phaser.Scene {
     if (relicCount > 0) {
       const names = runState.relics.map(r => r.name).join('  ·  ');
       this.add.text(cx, y + 36, names, {
-        fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
+        fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
         align: 'center', wordWrap: { width: 680 },
       }).setOrigin(0.5);
     }
@@ -236,7 +236,7 @@ export class GameOverScene extends Phaser.Scene {
       .setStrokeStyle(3, 0x2b1810);
     const highlightStrip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.4);
     const text = this.add.text(0, 0, label, {
-      fontSize: '14px', color: '#f5e6d3',
+      fontSize: '16px', color: '#f5e6d3',
       fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 

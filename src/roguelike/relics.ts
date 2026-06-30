@@ -1,31 +1,62 @@
-import { Relic, RelicContext } from '@/types';
+import { Relic, RelicContext, RelicEffect } from '@/types';
 import { isTerminal, isHonorTile } from '@/game/tiles';
 
-// 10 starter relics for M3 — each condition is evaluated at score time.
 export const RELICS: Relic[] = [
   {
-    id: 'amber-lantern',
-    name: 'Amber Lantern',
-    description: '+20% score for wins containing Pin (circle) tiles',
-    multiplier: 0.2,
+    id: 'lucky-draw',
+    name: 'Lucky Draw',
+    description: 'Once per round: draw 2 tiles instead of 1',
+    multiplier: 0,
     flatBonus: 0,
-    condition: (ctx: RelicContext) => ctx.rawTiles.some(t => t.suit === 'pin'),
+    effect: { type: 'extraDraw', value: 1 },
   },
   {
-    id: 'bamboo-flute',
-    name: 'Bamboo Flute',
-    description: '+20% score for wins containing Sou (bamboo) tiles',
-    multiplier: 0.2,
+    id: 'smooth-discard',
+    name: 'Smooth Discard',
+    description: 'Once per round: skip discarding after drawing',
+    multiplier: 0,
     flatBonus: 0,
-    condition: (ctx: RelicContext) => ctx.rawTiles.some(t => t.suit === 'sou'),
+    effect: { type: 'skipDiscard', value: 1 },
   },
   {
-    id: 'ink-brush',
-    name: 'Ink Brush',
-    description: '+20% score for wins containing Man (character) tiles',
-    multiplier: 0.2,
+    id: 'pin-focus',
+    name: 'Pin Focus',
+    description: 'Increases chance of drawing Pin tiles',
+    multiplier: 0,
     flatBonus: 0,
-    condition: (ctx: RelicContext) => ctx.rawTiles.some(t => t.suit === 'man'),
+    effect: { type: 'wallWeight', suit: 'pin', value: 1.5 },
+  },
+  {
+    id: 'sou-focus',
+    name: 'Sou Focus',
+    description: 'Increases chance of drawing Sou tiles',
+    multiplier: 0,
+    flatBonus: 0,
+    effect: { type: 'wallWeight', suit: 'sou', value: 1.5 },
+  },
+  {
+    id: 'man-focus',
+    name: 'Man Focus',
+    description: 'Increases chance of drawing Man tiles',
+    multiplier: 0,
+    flatBonus: 0,
+    effect: { type: 'wallWeight', suit: 'man', value: 1.5 },
+  },
+  {
+    id: 'early-tenpai',
+    name: 'Early Tenpai',
+    description: 'Start each round with 14 tiles instead of 13',
+    multiplier: 0,
+    flatBonus: 0,
+    effect: { type: 'extraInitialTiles', value: 1 },
+  },
+  {
+    id: 'riichi-accelerator',
+    name: 'Riichi Accelerator',
+    description: 'Auto-draw winning tile immediately after Riichi',
+    multiplier: 0,
+    flatBonus: 0,
+    effect: { type: 'autoRiichi' },
   },
   {
     id: 'lucky-coin',
@@ -35,47 +66,9 @@ export const RELICS: Relic[] = [
     flatBonus: 200,
   },
   {
-    id: 'dragon-pendant',
-    name: 'Dragon Pendant',
-    description: 'x1.5 score multiplier when you have a dragon triplet',
-    multiplier: 0.5,
-    flatBonus: 0,
-    condition: (ctx: RelicContext) => {
-      const triplets = ctx.winningHand.melds.filter(m => m.type === 'triplet');
-      return triplets.some(m => m.tiles[0].suit === 'dragon');
-    },
-  },
-  {
-    id: 'wind-chime',
-    name: 'Wind Chime',
-    description: '+25% score when you have a wind triplet',
-    multiplier: 0.25,
-    flatBonus: 0,
-    condition: (ctx: RelicContext) => {
-      const triplets = ctx.winningHand.melds.filter(m => m.type === 'triplet');
-      return triplets.some(m => m.tiles[0].suit === 'wind');
-    },
-  },
-  {
-    id: 'tanyao-charm',
-    name: 'Tanyao Charm',
-    description: 'Tanyao hand scores double (x1.0 extra multiplier)',
-    multiplier: 1.0,
-    flatBonus: 0,
-    condition: (ctx: RelicContext) => ctx.yakuList.some(y => y.yaku.id === 'tanyao'),
-  },
-  {
-    id: 'riichi-stone',
-    name: 'Riichi Stone',
-    description: 'Riichi gives +300 bonus points',
-    multiplier: 0,
-    flatBonus: 300,
-    condition: (ctx: RelicContext) => ctx.isRiichi,
-  },
-  {
     id: 'izakaya-menu',
     name: 'Izakaya Menu',
-    description: '+10% score to all wins (flat multiplier)',
+    description: '+10% score to all wins',
     multiplier: 0.1,
     flatBonus: 0,
   },
@@ -85,11 +78,6 @@ export const RELICS: Relic[] = [
     description: 'Terminal tiles (1s, 9s) each add +50 bonus chips',
     multiplier: 0,
     flatBonus: 0,
-    // Dynamic flat bonus: condition returns true always, but we compute flat via a side channel.
-    // Since Relic.condition is boolean, we encode the per-tile bonus as a flatBonus evaluated
-    // by overriding flatBonus at runtime — but to keep the type simple, we use a multiplier of 0
-    // and let the dedicated Nine Tails handler in scoring pick it up via the relic list.
-    // Implementation note: the scoring engine checks for relic id 'nine-tails' specially.
     condition: (ctx: RelicContext) => ctx.rawTiles.some(t => isTerminal(t)),
   },
 ];

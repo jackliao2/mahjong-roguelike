@@ -55,16 +55,17 @@ export const GameConfig = {
   // ===== Beginner Mode =====
   beginner: {
     maxRounds: 3,
-    scoreMultiplier: 0.7, // 70% of normal target scores
+    scoreMultiplier: 0.4, // 40% of normal target scores — a single basic yaku clears round 1
     unlockedYaku: ['riichi', 'tanyao', 'pinfu', 'yakuhai'],
     completedKey: 'mjrg_beginner_done',
+    tutorialSeenKey: 'mjrg_tutorial_seen',
     tutorialSteps: [
-      'Welcome! In Mahjong, you build a 14-tile hand. Each turn: draw a tile, then discard one. Goal: form a winning pattern called a YAKU.',
-      'Your hand: number suits (man/pin/sou 1-9), winds (E S W N), dragons (Rd Wh Gr). Hover any tile for details.',
-      'Click DRAW TILE (or press D) to draw from the wall.',
-      'Now click a tile to discard. Green border = keep, Red = discard. Tiles 2-8 are good for Tanyao!',
-      'To win, you need a YAKU pattern. Watch the progress bars below.',
-      'You are ready! Keep drawing and discarding. Press H to toggle hints. Good luck!',
+      { id: 'welcome', text: "Welcome! Goal: 4 sets + 1 pair (14 tiles). Let's learn by playing.", target: 'center' },
+      { id: 'draw', text: 'Press D or click DRAW TILE to take a new tile.', target: 'drawButton' },
+      { id: 'discard', text: 'Click a tile to discard. Try the glowing yellow one.', target: 'hand' },
+      { id: 'riichi', text: "You're 1 tile from winning! Click RIICHI to lock and auto-draw.", target: 'riichiButton' },
+      { id: 'win', text: 'Your winning tile appeared! Press W or click WIN!', target: 'winButton' },
+      { id: 'done', text: 'Great job! Loop: Draw → Discard → Riichi → Win. Good luck!', target: 'center' },
     ],
   },
 
@@ -79,8 +80,8 @@ export const GameConfig = {
 
   // ===== Tile Dimensions =====
   tiles: {
-    width: 48,
-    height: 64,
+    width: 56,
+    height: 72,
     gap: 4,
   },
 
@@ -114,21 +115,125 @@ export const GameConfig = {
     },
     onboardingTips: [
       'GOAL: Win rounds by forming a winning 14-tile hand.',
-      'Each win needs at least one YAKU (winning pattern).',
+      'Every win needs at least one YAKU (winning pattern).',
       '',
       'HOW TO PLAY:',
       '1. DRAW a tile from the wall',
       '2. Click a tile in your hand to DISCARD it',
-      '3. When ready, declare RIICHI (locks your hand)',
+      '3. When 1 tile from winning, declare RIICHI',
       '4. WIN! when your hand is complete',
       '',
-      'Easy yaku: Tanyao (simples 2-8) · Pinfu (sequences)',
-      '         Riichi (ready) · Yakuhai (dragon triplet)',
+      'Easy yaku: Tanyao (only 2-8) · Pinfu (4 runs + pair)',
+      '         Riichi (ready hand) · Yakuhai (dragon triplet)',
       '',
-      'KEYBOARD: D=Draw  W=Win  R=Riichi  N=Next',
+      'KEYBOARD: D=Draw  W=Win  R=Riichi  N=Next  H=Hints',
     ],
     onboardingTitle: 'WELCOME, TRAVELER',
     onboardingButton: 'BEGIN',
+  },
+
+  // ===== Round Challenge Goals =====
+  // Each round has a required primary goal (teaches a yaku) and optional
+  // secondary goals for extra bonus. Optional goals add replay value without
+  // blocking learning progress.
+  challenges: {
+    goalsByRound: [
+      // Round 1
+      [
+        { id: 'r1-primary', type: 'yaku', targetId: 'riichi', bonus: 500, desc: 'Win with RIICHI', optional: false },
+        { id: 'r1-opt1', type: 'fastWin', count: 12, bonus: 300, desc: 'Win in 12 turns or fewer', optional: true },
+      ],
+      // Round 2
+      [
+        { id: 'r2-primary', type: 'yaku', targetId: 'tanyao', bonus: 500, desc: 'Win with TANYAO', optional: false },
+        { id: 'r2-opt1', type: 'noHint', bonus: 400, desc: 'Win with hints turned off', optional: true },
+      ],
+      // Round 3
+      [
+        { id: 'r3-primary', type: 'yaku', targetId: 'pinfu', bonus: 500, desc: 'Win with PINFU', optional: false },
+        { id: 'r3-opt1', type: 'han', count: 2, bonus: 400, desc: 'Win with 2+ han', optional: true },
+      ],
+      // Round 4
+      [
+        { id: 'r4-primary', type: 'multiYaku', count: 2, bonus: 800, desc: 'Win with 2+ yaku combined', optional: false },
+        { id: 'r4-opt1', type: 'fastWin', count: 10, bonus: 500, desc: 'Win in 10 turns or fewer', optional: true },
+      ],
+      // Round 5
+      [
+        { id: 'r5-primary', type: 'han', count: 3, bonus: 1000, desc: 'Win with 3+ han', optional: false },
+        { id: 'r5-opt1', type: 'noRelic', bonus: 600, desc: 'Win without relic bonuses', optional: true },
+      ],
+    ] as import('@/types').ChallengeGoal[][],
+  },
+
+  // ===== Meta Progression Unlockables =====
+  // Spend currency earned from runs to permanently upgrade the learning experience.
+  unlockables: {
+    items: [
+      { id: 'hint-level-2', name: 'Sharper Hints', description: 'Recommended discard highlights both best and second-best tiles.', cost: 200, category: 'hint', icon: '💡' },
+      { id: 'classic-tiles', name: 'Classic Tile Theme', description: 'Traditional ivory tile faces with red and blue accents.', cost: 300, category: 'theme', icon: '🀄' },
+      { id: 'advanced-lessons', name: 'Advanced Lessons', description: 'Unlock rounds 6-8 featuring Pure Straight and Half Flush goals.', cost: 500, category: 'lesson', icon: '📖' },
+      { id: 'hint-level-3', name: 'Master Hints', description: 'Shows waiting tiles and explains why a discard is recommended.', cost: 700, category: 'hint', icon: '🔍' },
+    ] as import('@/types').Unlockable[],
+  },
+
+  // ===== Optional Pressure Mode =====
+  // Switched on in deck select. Adds a strict move limit per round for players
+  // who want extra tension. Never forced on beginner runs.
+  pressure: {
+    modes: ['off', 'moves'] as const,
+    moveLimit: { normal: 15, beginner: 20 },
+    bonus: 300,
+  },
+
+  // ===== Puzzle Mode =====
+  // Fixed-hand training scenarios. Each puzzle teaches a specific yaku or
+  // efficient path to tenpai. No run progress is saved — pure practice.
+  puzzles: {
+    items: [
+      {
+        id: 'puzzle-riichi-one-away',
+        name: 'One Tile Away',
+        description: 'You are 1 tile from a ready Riichi hand. Find the correct discard.',
+        goalYaku: 'riichi',
+        optimalMoves: 1,
+        tiles: [
+          { suit: 'man', rank: 2 }, { suit: 'man', rank: 3 }, { suit: 'man', rank: 4 },
+          { suit: 'pin', rank: 4 }, { suit: 'pin', rank: 5 }, { suit: 'pin', rank: 6 },
+          { suit: 'sou', rank: 6 }, { suit: 'sou', rank: 7 }, { suit: 'sou', rank: 8 },
+          { suit: 'man', rank: 5 }, { suit: 'man', rank: 5 },
+          { suit: 'dragon', rank: 1 }, { suit: 'dragon', rank: 1 },
+        ] as import('@/types').Tile[],
+      },
+      {
+        id: 'puzzle-tanyao-cleanup',
+        name: 'Clean Up for Tanyao',
+        description: 'Remove the 1-man and 9-pin to aim for Tanyao (all simples).',
+        goalYaku: 'tanyao',
+        optimalMoves: 3,
+        tiles: [
+          { suit: 'man', rank: 1 }, { suit: 'man', rank: 2 }, { suit: 'man', rank: 3 },
+          { suit: 'man', rank: 6 }, { suit: 'man', rank: 7 }, { suit: 'man', rank: 8 },
+          { suit: 'pin', rank: 2 }, { suit: 'pin', rank: 3 }, { suit: 'pin', rank: 9 },
+          { suit: 'sou', rank: 4 }, { suit: 'sou', rank: 5 }, { suit: 'sou', rank: 6 },
+          { suit: 'wind', rank: 1 },
+        ] as import('@/types').Tile[],
+      },
+      {
+        id: 'puzzle-pinfu-shape',
+        name: 'Shape into Pinfu',
+        description: 'Build 4 sequences and a non-dragon pair for Pinfu.',
+        goalYaku: 'pinfu',
+        optimalMoves: 4,
+        tiles: [
+          { suit: 'man', rank: 2 }, { suit: 'man', rank: 3 }, { suit: 'man', rank: 4 },
+          { suit: 'pin', rank: 3 }, { suit: 'pin', rank: 4 }, { suit: 'pin', rank: 5 },
+          { suit: 'sou', rank: 4 }, { suit: 'sou', rank: 5 }, { suit: 'sou', rank: 6 },
+          { suit: 'man', rank: 6 }, { suit: 'man', rank: 7 }, { suit: 'man', rank: 8 },
+          { suit: 'dragon', rank: 1 },
+        ] as import('@/types').Tile[],
+      },
+    ],
   },
 
   // ===== localStorage Keys =====

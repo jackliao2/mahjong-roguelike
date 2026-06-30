@@ -38,9 +38,25 @@ export interface Relic {
   id: string;
   name: string;
   description: string;
-  multiplier: number; // score multiplier (applied when condition is met, or always if no condition)
-  flatBonus: number; // flat score bonus (applied when condition is met, or always if no condition)
-  condition?: (ctx: RelicContext) => boolean; // optional condition; if absent, always applies
+  multiplier: number;
+  flatBonus: number;
+  condition?: (ctx: RelicContext) => boolean;
+  effect?: RelicEffect;
+}
+
+export type RelicEffectType = 
+  | 'extraDraw' 
+  | 'skipDiscard' 
+  | 'wallWeight' 
+  | 'extraInitialTiles' 
+  | 'guaranteedTenpai'
+  | 'autoRiichi'
+  | 'scoreMultiplier';
+
+export interface RelicEffect {
+  type: RelicEffectType;
+  value?: number;
+  suit?: Suit;
 }
 
 export interface RelicContext {
@@ -81,6 +97,31 @@ export interface MetaProgression {
   unlockedDecks: string[];
   currency: number;
   achievements: string[];
+  /** IDs of purchased permanent unlocks (hint upgrades, themes, lessons). */
+  purchasedUnlocks: string[];
+}
+
+/** A single challenge goal for a round. */
+export interface ChallengeGoal {
+  id: string;
+  type: 'yaku' | 'multiYaku' | 'han' | 'noHint' | 'fastWin' | 'noRelic';
+  /** Yaku ID when type === 'yaku'. */
+  targetId?: string;
+  count?: number;
+  bonus: number;
+  desc: string;
+  /** Optional goals are for extra bonus; required goals gate learning progress. */
+  optional: boolean;
+}
+
+/** Permanent unlockable upgrade for meta progression. */
+export interface Unlockable {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  category: 'hint' | 'theme' | 'lesson';
+  icon: string;
 }
 
 export interface ScoreResult {

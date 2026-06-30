@@ -96,7 +96,9 @@
 
   // ===== 4. Cookie Consent Banner (GDPR/CCPA) =====
   // Shows on first visit only. Dismissed flag stored in localStorage.
-  if (!localStorage.getItem('mjrg_cookies_accepted')) {
+  // Skip on the game page so the banner never covers the hand tray/buttons.
+  var isPlayPage = location.pathname === '/play.html' || location.pathname === '/play';
+  if (!isPlayPage && !localStorage.getItem('mjrg_cookies_accepted')) {
     var banner = document.createElement('div');
     banner.className = 'mri-cookie-banner';
     banner.setAttribute('role', 'dialog');

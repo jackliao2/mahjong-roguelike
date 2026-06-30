@@ -400,6 +400,15 @@
     position: relative;
     padding: 90px 24px;
     z-index: 1;
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+  }
+
+  /* Hero 和短 callout/CTA 不强制整屏，避免内容稀疏时留白过大 */
+  section.hero,
+  section.callout,
+  section.final-cta {
+    scroll-snap-align: start;
   }
 
   .section-inner {
@@ -944,6 +953,7 @@
       <a href="/">Home</a>
       <a href="/how-to-play.html">How to Play</a>
       <a href="/yaku-list.html">Yaku List</a>
+      <a href="/blog.html">Blog</a>
       <a href="/play.html">Play</a>
     </nav>
   </header>
@@ -1159,6 +1169,7 @@
         <ul>
           <li><a href="/how-to-play.html">How to Play</a></li>
           <li><a href="/yaku-list.html">Yaku List</a></li>
+          <li><a href="/blog.html">Blog</a></li>
           <li><a href="/#how-it-works">Core Loop</a></li>
           <li><a href="/#yaku-preview">Starter Yaku</a></li>
         </ul>

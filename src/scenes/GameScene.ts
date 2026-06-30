@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { Tile, Hand, RunState, Relic, CustomTile, Yaku } from '@/types';
+import { Tile, Hand, RunState, Relic, CustomTile, Yaku, ChallengeGoal } from '@/types';
 import { TileWall } from '@/game/wall';
-import { createHand, sortHand, getAllTiles } from '@/game/hand';
+import { createHand, sortHand, getAllTiles, findPairs } from '@/game/hand';
 import { detectWin, findWaitingTiles } from '@/game/winDetector';
 import { calculateScore, createRunState } from '@/game/scoring';
 import { tileKey, getTileDisplay } from '@/game/tiles';
@@ -12,11 +12,15 @@ import { loadRun, clearRun, loadMeta } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
 import { getUnlockedDecks } from '@/roguelike/meta';
 import { getRelicById } from '@/roguelike/relics';
+import { hasUnlock, loadMetaProgression } from '@/roguelike/meta';
 import { trackRunStart, trackRoundComplete, trackRunComplete, trackRewardSelected, trackReroll, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
 import { getYakuProximity, getDiscardHints } from '@/game/yakuProximity';
+import { analyzeHandStructure, recommendDiscard } from '@/game/handStructure';
 
 type GamePhase = 'idle' | 'drew' | 'won' | 'survived' | 'lost' | 'reward';
+
+type PressureMode = 'off' | 'moves';
 
 interface GameState {
   wall: TileWall;
@@ -25,6 +29,10 @@ interface GameState {
   phase: GamePhase;
   discardedTiles: Tile[];
   roundScore: number;
+  pressureMode: PressureMode;
+  isPuzzle: boolean;
+  puzzleId?: string;
+  puzzleMoves: number;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -42,38 +50,62 @@ export class GameScene extends Phaser.Scene {
   // New-player guidance flags
   private showHints: boolean = true;
   private discardHints: Map<string, { keep: boolean; reason: string }> = new Map();
+  private recommendedDiscardId: string | null = null;
   private yakuRefPanel!: Phaser.GameObjects.Container;
   // Beginner mode tutorial
   private isBeginner: boolean = false;
-  private tutorialStep: number = -1; // -1 = disabled, 0-5 = steps
+  private tutorialStep: number = -1; // -1 = disabled, 0-8 = steps
   private tutorialOverlay!: Phaser.GameObjects.Container;
+  // Beginner assist UI
+  private handStructureText!: Phaser.GameObjects.Text;
+  private recommendedActionText!: Phaser.GameObjects.Text;
+  private hintLegend!: Phaser.GameObjects.Text;
+  private yakuRefCards: Phaser.GameObjects.Container[] = [];
+  private yakuRefProgress: Phaser.GameObjects.Rectangle[] = [];
+  private buttonGlowTweens: Map<string, Phaser.Tweens.Tween> = new Map();
+  // Relic effect trackers (per-round usage)
+  private relicUses: Map<string, number> = new Map();
+  // 关卡挑战目标系统：每关 1 个主要目标 + 1 个可选目标
+  private challengeTexts: Phaser.GameObjects.Text[] = [];
+  private challengeGoals: ChallengeGoal[] = [];
+  private challengeCompletion: Map<string, boolean> = new Map();
+  private turnCount: number = 0;
+  private hintUsedThisRound: boolean = false;
+  private relicUsedThisRound: boolean = false;
+  private pressureText: Phaser.GameObjects.Text | null = null;
 
   constructor() {
     super('GameScene');
   }
 
-  create(data?: { action?: string; deckId?: string; difficulty?: string }): void {
+  create(data?: { action?: string; deckId?: string; difficulty?: string; pressureMode?: PressureMode; puzzleId?: string }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
 
     this.isBeginner = data?.difficulty === 'beginner';
 
-    if (data?.action === 'new_run') {
+    if (data?.action === 'puzzle' && data?.puzzleId) {
+      this.startPuzzleRun(data.puzzleId);
+    } else if (data?.action === 'new_run') {
       clearRun(); // fresh run — discard any saved state
-      this.startNewRun(data.deckId, data.difficulty);
+      this.startNewRun(data.deckId, data.difficulty, data?.pressureMode);
     } else if (!this.state) {
       this.startNewRun();
     }
     this.createUI();
+    this.setChallengeForRound(this.state.runState.round); // 在 createUI 之后调用，确保 challengeText 已创建
     this.renderHand();
     this.updateUI();
 
     // First-time player onboarding (shown once, then dismissed)
     if (!localStorage.getItem(GameConfig.storageKeys.onboarded)) {
       this.showOnboardingHint();
-    } else if (this.isBeginner && this.tutorialStep === -1) {
-      // Show guided tutorial for beginner mode (after onboarding, if applicable)
+    } else if (this.isBeginner && this.tutorialStep === -1 && !localStorage.getItem(GameConfig.beginner.tutorialSeenKey)) {
+      // Show guided tutorial for beginner mode only on the first beginner run
       this.time.delayedCall(600, () => this.startTutorial());
+    } else {
+      // 第一局开场横幅（已 onboarding 且无 tutorial 时显示）
+      this.time.delayedCall(800, () => this.showRoundIntro());
     }
 
     // Keyboard shortcuts
@@ -102,7 +134,9 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'H':
           this.showHints = !this.showHints;
+          this.hintUsedThisRound = this.showHints;
           this.showMessage(this.showHints ? 'Hints: ON' : 'Hints: OFF');
+          if (this.hintLegend) this.hintLegend.setVisible(this.isBeginner && this.showHints);
           this.time.delayedCall(1200, () => this.updateUI());
           this.renderHand();
           break;
@@ -112,55 +146,64 @@ export class GameScene extends Phaser.Scene {
 
   // ===== First-time onboarding overlay =====
   private showOnboardingHint(): void {
-    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(1000);
-    const panelW = 560;
-    const panelH = 420;
+    const panelW = 600;
+    const panelH = 440;
+    const btnW = 220;
+    const btnH = 48;
+    const btnY = 360 + panelH / 2 - 44;
+    const depth = 1000;
+
+    // Track every element so we can fade and destroy them together cleanly.
+    const elements: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(depth);
     const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
-      .setStrokeStyle(3, 0xd4a574).setDepth(1001);
-    // Top accent
-    this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 3, 0xe5b567).setDepth(1001);
+      .setStrokeStyle(3, 0xd4a574).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 3, 0xe5b567).setDepth(depth);
+    elements.push(overlay, panel, topAccent);
 
-    // Title
-    this.add.text(512, 360 - panelH / 2 + 36, GameConfig.ui.onboardingTitle, {
-      fontSize: '22px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(1002);
+    const title = this.add.text(512, 360 - panelH / 2 + 40, GameConfig.ui.onboardingTitle, {
+      fontSize: '24px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
 
-    // Tips
     const tips = GameConfig.ui.onboardingTips;
-    this.add.text(512, 360 - 20, tips.join('\n'), {
-      fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace',
-      align: 'center', lineSpacing: 4,
-    }).setOrigin(0.5).setDepth(1002);
+    const tipsText = this.add.text(512, 360 - 16, tips.join('\n'), {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', lineSpacing: 5,
+      wordWrap: { width: panelW - 60 },
+    }).setOrigin(0.5).setDepth(depth + 1);
+    elements.push(title, tipsText);
 
-    // Continue button
-    const btnW = 200;
-    const btnH = 44;
-    const btnY = 360 + panelH / 2 - 40;
-    const btnShadow = this.add.rectangle(516, btnY + 4, btnW, btnH, 0x000000, 0.5).setDepth(1001);
+    const btnShadow = this.add.rectangle(516, btnY + 4, btnW, btnH, 0x000000, 0.5).setDepth(depth);
     const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
-      .setStrokeStyle(3, 0x2b1810).setDepth(1001);
-    this.add.rectangle(512, btnY - btnH / 2 + 3, btnW - 6, 2, 0xffffff, 0.4).setDepth(1002);
+      .setStrokeStyle(3, 0x2b1810).setDepth(depth);
+    const btnHighlight = this.add.rectangle(512, btnY - btnH / 2 + 3, btnW - 6, 2, 0xffffff, 0.4).setDepth(depth + 1);
     const btnText = this.add.text(512, btnY, GameConfig.ui.onboardingButton, {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(1002);
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    elements.push(btnShadow, btnBg, btnHighlight, btnText);
 
-    const btnContainer = this.add.container(512, btnY, [btnShadow, btnBg, btnText])
-      .setSize(btnW, btnH).setInteractive({ useHandCursor: true }).setDepth(1003);
+    // Hit area for the button (invisible, on top)
+    const hitArea = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0).setDepth(depth + 2);
+    elements.push(hitArea);
 
-    btnContainer.on('pointerover', () => btnContainer.setScale(1.05));
-    btnContainer.on('pointerout', () => btnContainer.setScale(1));
-    btnContainer.on('pointerdown', () => {
+    let closing = false;
+    hitArea.setInteractive({ useHandCursor: true });
+    hitArea.on('pointerover', () => { if (!closing) { btnBg.setFillStyle(0xe04e4a); hitArea.setScale(1.05); btnText.setScale(1.05); btnShadow.setScale(1.05); btnHighlight.setScale(1.05); } });
+    hitArea.on('pointerout', () => { if (!closing) { btnBg.setFillStyle(0xc73e3a); hitArea.setScale(1); btnText.setScale(1); btnShadow.setScale(1); btnHighlight.setScale(1); } });
+    hitArea.on('pointerdown', () => {
+      if (closing) return;
+      closing = true;
       this.soundManager.playClick();
       localStorage.setItem(GameConfig.storageKeys.onboarded, '1');
-      // Fade out overlay
+      hitArea.disableInteractive();
+      // Fade out the entire overlay
       this.tweens.add({
-        targets: [overlay, panel],
+        targets: elements,
         alpha: 0,
         duration: 300,
         onComplete: () => {
-          overlay.destroy();
-          panel.destroy();
-          btnContainer.destroy();
+          elements.forEach(el => el.destroy());
           // Start beginner tutorial after onboarding
           if (this.isBeginner) {
             this.time.delayedCall(400, () => this.startTutorial());
@@ -168,101 +211,74 @@ export class GameScene extends Phaser.Scene {
         },
       });
     });
-    void btnBg;
   }
 
-  // ===== Guided tutorial for beginner mode =====
+  // ===== Guided tutorial for beginner mode (interactive: learn by doing) =====
   private startTutorial(): void {
     this.tutorialStep = 0;
-    this.showTutorialOverlay();
+    this.showInteractiveTutorial();
   }
 
-  private showTutorialOverlay(): void {
-    const steps = GameConfig.beginner.tutorialSteps;
-    const step = this.tutorialStep;
-    if (step < 0 || step >= steps.length) return;
+  /** Tutorial no longer blocks any actions - just shows info boxes */
+  private tutorialBlocksAction(action: 'draw' | 'discard' | 'riichi' | 'win' | 'keyboardShortcut'): boolean {
+    return false;
+  }
 
-    // Destroy existing overlay
+  private showInteractiveTutorial(): void {
+    const steps = GameConfig.beginner.tutorialSteps;
+    const stepIdx = this.tutorialStep;
+    if (stepIdx < 0 || stepIdx >= steps.length) return;
+
     this.tutorialOverlay?.destroy();
 
-    const stepText = steps[step];
-    const isLast = step === steps.length - 1;
+    const step = steps[stepIdx];
+    const isLast = stepIdx === steps.length - 1;
 
-    // Semi-transparent backdrop
-    const w = 1024, h = 720;
-    const overlay = this.add.rectangle(512, 360, w, h, 0x000000, 0.6).setDepth(900);
+    const master = this.add.container(0, 0).setDepth(900);
+    this.tutorialOverlay = master;
 
-    // Bottom banner for tutorial text
-    const bannerY = 510;
-    const bannerH = 100;
-    const bannerW = 800;
-    const banner = this.add.rectangle(512, bannerY, bannerW, bannerH, 0x1a0f08, 0.95)
-      .setStrokeStyle(3, 0xd4a574).setDepth(901);
-    this.add.rectangle(512, bannerY - bannerH / 2 + 4, bannerW - 10, 3, 0xe5b567).setDepth(902);
+    const panelW = 600;
+    const panelH = 180;
+    const panelX = 512;
+    const panelY = 140;
 
-    // Step indicator
-    this.add.text(512, bannerY - bannerH / 2 + 22, `STEP ${step + 1} / ${steps.length}`, {
-      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
-    }).setOrigin(0.5).setDepth(902);
+    const panel = this.add.rectangle(panelX, panelY, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0xd4a574);
+    const topAccent = this.add.rectangle(panelX, panelY - panelH / 2 + 4, panelW - 10, 3, 0xe5b567);
+    master.add([panel, topAccent]);
 
-    // Tutorial text
-    this.add.text(512, bannerY + 2, stepText, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
-      align: 'center', wordWrap: { width: bannerW - 60 }, lineSpacing: 4,
-    }).setOrigin(0.5).setDepth(902);
+    const stepLabel = this.add.text(panelX, panelY - panelH / 2 + 24, `STEP ${stepIdx + 1} / ${steps.length}`, {
+      fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
+    }).setOrigin(0.5);
+    master.add(stepLabel);
 
-    // Arrow pointing to relevant area (roughly)
-    if (step === 2) {
-      // Point to draw button
-      this.createTutorialArrow(512, 420, bannerY - bannerH / 2);
-    } else if (step === 3) {
-      // Point to hand area
-      this.createTutorialArrow(512, 600, bannerY - bannerH / 2);
-    }
+    const tutorialText = this.add.text(panelX, panelY + 8, step.text, {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 8,
+    }).setOrigin(0.5);
+    master.add(tutorialText);
 
-    // Dismiss button
-    const btnW = isLast ? 200 : 160;
-    const btnH = 38;
-    const btnY = bannerY + bannerH / 2 - 2;
-    const btnX = 512;
+    const btnW = 180;
+    const btnH = 44;
+    const btnX = panelX;
+    const btnY = panelY + panelH / 2 - 24;
     const btnBg = this.add.rectangle(btnX, btnY, btnW, btnH, 0xc73e3a)
-      .setStrokeStyle(3, 0x2b1810).setDepth(902);
-    this.add.rectangle(btnX, btnY - btnH / 2 + 3, btnW - 6, 2, 0xffffff, 0.4).setDepth(903);
+      .setStrokeStyle(3, 0x2b1810);
+    const btnHighlight = this.add.rectangle(btnX, btnY - btnH / 2 + 3, btnW - 6, 2, 0xffffff, 0.4);
     const label = isLast ? "LET'S GO!" : 'NEXT';
     const btnText = this.add.text(btnX, btnY, label, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(903);
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    const btnHit = this.add.rectangle(btnX, btnY, btnW, btnH, 0xffffff, 0);
+    master.add([btnBg, btnHighlight, btnText, btnHit]);
 
-    const btnContainer = this.add.container(btnX, btnY, [btnBg, btnText])
-      .setSize(btnW, btnH).setInteractive({ useHandCursor: true }).setDepth(904);
-
-    btnContainer.on('pointerover', () => btnContainer.setScale(1.05));
-    btnContainer.on('pointerout', () => btnContainer.setScale(1));
-    btnContainer.on('pointerdown', () => {
+    btnHit.setInteractive({ useHandCursor: true });
+    btnHit.on('pointerover', () => { btnBg.setFillStyle(0xe04e4a); btnText.setScale(1.05); btnHighlight.setScale(1.05); });
+    btnHit.on('pointerout', () => { btnBg.setFillStyle(0xc73e3a); btnText.setScale(1); btnHighlight.setScale(1); });
+    btnHit.on('pointerdown', () => {
       this.soundManager.playClick();
+      localStorage.setItem(GameConfig.beginner.tutorialSeenKey, '1');
       this.advanceTutorial();
-    });
-
-    this.tutorialOverlay = this.add.container(0, 0, [overlay, banner, btnContainer]);
-    this.tutorialOverlay.setDepth(900);
-  }
-
-  private createTutorialArrow(fromX: number, fromY: number, toY: number): void {
-    // Simple downward arrow
-    const g = this.add.graphics();
-    g.lineStyle(3, 0xe5b567, 0.8);
-    g.lineBetween(fromX, fromY, fromX, toY - 20);
-    // Arrow head
-    g.fillStyle(0xe5b567, 0.8);
-    g.fillTriangle(fromX, toY - 10, fromX - 8, toY - 28, fromX + 8, toY - 28);
-    g.setDepth(902);
-    // Pulse animation
-    this.tweens.add({
-      targets: g,
-      alpha: 0.4,
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
     });
   }
 
@@ -272,7 +288,7 @@ export class GameScene extends Phaser.Scene {
       this.tutorialOverlay?.destroy();
       return;
     }
-    this.showTutorialOverlay();
+    this.showInteractiveTutorial();
   }
 
   // Called when scene resumes from RewardScene
@@ -296,12 +312,13 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private startNewRun(deckId?: string, difficulty?: string): void {
+  private startNewRun(deckId?: string, difficulty?: string, pressureMode?: PressureMode): void {
     // Try to resume a persisted run (preserves round, score, relics, customTiles)
     const savedRun = loadRun();
     const isBeginner = difficulty === 'beginner';
     const maxRounds = isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
     const runState = savedRun ?? createRunState(maxRounds);
+    const pressure: PressureMode = pressureMode || 'off';
 
     // Apply beginner mode settings
     if (isBeginner && !savedRun) {
@@ -331,6 +348,9 @@ export class GameScene extends Phaser.Scene {
       phase: 'idle',
       discardedTiles: [],
       roundScore: 0,
+      pressureMode: pressure,
+      isPuzzle: false,
+      puzzleMoves: 0,
     };
     this.dealInitialHand();
     // Analytics: track run starts (only for fresh runs, not resumes)
@@ -339,13 +359,163 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Start a fixed-hand puzzle run for practice. No persistence, no rewards. */
+  private startPuzzleRun(puzzleId: string): void {
+    const puzzle = GameConfig.puzzles.items.find(p => p.id === puzzleId);
+    if (!puzzle) {
+      this.startNewRun();
+      return;
+    }
+
+    // Generate instance IDs for the fixed tiles
+    const tiles: Tile[] = puzzle.tiles.map((t, i) => ({
+      suit: t.suit,
+      rank: t.rank,
+      id: `puzzle-${puzzleId}-${t.suit}-${t.rank}-${i}`,
+    }));
+
+    const runState = createRunState(1);
+    runState.unlockedYaku = ['riichi', 'tanyao', 'pinfu', 'yakuhai', 'iipeikou'];
+
+    this.state = {
+      wall: new TileWall([]),
+      hand: createHand(tiles),
+      runState,
+      phase: 'idle',
+      discardedTiles: [],
+      roundScore: 0,
+      pressureMode: 'moves',
+      isPuzzle: true,
+      puzzleId,
+      puzzleMoves: 0,
+    };
+  }
+
   private dealInitialHand(): void {
+    const tiles = this.isBeginner
+      ? this.dealBeginnerFriendlyHand()
+      : this.dealRandomHand();
+    
+    // Apply Early Tenpai relic effect (start with 14 tiles)
+    for (const relic of this.state.runState.relics) {
+      if (relic.effect?.type === 'extraInitialTiles') {
+        const extraTiles = relic.effect.value || 1;
+        for (let i = 0; i < extraTiles; i++) {
+          const tile = this.state.wall.draw();
+          if (tile) tiles.push(tile);
+        }
+        this.relicUsedThisRound = true;
+        this.showMessage('Early Tenpai! Starting with extra tile!');
+        break;
+      }
+    }
+    
+    this.state.hand = createHand(tiles);
+  }
+
+  private dealRandomHand(): Tile[] {
     const tiles: Tile[] = [];
     for (let i = 0; i < 13; i++) {
       const tile = this.state.wall.draw();
       if (tile) tiles.push(tile);
     }
-    this.state.hand = createHand(tiles);
+    return tiles;
+  }
+
+  /**
+   * Deal a beginner-friendly starting hand.
+   * Beginners need to see clear shapes and get quick, encouraging wins, so we
+   * build the hand deterministically:
+   * - all simple tiles (2-8) so Tanyao is automatic,
+   * - 1 pair + 3 complete sequences + 1 two-sided partial,
+   * - already tenpai (1 tile from winning) with at least 2 winning tiles,
+   * - no honor or terminal tiles to confuse new players.
+   *
+   * We also gently bias the wall so one winning tile appears early, keeping
+   * the first-run experience reliably short without removing randomness entirely.
+   */
+  private dealBeginnerFriendlyHand(): Tile[] {
+    const hand = this.constructBeginnerHand();
+
+    // Place one of the waiting tiles within the first few draws so the
+    // beginner's ready hand converts to a win quickly, but vary the spot
+    // slightly so every round doesn't feel identical.
+    const waiting = findWaitingTiles(hand);
+    if (waiting.length > 0) {
+      const key = waiting[Math.floor(Math.random() * waiting.length)];
+      const [suit, rankStr] = key.split('-');
+      const earlyPosition = Math.floor(Math.random() * 7) + 2; // 2-8
+      this.state.wall.bringToFront(suit, parseInt(rankStr, 10), earlyPosition);
+    }
+
+    return hand;
+  }
+
+  /**
+   * Build a guaranteed beginner hand directly from the wall.
+   * Structure: 1 pair + 3 sequences + 1 two-sided partial.
+   * This is already tenpai (1 tile from winning) with a good wait.
+   * All tiles are simples (rank 2-8), no honors/terminals.
+   */
+  private constructBeginnerHand(): Tile[] {
+    const suits: Array<'man' | 'pin' | 'sou'> = ['man', 'pin', 'sou'];
+    const shuffleSuits = () => {
+      const arr = [...suits];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+    const pickRank = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const hand: Tile[] = [];
+    const requested: Array<{ suit: string; rank: number }> = [];
+
+    // Use each suit exactly once for the three sequences so tile counts stay safe
+    // and the hand looks varied.
+    const suitOrder = shuffleSuits();
+
+    // 1 pair in the middle of a suit
+    const pairSuit = suitOrder[0];
+    const pairRank = pickRank(3, 7);
+    requested.push({ suit: pairSuit, rank: pairRank }, { suit: pairSuit, rank: pairRank });
+
+    // 3 complete sequences, one per suit
+    for (let i = 0; i < 3; i++) {
+      const seqStart = pickRank(2, 6);
+      requested.push(
+        { suit: suitOrder[i], rank: seqStart },
+        { suit: suitOrder[i], rank: seqStart + 1 },
+        { suit: suitOrder[i], rank: seqStart + 2 }
+      );
+    }
+
+    // 1 two-sided partial sequence (middle rank so both waits are simples)
+    const partialSuit = suitOrder[1];
+    const partialStart = pickRank(3, 6);
+    requested.push(
+      { suit: partialSuit, rank: partialStart },
+      { suit: partialSuit, rank: partialStart + 1 }
+    );
+
+    // Draw the specific tiles from the wall
+    for (const req of requested) {
+      const tile = this.state.wall.drawSpecific(req.suit, req.rank);
+      if (tile) {
+        hand.push(tile);
+      }
+    }
+
+    // If deterministic construction fell short (shouldn't happen with a fresh wall),
+    // fill the rest with random draws.
+    while (hand.length < 13) {
+      const tile = this.state.wall.draw();
+      if (tile) hand.push(tile);
+      else break;
+    }
+
+    return hand;
   }
 
   // ========== UI CREATION ==========
@@ -362,6 +532,9 @@ export class GameScene extends Phaser.Scene {
     // ===== Top bar - redesigned with sections =====
     this.createTopBar();
 
+    // ===== Challenge goal bar (below top bar) =====
+    this.createChallengeBar();
+
     // ===== Score progress bar (below top bar) =====
     this.createScoreProgressBar();
 
@@ -374,15 +547,16 @@ export class GameScene extends Phaser.Scene {
     // ===== Message area (center, with decorative frame) =====
     this.createMessageArea();
 
-    // Action buttons
-    this.createButton('draw', 512, 420, GameConfig.ui.drawButton, () => this.drawTile());
-    this.createButton('riichi', 340, 420, GameConfig.ui.riichiButton, () => this.declareRiichi());
-    this.createButton('win', 684, 420, GameConfig.ui.winButton, () => this.declareWin(), true);
-    this.createButton('nextRound', 512, 420, GameConfig.ui.nextRoundButton, () => this.triggerRewardScreen());
-    this.createButton('newRun', 512, 420, GameConfig.ui.newRunButton, () => {
+    // Action buttons — positioned in the centre, between side panels and above hand
+    // Three buttons at x=330, x=512, x=694 with 160px width → 22px gaps between them
+    this.createButton('draw', 512, 475, GameConfig.ui.drawButton, () => this.drawTile());
+    this.createButton('riichi', 330, 475, GameConfig.ui.riichiButton, () => this.declareRiichi());
+    this.createButton('win', 512, 475, GameConfig.ui.winButton, () => this.declareWin(), true);
+    this.createButton('nextRound', 512, 475, GameConfig.ui.nextRoundButton, () => this.triggerRewardScreen());
+    this.createButton('newRun', 512, 475, GameConfig.ui.newRunButton, () => {
       this.scene.start('DeckSelectScene');
     });
-    this.createButton('undo', 824, 420, GameConfig.ui.undoButton, () => this.undoDiscard());
+    this.createButton('undo', 694, 475, GameConfig.ui.undoButton, () => this.undoDiscard());
 
     // Register resume handler (only once)
     this.events.removeAllListeners('resume');
@@ -395,8 +569,8 @@ export class GameScene extends Phaser.Scene {
     key: string, x: number, y: number, label: string,
     callback: () => void, highlight: boolean = false
   ): void {
-    const width = 160;
-    const height = 48;
+    const width = 170;
+    const height = 52;
     // Pixel-art shadow (offset black rectangle behind)
     const shadow = this.add.rectangle(4, 4, width, height, 0x000000, 0.5);
     // Main button bg with bevel
@@ -405,7 +579,7 @@ export class GameScene extends Phaser.Scene {
     // Top highlight (pixel bevel)
     const highlight_strip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.4);
     const text = this.add.text(0, 0, label, {
-      fontSize: '14px', color: highlight ? '#f5e6d3' : '#2b1810',
+      fontSize: '18px', color: highlight ? '#f5e6d3' : '#2b1810',
       fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
@@ -427,6 +601,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.actionButtons[key] = container;
+    container.setDepth(60);
   }
 
   // ===== Wood grain decorative background =====
@@ -467,58 +642,58 @@ export class GameScene extends Phaser.Scene {
   // ===== Redesigned top bar =====
   private createTopBar(): void {
     // Main top bar background
-    const topBg = this.add.rectangle(0, 0, 1024, 56, 0x1a0e08)
+    const topBg = this.add.rectangle(0, 0, 1024, 60, 0x1a0e08)
       .setOrigin(0, 0)
       .setStrokeStyle(2, 0xd4a574);
     // Inner accent line
-    this.add.rectangle(0, 54, 1024, 2, 0xc73e3a).setOrigin(0);
+    this.add.rectangle(0, 58, 1024, 2, 0xc73e3a).setOrigin(0);
 
     // Round indicator (left, with icon)
-    this.add.text(20, 10, GameConfig.ui.roundLabel, {
-      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    this.add.text(20, 8, GameConfig.ui.roundLabel, {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
     });
     this.uiText.round = this.add.text(20, 24, '', {
-      fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '24px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     });
 
     // Score (with label)
-    this.add.text(140, 10, GameConfig.ui.scoreLabel, {
-      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    this.add.text(150, 8, GameConfig.ui.scoreLabel, {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
     });
-    this.uiText.score = this.add.text(140, 24, '', {
-      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    this.uiText.score = this.add.text(150, 24, '', {
+      fontSize: '24px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     });
 
     // Target (with label)
-    this.add.text(300, 10, GameConfig.ui.targetLabel, {
-      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    this.add.text(320, 8, GameConfig.ui.targetLabel, {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
     });
-    this.uiText.target = this.add.text(300, 24, '', {
-      fontSize: '18px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    this.uiText.target = this.add.text(320, 24, '', {
+      fontSize: '24px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
     });
 
     // Wall remaining (with label)
-    this.add.text(460, 10, 'WALL', {
-      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    this.add.text(490, 8, 'WALL', {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
     });
-    this.uiText.wall = this.add.text(460, 24, '', {
-      fontSize: '18px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+    this.uiText.wall = this.add.text(490, 24, '', {
+      fontSize: '24px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
     });
 
     // Phase (right side)
-    this.add.text(620, 10, 'PHASE', {
-      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    this.add.text(660, 8, 'PHASE', {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
     });
-    this.uiText.phase = this.add.text(620, 24, '', {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    this.uiText.phase = this.add.text(660, 24, '', {
+      fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     });
 
     // Relics display (with icon)
-    this.add.text(780, 10, 'RELICS', {
-      fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
+    this.add.text(800, 8, 'RELICS', {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
     });
-    this.uiText.relics = this.add.text(780, 24, '', {
-      fontSize: '14px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    this.uiText.relics = this.add.text(800, 24, '', {
+      fontSize: '20px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     });
 
     // Sound toggle button (top-right corner)
@@ -528,14 +703,147 @@ export class GameScene extends Phaser.Scene {
     this.createHelpButton();
     // Yaku reference panel (right side, always visible for new players)
     this.createYakuRefPanel();
+    // Beginner-only assist UI: hand structure panel + recommended action banner
+    this.createBeginnerAssistUI();
+  }
+
+  // ===== Beginner assist: hand structure panel + recommended action =====
+  private createBeginnerAssistUI(): void {
+    // Recommended action banner — 紧贴按钮上方（唯一显示的提示）
+    this.recommendedActionText = this.add.text(512, 390, '', {
+      fontSize: '16px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      align: 'center',
+      padding: { x: 16, y: 8 },
+      wordWrap: { width: 560 },
+    }).setOrigin(0.5).setDepth(30);
+    this.recommendedActionText.setVisible(false);
+
+    // Hand structure info 合并到 yakuInfoText 显示，不再单独占位
+    this.handStructureText = this.add.text(512, 425, '', {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', lineSpacing: 5,
+      backgroundColor: '#1a0e08', padding: { x: 16, y: 8 },
+      wordWrap: { width: 560 },
+    }).setOrigin(0.5).setDepth(29);
+    this.handStructureText.setVisible(false);
+
+    // Discard hint legend — bottom-left corner, beginner mode only
+    this.hintLegend = this.add.text(20, 560, '[ GREEN = useful ]   [ RED = safe discard ]   [ YELLOW = best ]', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      lineSpacing: 4,
+    }).setOrigin(0, 1).setDepth(40);
+    this.hintLegend.setVisible(this.isBeginner && this.showHints);
+  }
+
+  // ===== Challenge goal bar: 每关 1 个主要目标 + 1 个可选目标 =====
+  private createChallengeBar(): void {
+    // 横条背景
+    this.add.rectangle(0, 64, 1024, 28, 0x2b1810).setOrigin(0, 0)
+      .setStrokeStyle(1, 0x5c3825);
+    // 左侧标签
+    this.add.text(20, 78, '\u2605 GOALS', {
+      fontSize: '14px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+
+    // Pressure mode indicator
+    if (this.state.pressureMode === 'moves') {
+      const limit = this.isBeginner
+        ? GameConfig.pressure.moveLimit.beginner
+        : GameConfig.pressure.moveLimit.normal;
+      this.pressureText = this.add.text(940, 78, `MOVES: ${this.turnCount}/${limit}`, {
+        fontSize: '13px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(1, 0.5);
+    }
+  }
+
+  /** 根据 round 设置挑战目标，并刷新横条显示 */
+  private setChallengeForRound(round: number): void {
+    // 重置每轮追踪状态
+    this.turnCount = 0;
+    this.hintUsedThisRound = false;
+    this.relicUsedThisRound = false;
+    this.challengeCompletion.clear();
+
+    const goalGroups = GameConfig.challenges.goalsByRound;
+    this.challengeGoals = round <= goalGroups.length ? goalGroups[round - 1] : [];
+
+    // 清理旧文本
+    this.challengeTexts.forEach(t => t.destroy());
+    this.challengeTexts = [];
+
+    if (this.challengeGoals.length === 0) {
+      const freeText = this.add.text(110, 78, 'Free practice — no bonus goals', {
+        fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
+      }).setOrigin(0, 0.5);
+      this.challengeTexts.push(freeText);
+      return;
+    }
+
+    let x = 110;
+    for (const goal of this.challengeGoals) {
+      const prefix = goal.optional ? 'OPT:' : 'MAIN:';
+      const text = this.add.text(x, 78, `${prefix} ${goal.desc} [+${goal.bonus}]`, {
+        fontSize: '13px', color: goal.optional ? '#c9b89a' : '#f5e6d3', fontFamily: 'monospace',
+      }).setOrigin(0, 0.5);
+      text.setData('goalId', goal.id);
+      this.challengeTexts.push(text);
+      x += text.width + 28;
+    }
+  }
+
+  /** 赢牌时检查所有挑战目标，返回累计 bonus 分数 */
+  private checkChallenges(score: import('@/types').ScoreResult): number {
+    let totalBonus = 0;
+    for (const goal of this.challengeGoals) {
+      if (this.challengeCompletion.get(goal.id)) continue;
+      let done = false;
+      switch (goal.type) {
+        case 'yaku':
+          done = goal.targetId ? score.yakuList.some(y => y.yaku.id === goal.targetId) : false;
+          break;
+        case 'multiYaku':
+          done = goal.count ? score.yakuList.length >= goal.count : false;
+          break;
+        case 'han':
+          done = goal.count ? score.totalHan >= goal.count : false;
+          break;
+        case 'noHint':
+          done = !this.hintUsedThisRound;
+          break;
+        case 'fastWin':
+          done = goal.count ? this.turnCount <= goal.count : false;
+          break;
+        case 'noRelic':
+          done = !this.relicUsedThisRound && score.breakdown.relicFlat === 0 && score.breakdown.relicMultiplier === 0;
+          break;
+      }
+      if (done) {
+        this.challengeCompletion.set(goal.id, true);
+        totalBonus += goal.bonus;
+      }
+    }
+    this.updateChallengeBarDisplay();
+    return totalBonus;
+  }
+
+  private updateChallengeBarDisplay(): void {
+    for (const text of this.challengeTexts) {
+      const goalId = text.getData('goalId') as string;
+      const goal = this.challengeGoals.find(g => g.id === goalId);
+      if (!goal) continue;
+      const done = this.challengeCompletion.get(goal.id);
+      const prefix = goal.optional ? 'OPT:' : 'MAIN:';
+      text.setText(`${done ? '\u2713 ' : ''}${prefix} ${goal.desc} [+${goal.bonus}]`);
+      text.setColor(done ? '#2d6a4f' : (goal.optional ? '#c9b89a' : '#f5e6d3'));
+    }
   }
 
   // ===== Score progress bar =====
   private createScoreProgressBar(): void {
-    const barY = 62;
-    const barWidth = 980;
+    const barY = 106; // 在 challenge bar 下方，避免重叠
+    const barWidth = 560; // 收窄到中央区域，避开两侧 discard/yakuRef 面板
     const barHeight = 8;
-    const barX = 22;
+    const barX = 512 - barWidth / 2; // 居中
 
     // Background
     this.scoreProgressBg = this.add.rectangle(barX + barWidth / 2, barY, barWidth, barHeight, 0x1a0e08)
@@ -548,7 +856,7 @@ export class GameScene extends Phaser.Scene {
   private updateScoreProgressBar(): void {
     const rs = this.state.runState;
     const ratio = Math.min(1, rs.score / rs.targetScore);
-    const maxWidth = 980;
+    const maxWidth = 560;
     this.scoreProgressBar.width = maxWidth * ratio;
     // Color shift: amber -> red as it fills
     const color = ratio >= 1 ? 0xc73e3a : 0xe5b567;
@@ -559,8 +867,8 @@ export class GameScene extends Phaser.Scene {
   private createHandArea(): void {
     // Tray background — darker wood with inner shadow
     const trayY = 600;
-    const trayWidth = 900;
-    const trayHeight = 90;
+    const trayWidth = 960;
+    const trayHeight = 96;
     const trayX = 512 - trayWidth / 2;
 
     // Outer shadow
@@ -576,41 +884,43 @@ export class GameScene extends Phaser.Scene {
     this.handAreaBg = this.add.container(0, 0);
   }
 
-  // ===== Discard area (right panel) =====
+  // ===== Discard area (left panel — aligned with Yaku Ref on right) =====
   private createDiscardArea(): void {
-    const panelX = 512 + 380;
-    const panelY = 300;
-    // Background panel
-    this.add.rectangle(panelX, panelY, 200, 280, 0x1a0e08, 0.7)
+    const panelX = 116;
+    const panelY = 280; // 下移避开挑战条
+    // Background panel — 200x320, aligned with right panel
+    this.add.rectangle(panelX, panelY, 200, 320, 0x1a0e08, 0.7)
       .setStrokeStyle(2, 0x5c3825);
     // Label
-    this.add.text(panelX, panelY - 120, 'DISCARDS', {
-      fontSize: '11px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+    this.add.text(panelX, panelY - 137, 'DISCARDS', {
+      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     // Divider line
-    this.add.rectangle(panelX, panelY - 105, 180, 1, 0x5c3825);
+    this.add.rectangle(panelX, panelY - 124, 180, 1, 0x5c3825);
 
     this.discardArea = this.add.container(panelX, panelY);
   }
 
   // ===== Message area (with frame) =====
   private createMessageArea(): void {
-    // Decorative frame around message area
-    const frameY = 220;
-    this.add.rectangle(512, frameY, 600, 50, 0x1a0e08, 0.5)
+    // Centered between left (x=16-216) and right (x=808-1008) panels
+    const frameY = 165;
+    this.add.rectangle(512, frameY, 580, 56, 0x1a0e08, 0.5)
       .setStrokeStyle(2, 0xd4a574, 0.5);
 
     this.messageText = this.add.text(512, frameY, '', {
-      fontSize: '24px', color: '#f5e6d3', fontFamily: 'monospace',
+      fontSize: '20px', color: '#f5e6d3', fontFamily: 'monospace',
       align: 'center', fontStyle: 'bold',
+      wordWrap: { width: 560 },
     }).setOrigin(0.5);
 
-    // Yaku info — larger, framed
-    this.add.rectangle(512, 310, 700, 110, 0x1a0e08, 0.6)
+    // Yaku info — 缩小高度，避免与按钮区拥挤
+    this.add.rectangle(512, 280, 540, 110, 0x1a0e08, 0.6)
       .setStrokeStyle(2, 0xd4a574, 0.4);
-    this.yakuInfoText = this.add.text(512, 310, '', {
-      fontSize: '13px', color: '#e5b567', fontFamily: 'monospace',
-      align: 'center', lineSpacing: 4,
+    this.yakuInfoText = this.add.text(512, 280, '', {
+      fontSize: '17px', color: '#e5b567', fontFamily: 'monospace',
+      align: 'center', lineSpacing: 6,
+      wordWrap: { width: 500 },
     }).setOrigin(0.5);
   }
 
@@ -630,16 +940,16 @@ export class GameScene extends Phaser.Scene {
   private soundToggleText!: Phaser.GameObjects.Text;
 
   private createSoundToggleButton(): void {
-    const x = 990;
+    const x = 986;
     const y = 30;
-    const bg = this.add.rectangle(0, 0, 36, 30, 0x2b1810)
+    const bg = this.add.rectangle(0, 0, 42, 34, 0x2b1810)
       .setStrokeStyle(2, 0xd4a574);
     this.soundToggleText = this.add.text(0, 0, 'SFX', {
-      fontSize: '11px', color: '#d4a574', fontFamily: 'monospace',
+      fontSize: '12px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.soundToggleButton = this.add.container(x, y, [bg, this.soundToggleText])
-      .setSize(36, 30)
+      .setSize(42, 34)
       .setInteractive({ useHandCursor: true });
 
     this.soundToggleButton.on('pointerover', () => bg.setScale(1.05));
@@ -656,22 +966,23 @@ export class GameScene extends Phaser.Scene {
   private hintToggleText!: Phaser.GameObjects.Text;
 
   private createHintToggleButton(): void {
-    const x = 948;
+    const x = 940;
     const y = 30;
-    const bg = this.add.rectangle(0, 0, 36, 30, 0x2b1810)
+    const bg = this.add.rectangle(0, 0, 42, 34, 0x2b1810)
       .setStrokeStyle(2, 0xd4a574);
     this.hintToggleText = this.add.text(0, 0, 'HINT', {
-      fontSize: '10px', color: '#d4a574', fontFamily: 'monospace',
+      fontSize: '12px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.hintToggleButton = this.add.container(x, y, [bg, this.hintToggleText])
-      .setSize(36, 30)
+      .setSize(42, 34)
       .setInteractive({ useHandCursor: true });
 
     this.hintToggleButton.on('pointerover', () => bg.setScale(1.05));
     this.hintToggleButton.on('pointerout', () => bg.setScale(1));
     this.hintToggleButton.on('pointerdown', () => {
       this.showHints = !this.showHints;
+      this.hintUsedThisRound = this.showHints;
       this.hintToggleText.setColor(this.showHints ? '#d4a574' : '#666666');
       this.hintToggleText.setText(this.showHints ? 'HINT' : 'OFF');
       this.renderHand();
@@ -681,16 +992,16 @@ export class GameScene extends Phaser.Scene {
 
   /** Help button linking to the how-to-play guide */
   private createHelpButton(): void {
-    const x = 900;
+    const x = 894;
     const y = 30;
-    const bg = this.add.rectangle(0, 0, 36, 30, 0x2b1810)
+    const bg = this.add.rectangle(0, 0, 42, 34, 0x2b1810)
       .setStrokeStyle(2, 0x5c3825);
     const text = this.add.text(0, 0, '?', {
-      fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const container = this.add.container(x, y, [bg, text])
-      .setSize(36, 30)
+      .setSize(42, 34)
       .setInteractive({ useHandCursor: true });
 
     container.on('pointerover', () => { bg.setScale(1.05); text.setColor('#d4a574'); });
@@ -701,53 +1012,101 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** Always-visible cheat sheet for the 4 easiest yaku */
+  /** Always-visible cheat sheet for the 4 easiest yaku, with live progress bars */
   private createYakuRefPanel(): void {
-    const panelX = 936;
-    const panelY = 400;
-    const panelW = 170;
+    const panelX = 908; // same distance from right edge as discard from left
+    const panelY = 280; // 与 Discard panel 同高
+    const panelW = 200;
     const panelH = 320;
 
     this.yakuRefPanel = this.add.container(0, 0);
     this.yakuRefPanel.setDepth(50);
+    this.yakuRefCards = [];
+    this.yakuRefProgress = [];
 
     // Panel background
-    this.add.rectangle(panelX, panelY, panelW, panelH, 0x1a0e08, 0.85)
-      .setStrokeStyle(2, 0xd4a574, 0.5)
+    this.add.rectangle(panelX, panelY, panelW, panelH, 0x1a0e08, 0.9)
+      .setStrokeStyle(2, 0x5c3825)
       .setDepth(50);
 
     // Title
-    this.add.text(panelX, panelY - panelH / 2 + 18, 'YAKU REF', {
-      fontSize: '9px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    this.add.text(panelX, panelY - panelH / 2 + 22, 'YAKU GUIDE', {
+      fontSize: '17px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(51);
 
+    // 精简为3张卡，每张更大更清晰
     const yakuCards = [
-      { name: 'Tanyao', han: '1', desc: 'All tiles 2-8\nNo terminals\nor honors' },
-      { name: 'Pinfu', han: '1', desc: '4 sequences\n+ any pair\n(not dragon)' },
-      { name: 'Riichi', han: '1', desc: 'Declare when\n1 tile from\nwinning' },
-      { name: 'Yakuhai', han: '1', desc: 'Triplet of\nany dragon\ntile' },
+      { id: 'riichi', name: 'Riichi', han: '1', desc: 'Ready hand. Declare when 1 tile from win.' },
+      { id: 'tanyao', name: 'Tanyao', han: '1', desc: 'All simples 2-8. No 1s, 9s, honors.' },
+      { id: 'pinfu', name: 'Pinfu', han: '1', desc: '4 sequences + non-dragon pair.' },
     ];
 
-    const cardH = 62;
-    const startY = panelY - panelH / 2 + 52;
+    const cardH = 90;
+    const gap = 8;
+    const startY = panelY - panelH / 2 + 56;
     yakuCards.forEach((card, i) => {
-      const cy = startY + i * (cardH + 6);
+      const cy = startY + i * (cardH + gap) + cardH / 2;
+      const cardContainer = this.add.container(panelX, cy).setDepth(51);
       // Card bg
-      this.add.rectangle(panelX, cy, panelW - 16, cardH, 0x2b1810, 0.7)
-        .setStrokeStyle(1, 0xd4a574, 0.3)
-        .setDepth(51);
+      const cardBg = this.add.rectangle(0, 0, panelW - 16, cardH, 0x2b1810, 0.7)
+        .setStrokeStyle(1, 0xd4a574, 0.4);
+      cardContainer.add(cardBg);
       // Name + han
-      this.add.text(panelX - panelW / 2 + 16, cy - 16, card.name, {
-        fontSize: '10px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-      }).setDepth(52);
-      this.add.text(panelX + panelW / 2 - 16, cy - 16, `${card.han} han`, {
-        fontSize: '9px', color: '#8b6f47', fontFamily: 'monospace',
-      }).setOrigin(1, 0).setDepth(52);
+      cardContainer.add(this.add.text(-panelW / 2 + 14, -cardH / 2 + 10, card.name, {
+        fontSize: '17px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      }));
+      cardContainer.add(this.add.text(panelW / 2 - 14, -cardH / 2 + 10, `${card.han} han`, {
+        fontSize: '14px', color: '#8b6f47', fontFamily: 'monospace',
+      }).setOrigin(1, 0));
       // Description
-      this.add.text(panelX - panelW / 2 + 16, cy + 4, card.desc, {
-        fontSize: '8px', color: '#c9b89a', fontFamily: 'monospace',
-        lineSpacing: 2,
-      }).setDepth(52);
+      cardContainer.add(this.add.text(-panelW / 2 + 14, -cardH / 2 + 34, card.desc, {
+        fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+        lineSpacing: 3,
+        wordWrap: { width: panelW - 28 },
+      }));
+      // Live progress bar (bottom of card)
+      const barW = panelW - 28;
+      const barX = -barW / 2;
+      const barY = cardH / 2 - 12;
+      const barBg = this.add.rectangle(0, barY, barW, 7, 0x000000, 0.6)
+        .setStrokeStyle(1, 0x5c3825);
+      const barFill = this.add.rectangle(barX, barY, 0, 7, 0xe5b567)
+        .setOrigin(0, 0.5);
+      cardContainer.add([barBg, barFill]);
+      // Progress label
+      const progressLabel = this.add.text(panelW / 2 - 4, barY + 12, '0%', {
+        fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
+      }).setOrigin(0, 0.5);
+      cardContainer.add(progressLabel);
+      (cardContainer as any).progressLabel = progressLabel;
+      this.yakuRefCards.push(cardContainer);
+      this.yakuRefProgress.push(barFill);
+    });
+  }
+
+  /** Update the live progress bars on the yaku ref panel */
+  private updateYakuRefProgress(): void {
+    if (!this.state) return;
+    const proximity = getYakuProximity(this.state.hand.tiles, this.state.runState.unlockedYaku);
+    const proxMap = new Map(proximity.map(p => [p.yakuId, p]));
+    const ids = ['riichi', 'tanyao', 'pinfu'];
+    const barW = 176; // panelW - 24
+    ids.forEach((id, i) => {
+      const bar = this.yakuRefProgress[i];
+      const cardContainer = this.yakuRefCards[i];
+      if (!bar || !cardContainer) return;
+      const p = proxMap.get(id);
+      const score = p ? p.score : 0;
+      const width = Math.max(0, Math.min(barW, (score / 100) * barW));
+      bar.width = width;
+      // Green when ready, gold when close, amber otherwise
+      bar.fillColor = score >= 100 ? 0x4a9e4a : score >= 50 ? 0xe5b567 : 0xc9b89a;
+      // Update progress label
+      const label = (cardContainer as any).progressLabel as Phaser.GameObjects.Text;
+      if (label) {
+        label.setText(score >= 100 ? 'READY' : `${Math.round(score)}%`);
+        label.setColor(score >= 100 ? '#4a9e4a' : '#8b6f47');
+      }
     });
   }
 
@@ -755,6 +1114,51 @@ export class GameScene extends Phaser.Scene {
 
   private drawTile(): void {
     if (this.state.phase !== 'idle') return;
+    if (this.tutorialBlocksAction('draw')) return;
+
+    // Pressure mode: hard move limit
+    if (this.state.pressureMode === 'moves') {
+      const limit = this.isBeginner
+        ? GameConfig.pressure.moveLimit.beginner
+        : GameConfig.pressure.moveLimit.normal;
+      if (this.turnCount >= limit) {
+        this.showMessage(`Move limit reached (${limit}) — round failed!`);
+        this.endRound(false);
+        return;
+      }
+    }
+
+    this.turnCount++;
+
+    // Apply Lucky Draw relic effect (draw 2 tiles)
+    let extraDraw = false;
+    for (const relic of this.state.runState.relics) {
+      if (relic.effect?.type === 'extraDraw') {
+        const uses = this.relicUses.get(relic.id) || 0;
+        if (uses < (relic.effect.value || 1)) {
+          extraDraw = true;
+          this.relicUsedThisRound = true;
+          this.relicUses.set(relic.id, uses + 1);
+          this.showMessage('Lucky Draw! Drawing 2 tiles...');
+          break;
+        }
+      }
+    }
+
+    // Apply Smooth Discard effect (skip discard after drawing)
+    let skipDiscard = false;
+    for (const relic of this.state.runState.relics) {
+      if (relic.effect?.type === 'skipDiscard') {
+        const uses = this.relicUses.get(relic.id) || 0;
+        if (uses < (relic.effect.value || 1)) {
+          skipDiscard = true;
+          this.relicUsedThisRound = true;
+          this.relicUses.set(relic.id, uses + 1);
+          this.showMessage('Smooth Discard! Keep the drawn tile!');
+          break;
+        }
+      }
+    }
 
     const tile = this.state.wall.draw();
     if (!tile) {
@@ -765,9 +1169,25 @@ export class GameScene extends Phaser.Scene {
     // Clear undo snapshot — drawing a new tile commits the previous discard
     this.undoSnapshot = null;
 
-    this.state.hand.drawnTile = tile;
-    this.state.phase = 'drew';
-    // Increment riichi turn counter (for ippatsu: must win on the first turn after riichi)
+    if (skipDiscard) {
+      // Keep the drawn tile, no discard needed
+      this.state.hand.tiles.push(tile);
+      this.state.hand.tiles = sortHand(this.state.hand.tiles);
+      this.state.phase = 'idle';
+      this.showMessage('');
+    } else {
+      this.state.hand.drawnTile = tile;
+      this.state.phase = 'drew';
+
+      // Extra draw from relic
+      if (extraDraw) {
+        const extraTile = this.state.wall.draw();
+        if (extraTile) {
+          this.state.hand.tiles.push(extraTile);
+          this.soundManager.playDraw();
+        }
+      }
+    }
     if (this.state.runState.isRiichi) {
       this.state.runState.riichiTurns += 1;
     }
@@ -777,19 +1197,26 @@ export class GameScene extends Phaser.Scene {
     const win = detectWin(allTiles);
     if (win) {
       this.showMessage('Tsumo! You can win with this tile!');
+    } else if (this.state.isPuzzle || this.isBeginner) {
+      this.showMessage('Click a tile to discard');
+      this.time.delayedCall(4500, () => this.showMessage(''));
     }
 
     this.renderHand();
     this.updateUI();
 
-    // Auto-advance tutorial: step 2 (draw tile) → step 3
-    if (this.tutorialStep === 2) {
-      this.advanceTutorial();
+    // Auto-advance tutorial after drawing
+    if (this.isBeginner && this.tutorialStep >= 0) {
+      const current = GameConfig.beginner.tutorialSteps[this.tutorialStep];
+      if (current?.id === 'draw') {
+        this.advanceTutorial();
+      }
     }
   }
 
   private discardTile(tileId: string): void {
     if (this.state.phase !== 'drew') return;
+    if (this.tutorialBlocksAction('discard')) return;
 
     // Riichi lock: can only discard the drawn tile
     if (this.state.runState.isRiichi && this.state.hand.drawnTile) {
@@ -828,6 +1255,7 @@ export class GameScene extends Phaser.Scene {
     this.state.hand.tiles = sortHand(this.state.hand.tiles);
     this.state.discardedTiles.push(discarded);
     this.state.phase = 'idle';
+    if (this.state.isPuzzle) this.state.puzzleMoves++;
     this.soundManager.playDiscard();
 
     // Capture discard hint BEFORE renderHand clears it
@@ -847,6 +1275,13 @@ export class GameScene extends Phaser.Scene {
     if (waiting.length > 0 && !this.state.runState.isRiichi) {
       this.showYakuInfo(`Tenpai! Waiting for: ${waiting.length} tile type(s)`);
       this.soundManager.playTenpai();
+      // Beginner mode: bring winning tiles to the front of the wall for easier winning
+      if (this.isBeginner) {
+        for (const waitKey of waiting) {
+          const [suit, rankStr] = waitKey.split('-');
+          this.state.wall.bringToFront(suit, parseInt(rankStr, 10), 0);
+        }
+      }
     } else {
       this.showYakuInfo('');
     }
@@ -860,13 +1295,17 @@ export class GameScene extends Phaser.Scene {
 
     // Beginner mode: show discard feedback
     if (this.isBeginner && discardHint) {
-      this.showMessage(discardHint.keep ? `Kept: ${discardHint.reason}` : `Discarded: ${discardHint.reason}`);
-      this.time.delayedCall(2000, () => this.showMessage(''));
+      const prefix = discardHint.keep ? 'Tip: that tile was useful — ' : 'Good discard — ';
+      this.showMessage(`${prefix}${discardHint.reason}`);
+      this.time.delayedCall(2200, () => this.showMessage(''));
     }
 
-    // Auto-advance tutorial: step 3 (discard) → step 4
-    if (this.tutorialStep === 3) {
-      this.advanceTutorial();
+    // Auto-advance tutorial after discarding
+    if (this.isBeginner && this.tutorialStep >= 0) {
+      const current = GameConfig.beginner.tutorialSteps[this.tutorialStep];
+      if (current?.id === 'discard') {
+        this.advanceTutorial();
+      }
     }
   }
 
@@ -885,7 +1324,7 @@ export class GameScene extends Phaser.Scene {
     this.soundManager.playClick();
     if (lastDiscard) {
       this.showMessage(`Undid discard of ${lastDiscard.suit}-${lastDiscard.rank}`);
-      this.time.delayedCall(1500, () => this.showMessage(''));
+      this.time.delayedCall(3000, () => this.showMessage(''));
     }
     this.renderHand();
     this.updateUI();
@@ -893,17 +1332,23 @@ export class GameScene extends Phaser.Scene {
 
   private declareRiichi(): void {
     if (this.state.phase !== 'idle') return;
+    if (this.tutorialBlocksAction('riichi')) return;
     if (this.state.runState.isRiichi) return;
 
     const waiting = findWaitingTiles(this.state.hand.tiles);
     if (waiting.length === 0) {
       this.showMessage('Not in tenpai! Cannot declare Riichi.');
-      this.time.delayedCall(1500, () => this.showMessage(''));
+      this.time.delayedCall(5000, () => this.showMessage(''));
       return;
     }
 
     this.state.runState.isRiichi = true;
     this.state.runState.riichiTurns = 0; // reset ippatsu counter
+    // Puzzle mode: guarantee the next draw completes the ready hand
+    if (this.state.isPuzzle && this.state.puzzleId && waiting.length > 0) {
+      const [suit, rankStr] = waiting[0].split('-');
+      this.state.wall.bringToFront(suit, parseInt(rankStr, 10), 0);
+    }
     // Reveal a dora indicator from the wall when riichi is declared
     const doraIndicator = this.state.wall.revealDoraIndicator();
     if (doraIndicator) {
@@ -913,13 +1358,40 @@ export class GameScene extends Phaser.Scene {
     const doraMsg = doraIndicator ? ` Dora: ${doraIndicator.suit}-${doraIndicator.rank}` : '';
     this.showMessage(`Riichi! Auto-draw enabled. Ippatsu active!${doraMsg}`);
     this.showYakuInfo(`Waiting tiles: ${waiting.length}`);
-    this.time.delayedCall(1500, () => this.showMessage(''));
+    this.time.delayedCall(3000, () => this.showMessage(''));
     persistRun(this.state.runState);
+
+    // Tutorial: place a winning tile at the front of the wall and auto-draw it
+    // so the player immediately sees the WIN button and learns the final step.
+    if (this.isBeginner && this.tutorialStep >= 0) {
+      const current = GameConfig.beginner.tutorialSteps[this.tutorialStep];
+      if (current?.id === 'riichi') {
+        const waitKeys = findWaitingTiles(this.state.hand.tiles);
+        if (waitKeys.length > 0) {
+          const [suit, rankStr] = waitKeys[0].split('-');
+          this.state.wall.bringToFront(suit, parseInt(rankStr, 10), 0);
+        }
+        this.updateUI();
+        this.advanceTutorial(); // move to WIN step
+        this.time.delayedCall(600, () => this.drawTile());
+        return;
+      }
+    }
+
     this.updateUI();
+
+    // Auto-advance tutorial after declaring riichi (non-tutorial path)
+    if (this.isBeginner && this.tutorialStep >= 0) {
+      const current = GameConfig.beginner.tutorialSteps[this.tutorialStep];
+      if (current?.id === 'riichi') {
+        this.advanceTutorial();
+      }
+    }
   }
 
   private declareWin(): void {
     if (this.state.phase !== 'drew') return;
+    if (this.tutorialBlocksAction('win')) return;
 
     const allTiles = getAllTiles(this.state.hand);
     const win = detectWin(allTiles);
@@ -950,8 +1422,17 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.state.roundScore = score.finalScore;
-    this.state.runState.score += score.finalScore;
+    // Puzzle mode: show completion card immediately, no run progression
+    if (this.state.isPuzzle) {
+      this.showPuzzleComplete(score);
+      return;
+    }
+
+    const challengeBonus = this.checkChallenges(score);
+    const pressureBonus = this.state.pressureMode === 'moves' ? GameConfig.pressure.bonus : 0;
+    const finalScore = score.finalScore + challengeBonus + pressureBonus;
+    this.state.roundScore = finalScore;
+    this.state.runState.score += finalScore;
     this.state.phase = 'won';
     this.soundManager.playWin();
     // Analytics: track win with yaku breakdown
@@ -963,7 +1444,13 @@ export class GameScene extends Phaser.Scene {
     );
 
     // Visual pop on win — message scales in with bounce
-    this.showMessage(`WIN! +${score.finalScore} pts`);
+    const bonusParts: string[] = [];
+    if (challengeBonus > 0) bonusParts.push(`GOAL +${challengeBonus}`);
+    if (pressureBonus > 0) bonusParts.push(`PRESSURE +${pressureBonus}`);
+    const winMsg = bonusParts.length > 0
+      ? `WIN! +${finalScore} pts  (${bonusParts.join(' | ')})`
+      : `WIN! +${finalScore} pts`;
+    this.showMessage(winMsg);
     this.messageText.setScale(0.3);
     this.tweens.add({
       targets: this.messageText,
@@ -983,6 +1470,16 @@ export class GameScene extends Phaser.Scene {
 
     persistRun(this.state.runState);
     this.endRound(true);
+    // 延迟显示教学卡片，让赢牌动画先播完
+    this.time.delayedCall(900, () => this.showLessonCard(score));
+
+    // Auto-advance tutorial after winning
+    if (this.isBeginner && this.tutorialStep >= 0) {
+      const current = GameConfig.beginner.tutorialSteps[this.tutorialStep];
+      if (current?.id === 'win') {
+        this.advanceTutorial();
+      }
+    }
   }
 
   /**
@@ -1031,12 +1528,230 @@ export class GameScene extends Phaser.Scene {
     this.yakuInfoText.setText(lines.join('\n'));
   }
 
+  /**
+   * 教学卡片：每局赢牌后弹出"这局你学到了什么"，列出用到的 yaku 及解释，
+   * 并链接到 /yaku-list.html 深入学习。让游戏成为 SEO 内容的实战练习场。
+   */
+  private showLessonCard(score: import('@/types').ScoreResult): void {
+    if (score.yakuList.length === 0) return;
+    // 教程进行中不打断（教程自身会推进）
+    if (this.isBeginner && this.tutorialStep >= 0 && this.tutorialOverlay) return;
+
+    const depth = 950;
+    const elements: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.78).setDepth(depth);
+    elements.push(overlay);
+
+    const cardW = 660;
+    const cardH = 460;
+    const card = this.add.rectangle(512, 360, cardW, cardH, 0x1a0f08)
+      .setStrokeStyle(3, 0xe5b567).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - cardH / 2 + 4, cardW - 10, 3, 0xe5b567).setDepth(depth);
+    elements.push(card, topAccent);
+
+    const title = this.add.text(512, 360 - cardH / 2 + 36, 'LESSON COMPLETE', {
+      fontSize: '24px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    const subtitle = this.add.text(512, 360 - cardH / 2 + 68, 'You won using these patterns:', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth);
+    elements.push(title, subtitle);
+
+    // 挑战目标完成状态
+    const completedGoals = this.challengeGoals.filter(g => this.challengeCompletion.get(g.id));
+    const challengeLines = this.challengeGoals.map(g => {
+      const done = this.challengeCompletion.get(g.id);
+      const prefix = g.optional ? 'OPT' : 'MAIN';
+      return `${done ? '\u2713' : '\u25cb'} ${prefix}: ${g.desc}${done ? ` +${g.bonus}` : ''}`;
+    });
+    if (challengeLines.length > 0) {
+      const allDone = completedGoals.length === this.challengeGoals.length;
+      const goalHeader = this.add.text(512, 360 - cardH / 2 + 90, allDone ? 'ALL GOALS COMPLETE!' : 'GOAL PROGRESS', {
+        fontSize: '14px', color: allDone ? '#2d6a4f' : '#8b6f47',
+        fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth);
+      elements.push(goalHeader);
+      const goalText = this.add.text(512, 360 - cardH / 2 + 112, challengeLines.join('\n'), {
+        fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace',
+        align: 'center', lineSpacing: 3,
+      }).setOrigin(0.5).setDepth(depth);
+      elements.push(goalText);
+    }
+
+    // Yaku 列表（最多展示 4 个，避免溢出）
+    let yPos = 360 - cardH / 2 + (this.challengeGoals.length > 0 ? 150 : 104);
+    const shown = score.yakuList.slice(0, 4);
+    for (const { yaku, han } of shown) {
+      const yakuLine = this.add.text(512, yPos, `${yaku.name} (${yaku.romaji})  +${han} han`, {
+        fontSize: '17px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth);
+      yPos += 24;
+      const desc = this.add.text(512, yPos, yaku.description, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+        align: 'center', wordWrap: { width: cardW - 80 }, lineSpacing: 3,
+      }).setOrigin(0.5).setDepth(depth);
+      yPos += desc.height + 14;
+      elements.push(yakuLine, desc);
+    }
+
+    // 链接到 yaku-list 文章（SEO 闭环：游戏 → 内容）
+    const linkY = 360 + cardH / 2 - 76;
+    const link = this.add.text(512, linkY, 'Read full guide → /yaku-list.html', {
+      fontSize: '13px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'underline',
+    }).setOrigin(0.5).setDepth(depth);
+    link.setInteractive({ useHandCursor: true });
+    link.on('pointerover', () => link.setColor('#e5b567'));
+    link.on('pointerout', () => link.setColor('#d4a574'));
+    link.on('pointerdown', () => {
+      window.open('/yaku-list.html', '_blank');
+    });
+    elements.push(link);
+
+    // GOT IT 按钮
+    const btnW = 200;
+    const btnH = 48;
+    const btnY = 360 + cardH / 2 - 34;
+    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
+      .setStrokeStyle(3, 0x2b1810).setDepth(depth);
+    const btnText = this.add.text(512, btnY, 'GOT IT', {
+      fontSize: '17px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0).setDepth(depth + 1);
+    elements.push(btnBg, btnText, btnHit);
+
+    btnHit.setInteractive({ useHandCursor: true });
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0xe04e4a));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
+    btnHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      elements.forEach(el => el.destroy());
+    });
+  }
+
+  private showPuzzleComplete(score: import('@/types').ScoreResult): void {
+    const puzzle = GameConfig.puzzles.items.find(p => p.id === this.state.puzzleId);
+    if (!puzzle) return;
+
+    const goalYaku = puzzle.goalYaku as string | undefined;
+    const goalAchieved = goalYaku
+      ? score.yakuList.some(({ yaku }) => yaku.id === goalYaku)
+      : score.totalHan > 0;
+
+    const moves = this.state.puzzleMoves;
+    const optimal = puzzle.optimalMoves ?? 0;
+    const perfect = goalAchieved && moves <= optimal && optimal > 0;
+
+    const depth = 960;
+    const elements: Phaser.GameObjects.GameObject[] = [];
+
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.78).setDepth(depth);
+    elements.push(overlay);
+
+    const cardW = 660;
+    const cardH = 520;
+    const card = this.add.rectangle(512, 360, cardW, cardH, 0x1a0f08)
+      .setStrokeStyle(3, 0xe5b567).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - cardH / 2 + 4, cardW - 10, 3, 0xe5b567).setDepth(depth);
+    elements.push(card, topAccent);
+
+    const title = this.add.text(512, 360 - cardH / 2 + 36, goalAchieved ? 'PUZZLE SOLVED' : 'HAND COMPLETE', {
+      fontSize: '26px', color: goalAchieved ? '#e5b567' : '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    const nameText = this.add.text(512, 360 - cardH / 2 + 70, puzzle.name, {
+      fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    elements.push(title, nameText);
+
+    let yPos = 360 - cardH / 2 + 108;
+    const goalLabel = goalYaku
+      ? `GOAL YAKU: ${goalYaku.toUpperCase()} ${goalAchieved ? '\u2713' : '\u2717'}`
+      : `GOAL: complete any hand ${goalAchieved ? '\u2713' : '\u2717'}`;
+    const goalText = this.add.text(512, yPos, goalLabel, {
+      fontSize: '15px', color: goalAchieved ? '#2d6a4f' : '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    elements.push(goalText);
+    yPos += 28;
+
+    const movesText = this.add.text(512, yPos, `MOVES: ${moves} / ${optimal > 0 ? optimal : '-'}${perfect ? '  PERFECT!' : ''}`, {
+      fontSize: '15px', color: perfect ? '#e5b567' : '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    elements.push(movesText);
+    yPos += 34;
+
+    const yakuHeader = this.add.text(512, yPos, 'YAKU ACHIEVED', {
+      fontSize: '14px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    elements.push(yakuHeader);
+    yPos += 22;
+
+    if (score.yakuList.length === 0) {
+      const none = this.add.text(512, yPos, 'None', {
+        fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      }).setOrigin(0.5).setDepth(depth);
+      elements.push(none);
+      yPos += 20;
+    } else {
+      for (const { yaku, han } of score.yakuList) {
+        const line = this.add.text(512, yPos, `${yaku.name} (${yaku.romaji})  +${han} han`, {
+          fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        }).setOrigin(0.5).setDepth(depth);
+        elements.push(line);
+        yPos += 22;
+      }
+    }
+
+    const desc = this.add.text(512, 360 + cardH / 2 - 110, puzzle.description, {
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: cardW - 80 }, lineSpacing: 3,
+    }).setOrigin(0.5).setDepth(depth);
+    elements.push(desc);
+
+    const btnY = 360 + cardH / 2 - 54;
+    const tryAgain = this.createPuzzleCardButton(400, btnY, 'TRY AGAIN', () => {
+      this.scene.restart({ action: 'puzzle', puzzleId: this.state.puzzleId });
+    });
+    const backToMenu = this.createPuzzleCardButton(624, btnY, 'BACK TO MENU', () => {
+      this.scene.start('DeckSelectScene');
+    });
+    elements.push(...tryAgain, ...backToMenu);
+
+    this.state.phase = 'won';
+  }
+
+  private createPuzzleCardButton(
+    x: number, y: number, label: string, callback: () => void
+  ): Phaser.GameObjects.GameObject[] {
+    const depth = 970;
+    const btnW = 190;
+    const btnH = 46;
+    const bg = this.add.rectangle(x, y, btnW, btnH, 0xd4a574)
+      .setStrokeStyle(3, 0x2b1810).setDepth(depth);
+    const text = this.add.text(x, y, label, {
+      fontSize: '15px', color: '#2b1810', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    const hit = this.add.rectangle(x, y, btnW, btnH, 0xffffff, 0).setDepth(depth + 1);
+    hit.setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => bg.setFillStyle(0xe5b567));
+    hit.on('pointerout', () => bg.setFillStyle(0xd4a574));
+    hit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      callback();
+    });
+    return [bg, text, hit];
+  }
+
   private endRound(won: boolean): void {
     if (won) {
       this.state.phase = 'won';
     } else {
-      // Wall exhausted — check if cumulative score meets target
-      if (this.state.runState.score >= this.state.runState.targetScore) {
+      // Beginner mode: reaching tenpai when the wall runs out is progress,
+      // so we count it as a survived round instead of a game over.
+      const waiting = findWaitingTiles(this.state.hand.tiles);
+      if (this.isBeginner && waiting.length > 0) {
+        this.state.phase = 'survived';
+        this.showMessage(`Round survived! You were ready to win (tenpai). Score: ${this.state.runState.score}/${this.state.runState.targetScore}`);
+      } else if (this.state.runState.score >= this.state.runState.targetScore) {
         this.state.phase = 'survived';
         this.showMessage(`Round survived! Score: ${this.state.runState.score}/${this.state.runState.targetScore}`);
       } else {
@@ -1108,6 +1823,52 @@ export class GameScene extends Phaser.Scene {
     trackRewardSelected(reward.type, reward.name);
   }
 
+  /**
+   * 开场教学横幅：每关开始时显示"本课学什么"，给玩家明确学习目标。
+   * Round 1-3 对应核心 yaku（Riichi/Tanyao/Pinfu），4+ 为自由练习。
+   */
+  private showRoundIntro(): void {
+    const round = this.state.runState.round;
+    const themes: { title: string; desc: string }[] = [
+      { title: 'RIICHI', desc: 'Declare a ready hand — +1 han bonus' },
+      { title: 'TANYAO', desc: 'Win with all simples (no 1s, 9s, or honors)' },
+      { title: 'PINFU', desc: 'All chows + non-dragon pair = 1 han' },
+    ];
+    const theme = round <= themes.length ? themes[round - 1] : null;
+    const lessonTitle = theme ? `LESSON ${round}: ${theme.title}` : `LESSON ${round}: FREE PRACTICE`;
+    const lessonDesc = theme ? theme.desc : 'Use any yaku you have learned so far';
+
+    const depth = 900;
+    const elements: Phaser.GameObjects.GameObject[] = [];
+
+    const banner = this.add.rectangle(512, 200, 560, 130, 0x1a0f08)
+      .setStrokeStyle(3, 0xe5b567).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 200 - 65 + 4, 550, 3, 0xe5b567).setDepth(depth);
+    elements.push(banner, topAccent);
+
+    const title = this.add.text(512, 175, lessonTitle, {
+      fontSize: '24px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth);
+    const desc = this.add.text(512, 218, lessonDesc, {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: 500 },
+    }).setOrigin(0.5).setDepth(depth);
+    elements.push(title, desc);
+
+    // 自动消失或点击消失
+    const dismiss = () => {
+      this.tweens.add({
+        targets: elements,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => elements.forEach(el => el.destroy()),
+      });
+    };
+    banner.setInteractive({ useHandCursor: true });
+    banner.on('pointerdown', dismiss);
+    this.time.delayedCall(6000, dismiss);
+  }
+
   private proceedAfterReward(): void {
     // Advance to next round
     this.state.runState = advanceRound(this.state.runState);
@@ -1120,11 +1881,15 @@ export class GameScene extends Phaser.Scene {
     this.state.discardedTiles = [];
     this.state.roundScore = 0;
     this.state.phase = 'idle';
+    // Reset relic uses for new round
+    this.relicUses.clear();
     this.dealInitialHand();
+    this.setChallengeForRound(this.state.runState.round);
     this.showMessage('');
     this.showYakuInfo('');
     this.renderHand();
     this.updateUI();
+    this.showRoundIntro();
   }
 
   // ========== RENDERING ==========
@@ -1140,37 +1905,54 @@ export class GameScene extends Phaser.Scene {
     const startX = 512 - totalWidth / 2;
     const y = 620;
 
-    // Compute discard hints when enabled and in discard phase
+    // Compute discard hints only for beginner mode; normal mode = player decides
     this.discardHints = new Map();
-    if (this.showHints && this.state.phase === 'drew') {
+    if (this.isBeginner && this.showHints && this.state.phase === 'drew') {
       const allTiles = [...hand.tiles];
       if (hand.drawnTile) allTiles.push(hand.drawnTile);
       this.discardHints = getDiscardHints(allTiles, this.state.runState.unlockedYaku);
     }
 
+    // Beginner mode only: compute recommended discard tile id for yellow glow
+    this.recommendedDiscardId = null;
+    if (this.isBeginner && this.showHints && this.state.phase === 'drew') {
+      // Riichi lock: only the drawn tile can be discarded, so glow it explicitly.
+      if (this.state.runState.isRiichi && hand.drawnTile) {
+        this.recommendedDiscardId = hand.drawnTile.id;
+      } else {
+        const allTiles = [...hand.tiles];
+        if (hand.drawnTile) allTiles.push(hand.drawnTile);
+        const rec = recommendDiscard(allTiles, this.discardHints);
+        if (rec) this.recommendedDiscardId = rec.id;
+      }
+    }
+
     hand.tiles.forEach((tile, index) => {
       const x = startX + index * (TILE_WIDTH + tileSpacing);
       const hint = this.discardHints.get(tile.id);
-      const sprite = this.createTileSprite(tile, x, y, false, hint);
+      const isRecommended = tile.id === this.recommendedDiscardId;
+      const sprite = this.createTileSprite(tile, x, y, false, hint, isRecommended);
       this.tileSprites.push(sprite);
     });
 
     if (hand.drawnTile) {
       const drawnX = startX + hand.tiles.length * (TILE_WIDTH + tileSpacing) + 20;
       const hint = this.discardHints.get(hand.drawnTile.id);
-      const sprite = this.createTileSprite(hand.drawnTile, drawnX, y, true, hint);
+      const isRecommended = hand.drawnTile.id === this.recommendedDiscardId;
+      const sprite = this.createTileSprite(hand.drawnTile, drawnX, y, true, hint, isRecommended);
       this.tileSprites.push(sprite);
     }
 
     this.renderDiscards();
   }
 
-  private createTileSprite(tile: Tile, x: number, y: number, isDrawn: boolean = false, hint?: { keep: boolean; reason: string }): Phaser.GameObjects.Container {
+  private createTileSprite(tile: Tile, x: number, y: number, isDrawn: boolean = false, hint?: { keep: boolean; reason: string }, isRecommended: boolean = false): Phaser.GameObjects.Container {
     const textureKey = `tile-${tileKey(tile)}`;
     const sprite = this.add.image(0, 0, textureKey);
     const shadow = this.add.rectangle(2, 4, TILE_WIDTH, TILE_HEIGHT, 0x000000, 0.3);
 
     const container = this.add.container(x, y, [shadow, sprite]);
+    (container as any).tile = tile;
     container.setSize(TILE_WIDTH, TILE_HEIGHT);
     container.setInteractive({ useHandCursor: true });
 
@@ -1178,6 +1960,22 @@ export class GameScene extends Phaser.Scene {
     if (isDrawn) {
       const highlight = this.add.rectangle(0, 0, TILE_WIDTH + 4, TILE_HEIGHT + 4, 0xd4a574, 0.3);
       container.addAt(highlight, 0);
+    }
+
+    // Beginner mode: yellow glow on the recommended discard tile
+    if (isRecommended) {
+      const glow = this.add.rectangle(0, 0, TILE_WIDTH + 8, TILE_HEIGHT + 8, 0xe5b567, 0.35)
+        .setStrokeStyle(2, 0xe5b567, 0.9);
+      container.addAt(glow, 0);
+      // Pulsing animation to draw the eye
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0.5, to: 1 },
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.inOut',
+      });
     }
 
     // Discard hint border: green = keep, red = discard
@@ -1192,17 +1990,12 @@ export class GameScene extends Phaser.Scene {
       container.add(dot);
     }
 
-    // Beginner mode: show tile label (short name)
+    // Beginner mode: show tile label (short name) — white text on dark bg for readability
     if (this.isBeginner) {
       const label = this.getTileLabel(tile);
-      const labelColor = tile.suit === 'dragon' ? '#c73e3a'
-        : tile.suit === 'wind' ? '#5c4033'
-        : tile.suit === 'man' ? '#1a1a2e'
-        : tile.suit === 'pin' ? '#2c5f8a'
-        : '#2d6a4f';
-      const labelBg = this.add.rectangle(0, TILE_HEIGHT / 2 - 8, 28, 14, 0x000000, 0.6);
-      const labelText = this.add.text(0, TILE_HEIGHT / 2 - 8, label, {
-        fontSize: '9px', color: labelColor, fontFamily: 'monospace', fontStyle: 'bold',
+      const labelBg = this.add.rectangle(0, TILE_HEIGHT / 2 - 10, 42, 20, 0x000000, 0.8);
+      const labelText = this.add.text(0, TILE_HEIGHT / 2 - 10, label, {
+        fontSize: '14px', color: '#ffffff', fontFamily: 'monospace', fontStyle: 'bold',
       }).setOrigin(0.5);
       container.add([labelBg, labelText]);
     }
@@ -1243,12 +2036,12 @@ export class GameScene extends Phaser.Scene {
       tooltipLines.push('', hintReason);
     }
 
-    this.tooltipBg = this.add.rectangle(x, y, 200, 70 + (hintReason ? 30 : 0), 0x1a0f08, 0.95)
+    this.tooltipBg = this.add.rectangle(x, y, 220, 76 + (hintReason ? 34 : 0), 0x1a0f08, 0.95)
       .setStrokeStyle(2, 0xd4a574)
       .setDepth(1000);
 
     this.tooltipText = this.add.text(x, y, tooltipLines.join('\n'), {
-      fontSize: '12px', color: '#f5e6d3', fontFamily: 'monospace', align: 'center',
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', align: 'center',
     }).setOrigin(0.5).setDepth(1001);
   }
 
@@ -1262,42 +2055,38 @@ export class GameScene extends Phaser.Scene {
     this.discardArea.list.forEach(obj => obj.destroy());
     this.discardArea.removeAll();
 
-    // Show last 6 discards in a 3x2 grid (smaller tiles)
+    // Show last 6 discards in a 3x2 grid using real tile textures
     const recent = this.state.discardedTiles.slice(-6);
-    const miniTileSize = 24;
+    const miniW = 52;
+    const miniH = 66;
     const cols = 3;
-    const startX = -40;
-    const startY = -70;
+    const gap = 10;
+    const startX = -((cols * miniW + (cols - 1) * gap) / 2) + miniW / 2;
+    const startY = -55;
 
     recent.forEach((tile, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const x = startX + col * (miniTileSize + 4);
-      const y = startY + row * (miniTileSize + 4);
+      const x = startX + col * (miniW + gap);
+      const y = startY + row * (miniH + gap);
 
-      // Mini tile background
-      const bg = this.add.rectangle(x, y, miniTileSize, miniTileSize, 0xf5e6d3)
-        .setStrokeStyle(1, 0x2b1810);
-      // Mini tile text (just the rank/suit shorthand)
-      const display = getTileDisplay(tile);
-      const label = tile.suit === 'wind' || tile.suit === 'dragon'
-        ? display.englishName.charAt(0)
-        : tile.rank.toString();
-      const textColor = tile.suit === 'dragon' ? '#c73e3a'
-        : tile.suit === 'wind' ? '#5c4033'
-        : tile.suit === 'man' ? '#1a1a2e'
-        : tile.suit === 'pin' ? '#2c5f8a'
-        : '#2d6a4f';
-      const txt = this.add.text(x, y, label, {
-        fontSize: '10px', color: textColor, fontFamily: 'monospace', fontStyle: 'bold',
-      }).setOrigin(0.5);
+      const textureKey = `tile-${tileKey(tile)}`;
+      // Tile backing + subtle shadow
+      const shadow = this.add.rectangle(x + 2, y + 3, miniW, miniH, 0x000000, 0.35);
+      const border = this.add.rectangle(x, y, miniW + 2, miniH + 2)
+        .setStrokeStyle(2, 0xd4a574, 0.5)
+        .setFillStyle(0x000000, 0);
+      const sprite = this.add.image(x, y, textureKey)
+        .setDisplaySize(miniW, miniH);
 
-      this.discardArea.add([bg, txt]);
+      this.discardArea.add([shadow, border, sprite]);
     });
 
     // Discard count label at bottom
-    const countText = this.add.text(0, 100, `${this.state.discardedTiles.length} tiles`, {
-      fontSize: '10px', color: '#8b6f47', fontFamily: 'monospace',
+    const count = this.state.discardedTiles.length;
+    const countLabel = count === 1 ? '1 tile discarded' : `${count} tiles discarded`;
+    const countText = this.add.text(0, 145, countLabel, {
+      fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
     }).setOrigin(0.5);
     this.discardArea.add(countText);
   }
@@ -1333,17 +2122,37 @@ export class GameScene extends Phaser.Scene {
     // Update progress bar
     this.updateScoreProgressBar();
 
+    // Update pressure move counter
+    if (this.pressureText && this.state.pressureMode === 'moves') {
+      const limit = this.isBeginner
+        ? GameConfig.pressure.moveLimit.beginner
+        : GameConfig.pressure.moveLimit.normal;
+      const remaining = limit - this.turnCount;
+      this.pressureText.setText(`MOVES: ${this.turnCount}/${limit}`);
+      this.pressureText.setColor(remaining <= 3 ? '#c73e3a' : '#e5b567');
+    }
+
     this.hideAllButtons();
+    let canWin = false;
+    let canRiichi = false;
     switch (this.state.phase) {
       case 'idle':
         this.showButton('draw');
-        if (!rs.isRiichi) this.showButton('riichi');
+        if (!rs.isRiichi) {
+          this.showButton('riichi');
+          // Riichi is available only in tenpai — glow when ready
+          const waiting = findWaitingTiles(this.state.hand.tiles);
+          if (waiting.length > 0) canRiichi = true;
+        }
         // Show undo button only when a discard can be undone
         if (this.undoSnapshot) this.showButton('undo');
         break;
       case 'drew':
         const allTiles = getAllTiles(this.state.hand);
-        if (detectWin(allTiles)) this.showButton('win');
+        if (detectWin(allTiles)) {
+          this.showButton('win');
+          canWin = true;
+        }
         break;
       case 'won':
       case 'survived':
@@ -1354,8 +2163,12 @@ export class GameScene extends Phaser.Scene {
         break;
     }
 
-    // Show yaku proximity hints when enabled (only for idle/drew phases)
-    if (this.showHints && (this.state.phase === 'idle' || this.state.phase === 'drew')) {
+    // Button glow effects for beginner mode (and any mode when hints on)
+    this.updateButtonGlow('win', canWin);
+    this.updateButtonGlow('riichi', canRiichi);
+
+    // Show yaku proximity hints only in beginner mode (normal mode = player decides)
+    if (this.isBeginner && this.showHints && (this.state.phase === 'idle' || this.state.phase === 'drew')) {
       const proximity = getYakuProximity(this.state.hand.tiles, rs.unlockedYaku);
       if (proximity.length > 0) {
         const top3 = proximity.slice(0, 3);
@@ -1368,5 +2181,144 @@ export class GameScene extends Phaser.Scene {
         this.yakuInfoText.setText(lines.join('\n'));
       }
     }
+
+    // Live yaku ref panel progress bars
+    this.updateYakuRefProgress();
+
+    // Beginner mode: hand structure panel + recommended action
+    this.updateBeginnerAssist();
+  }
+
+  /** Pulse a button's scale to draw attention when an opportunity arises */
+  private updateButtonGlow(key: string, active: boolean): void {
+    const btn = this.actionButtons[key];
+    if (!btn) return;
+    const existing = this.buttonGlowTweens.get(key);
+    if (active) {
+      if (!existing) {
+        const tween = this.tweens.add({
+          targets: btn,
+          scale: { from: 1, to: 1.12 },
+          duration: 500,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.inOut',
+        });
+        this.buttonGlowTweens.set(key, tween);
+      }
+    } else {
+      if (existing) {
+        existing.stop();
+        btn.setScale(1);
+        this.buttonGlowTweens.delete(key);
+      }
+    }
+  }
+
+  /** Update beginner-only assist: hand structure display + recommended next action */
+  private updateBeginnerAssist(): void {
+    if (!this.isBeginner || !this.showHints) {
+      this.handStructureText.setVisible(false);
+      this.recommendedActionText.setVisible(false);
+      return;
+    }
+    // Hand structure analysis: only show during idle phase so the summary
+    // always matches the 13 tiles the player is actually holding.
+    if (this.state.phase === 'idle') {
+      const structure = analyzeHandStructure(this.state.hand.tiles);
+      this.handStructureText.setText(structure.summary);
+      this.handStructureText.setVisible(true);
+    } else {
+      this.handStructureText.setVisible(false);
+    }
+
+    // Live tenpai check used for recommendations and ready-state hints
+    const waiting = findWaitingTiles(this.state.hand.tiles);
+
+    // Show a ready-state hint in the center message area when tenpai
+    if (waiting.length > 0 && !this.state.runState.isRiichi && this.state.phase === 'idle') {
+      this.showYakuInfo(`READY HAND — waiting for: ${this.describeWaitingTiles(waiting)}`);
+    }
+
+    const masterHints = hasUnlock(loadMetaProgression(), 'hint-level-3');
+
+    // Recommended next action
+    let recommendation = '';
+    if (this.state.phase === 'idle') {
+      if (waiting.length > 0 && !this.state.runState.isRiichi) {
+        // In beginner mode, always recommend Riichi as soon as tenpai so the
+        // player gets a quick, encouraging win and learns the Riichi flow.
+        // In normal mode, wait for a wider wait or late wall to reduce variance.
+        const isGoodWait = this.isBeginner || waiting.length >= 3 || this.state.wall.remaining < 12;
+        if (isGoodWait) {
+          recommendation = '>>> Declare RIICHI — your hand is ready! <<<';
+        } else {
+          recommendation = `>>> Ready hand — keep drawing to widen your ${waiting.length}-tile wait <<<`;
+        }
+        if (masterHints) {
+          recommendation += `\n    Waiting for: ${this.describeWaitingTiles(waiting)}`;
+        }
+      } else if (this.state.runState.isRiichi) {
+        recommendation = '>>> Riichi active — press D to auto-draw <<<';
+      } else {
+        recommendation = '>>> Press D or click DRAW TILE <<<';
+      }
+    } else if (this.state.phase === 'drew') {
+      const allTiles = getAllTiles(this.state.hand);
+      if (detectWin(allTiles)) {
+        recommendation = '>>> Press W or click WIN! — you have a winning hand! <<<';
+      } else if (this.state.runState.isRiichi && this.state.hand.drawnTile) {
+        // Locked hand: make it crystal clear that only the drawn tile may go.
+        recommendation = '>>> RIICHI LOCK — discard only the drawn tile (yellow glow) <<<';
+      } else {
+        // Recommend a discard
+        const allTilesForRec = [...this.state.hand.tiles];
+        if (this.state.hand.drawnTile) allTilesForRec.push(this.state.hand.drawnTile);
+        const rec = recommendDiscard(allTilesForRec, this.discardHints);
+        if (rec) {
+          const name = this.getTileFullName(rec);
+          recommendation = `>>> Discard the glowing tile: ${name} <<<`;
+          if (masterHints) {
+            const hintReason = this.discardHints.get(rec.id)?.reason;
+            if (hintReason) recommendation += `\n    Why: ${hintReason}`;
+          }
+        } else {
+          recommendation = '>>> Click any RED-border tile to discard <<<';
+        }
+      }
+    } else if (this.state.phase === 'won' || this.state.phase === 'survived') {
+      recommendation = '>>> Press N or click NEXT ROUND <<<';
+    }
+    this.recommendedActionText.setText(recommendation);
+    this.recommendedActionText.setVisible(recommendation !== '');
+  }
+
+  /** Convert waiting tile keys to short, beginner-friendly labels */
+  private describeWaitingTiles(waiting: string[]): string {
+    if (waiting.length === 0) return 'none';
+    const names = waiting.map(key => {
+      const [suit, rankStr] = key.split('-');
+      const rank = parseInt(rankStr, 10);
+      if (suit === 'wind') return ['E', 'S', 'W', 'N'][rank - 1] ?? '?';
+      if (suit === 'dragon') return ['Rd', 'Wh', 'Gr'][rank - 1] ?? '?';
+      const suffix = suit === 'man' ? 'm' : suit === 'pin' ? 'p' : 's';
+      return `${rank}${suffix}`;
+    });
+    if (names.length <= 4) return names.join(', ');
+    return `${names.slice(0, 3).join(', ')} +${names.length - 3}`;
+  }
+
+  /** Full beginner-friendly tile name */
+  private getTileFullName(tile: Tile): string {
+    if (tile.suit === 'wind') {
+      const names = ['East wind', 'South wind', 'West wind', 'North wind'];
+      return names[tile.rank - 1] ?? 'Wind';
+    }
+    if (tile.suit === 'dragon') {
+      const names = ['Red dragon', 'White dragon', 'Green dragon'];
+      return names[tile.rank - 1] ?? 'Dragon';
+    }
+    const suitName = tile.suit === 'man' ? 'Characters' : tile.suit === 'pin' ? 'Circles' : 'Bamboo';
+    return `${tile.rank} of ${suitName}`;
   }
 }

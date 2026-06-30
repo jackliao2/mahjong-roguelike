@@ -12,6 +12,7 @@
 <meta property="og:url" content="https://mahjongroguelike.com/contact.html">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mahjongroguelike.com/contact.html">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2B1810">
@@ -192,6 +193,7 @@
     <a href="/">Home</a>
     <a href="/how-to-play.html">How to Play</a>
     <a href="/yaku-list.html">Yaku List</a>
+    <a href="/blog.html">Blog</a>
     <a href="/play.html">Play</a>
   </nav>
 </header>
@@ -257,7 +259,7 @@
 </main>
 
 <script>
-  // Form submission handler (wired to a no-op for now; replace with Formspree or your backend)
+  // Form submission — 使用 mailto 兜底（无需后端），用户点击后打开邮件客户端
   (function () {
     var form = document.getElementById('contact-form');
     var success = document.getElementById('form-success');
@@ -267,6 +269,7 @@
     btn.addEventListener('click', function () {
       var name = document.getElementById('name').value.trim();
       var email = document.getElementById('email').value.trim();
+      var topic = document.getElementById('topic').value;
       var message = document.getElementById('message').value.trim();
 
       if (!name || !email || !message) {
@@ -274,23 +277,15 @@
         return;
       }
 
-      // TODO: Replace with actual form submission (Formspree, Netlify Forms, or your own API)
-      // For now, show the success message and hide the form.
-      // When you deploy, uncomment and configure:
-      /*
-      fetch('https://formspree.io/f/YOUR_FORM_ID', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name, email: email, topic: document.getElementById('topic').value, message: message })
-      }).then(function(res) {
-        if (res.ok) { form.style.display = 'none'; success.style.display = 'block'; }
-        else { alert('Failed to send. Please email us directly at hello@mahjongroguelike.com.'); }
-      }).catch(function() {
-        alert('Failed to send. Please email us directly at hello@mahjongroguelike.com.');
-      });
-      */
+      // 构建 mailto 链接，确保消息真正能送达
+      var subject = '[Mahjong Roguelike] ' + topic + ' — from ' + name;
+      var body = 'Name: ' + name + '\nEmail: ' + email + '\nTopic: ' + topic + '\n\n' + message;
+      var mailtoLink = 'mailto:hello@mahjongroguelike.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 
-      // Temporary: just show success
+      // 打开邮件客户端
+      window.location.href = mailtoLink;
+
+      // 显示成功提示
       form.style.display = 'none';
       success.style.display = 'block';
     });

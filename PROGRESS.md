@@ -1,5 +1,19 @@
 # PROGRESS - Mahjong Roguelike
 
+## Session: 2026-06-29
+
+### Completed
+- [x] Newbie learnability audit via Puppeteer newbie-test.mjs
+- [x] Fixed DeckSelectScene default difficulty to `beginner` so first-time players never start in locked normal mode
+- [x] Fixed handStructure shanten formula that falsely reported TENPAI; now uses conservative `4 - effectiveBlocks`
+- [x] Simplified hand-structure vocabulary for novices ("shapes", "loose tiles", "READY")
+- [x] Increased beginner-assist font sizes and improved hint legend wording
+- [x] Improved recommended-action banner: clearer RIICHI/discard/win/next messages with full tile names
+- [x] Added live "READY HAND — waiting for: ..." hint in the center yaku info area when tenpai
+- [x] Updated Yaku Ref panel descriptions to avoid jargon ("runs" instead of "sequences")
+- [x] Updated tutorial and onboarding copy to match new terminology and emphasize hints/banners
+- [x] Verified changes with rebuilt newbie-test.mjs screenshots
+
 ## Session: 2026-06-27
 
 ### Completed

@@ -257,7 +257,7 @@ function applyAllBonuses(
 /**
  * Calculate the target score for a given round.
  * Target is cumulative — the player's total score must reach this by end of round.
- * Round 1 target is low enough to be winnable with a single basic yaku (e.g. Tanyao ≈ 480 pts).
+ * Beginner mode applies an additional multiplier so a single basic yaku clears round 1.
  */
 export function calculateTargetScore(round: number, maxRounds: number): number {
   const { baseScore, scoreMultiplier, bossRoundMultiplier } = GameConfig.rounds;

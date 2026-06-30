@@ -74,5 +74,51 @@ export class TileWall {
   get doraIndicators(): Tile[] {
     return [...this.doraRevealed];
   }
+
+  /**
+   * Return tiles to the wall and reshuffle the undrawn portion.
+   * Used by beginner-friendly dealing to reject scattered hands.
+   */
+  returnTiles(tiles: Tile[]): void {
+    this.wall.splice(this.drawIndex, 0, ...tiles);
+    const undrawn = this.wall.slice(this.drawIndex);
+    const shuffled = this.shuffle(undrawn);
+    this.wall = [...this.wall.slice(0, this.drawIndex), ...shuffled];
+  }
+
+  /**
+   * Draw a specific tile type from the undrawn wall if available.
+   * Used by deterministic beginner hand construction.
+   */
+  drawSpecific(suit: string, rank: number): Tile | null {
+    for (let i = this.drawIndex; i < this.wall.length; i++) {
+      const t = this.wall[i];
+      if (t.suit === suit && t.rank === rank) {
+        this.wall.splice(i, 1);
+        return t;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get all remaining (undrawn) tiles. Useful for constructing hands.
+   */
+  getRemainingTiles(): Tile[] {
+    return this.wall.slice(this.drawIndex);
+  }
+
+  /**
+   * Move a specific tile type to a position near the front of the undrawn wall.
+   * Used to guarantee beginner-friendly winning tiles appear early.
+   */
+  bringToFront(suit: string, rank: number, position: number = 0): Tile | null {
+    const targetIndex = this.wall.findIndex((t, i) => i >= this.drawIndex && t.suit === suit && t.rank === rank);
+    if (targetIndex === -1) return null;
+    const [tile] = this.wall.splice(targetIndex, 1);
+    const insertAt = Math.max(this.drawIndex, Math.min(this.drawIndex + position, this.wall.length));
+    this.wall.splice(insertAt, 0, tile);
+    return tile;
+  }
 }
 

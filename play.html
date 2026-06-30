@@ -11,6 +11,7 @@
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/play.html">
 <meta property="og:type" content="website">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mahjongroguelike.com/play.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,8 +52,10 @@
     z-index: 10;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 0 18px;
+    gap: 18px;
+    flex-wrap: nowrap;
   }
   .game-topbar a {
     font-family: 'Press Start 2P', 'Inter', monospace;
@@ -63,6 +66,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
   }
   .game-topbar a:hover { color: var(--cream); }
   .game-topbar .home-link::before {
@@ -79,7 +83,9 @@
     letter-spacing: 1px;
   }
 
-  /* Full-screen game container */
+  /* Full-screen game container — Phaser manages canvas centering via
+     Scale.FIT + CENTER_BOTH (margin auto), so we use block layout here
+     to avoid double-centering conflicts with flex. */
   #game-container {
     position: fixed;
     top: 48px;
@@ -87,10 +93,19 @@
     right: 0;
     bottom: 0;
     background: var(--wood-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
+  }
+
+  /* Ad slot must not participate in layout flow — position it absolutely
+     so it never pushes the canvas off-center. */
+  #game-container .game-ad {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    z-index: 1;
+    pointer-events: none;
   }
 
   #game-container canvas {
@@ -189,6 +204,7 @@
   <header class="game-topbar">
     <a href="/" class="home-link" aria-label="Back to home">Back to Home</a>
     <span class="game-title">MAHJONG ROGUELIKE</span>
+    <a href="/blog.html">Blog</a>
     <a href="/how-to-play.html">How to Play</a>
   </header>
 

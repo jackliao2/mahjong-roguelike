@@ -8,7 +8,7 @@ import { DeckSelectScene } from '@/scenes/DeckSelectScene';
 
 export function createGame(parent: HTMLElement): Phaser.Game {
   const { width, height, backgroundColor, pixelArt } = GameConfig.canvas;
-  return new Phaser.Game({
+  const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
     width,
@@ -21,4 +21,6 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     },
     scene: [BootScene, DeckSelectScene, GameScene, RewardScene, GameOverScene],
   });
+  (window as any).game = game;
+  return game;
 }

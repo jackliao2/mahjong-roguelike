@@ -1,4 +1,5 @@
-import { MetaProgression } from '@/types';
+import { MetaProgression, Unlockable } from '@/types';
+import { GameConfig } from '@/config/game-config';
 
 const META_KEY = 'mjrg_meta';
 
@@ -9,6 +10,7 @@ const DEFAULT_META: MetaProgression = {
   unlockedDecks: ['default'],
   currency: 0,
   achievements: [],
+  purchasedUnlocks: [],
 };
 
 export interface Achievement {
@@ -162,4 +164,28 @@ export function getUnlockedDecks(meta: MetaProgression): StartingDeck[] {
       default: return false;
     }
   });
+}
+
+/** Permanent unlockables from config. */
+export const UNLOCKABLES: Unlockable[] = GameConfig.unlockables.items;
+
+/** Check if a permanent unlock has already been purchased. */
+export function hasUnlock(meta: MetaProgression, unlockId: string): boolean {
+  return meta.purchasedUnlocks?.includes(unlockId) ?? false;
+}
+
+/** Attempt to buy a permanent unlock. Returns success flag and updated meta. */
+export function buyUnlock(meta: MetaProgression, unlockId: string): { success: boolean; meta: MetaProgression } {
+  const item = UNLOCKABLES.find(u => u.id === unlockId);
+  if (!item) return { success: false, meta };
+  if (hasUnlock(meta, unlockId)) return { success: false, meta };
+  if ((meta.currency || 0) < item.cost) return { success: false, meta };
+
+  const updated: MetaProgression = {
+    ...meta,
+    currency: meta.currency - item.cost,
+    purchasedUnlocks: [...(meta.purchasedUnlocks || []), unlockId],
+  };
+  saveMetaProgression(updated);
+  return { success: true, meta: updated };
 }

@@ -36,3 +36,9 @@ out/
 .cache/
 .temp/
 .tmp/
+
+# Temp scripts/screenshots
+_diag*.cjs
+_shot*.cjs
+_fix*.cjs
+_ss_*.png

@@ -63,14 +63,14 @@ export class RewardScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.add.text(512, 108, `Round ${data.runState.round} cleared — pick one bonus`, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace',
     }).setOrigin(0.5);
 
     // Currency display in a small framed box
     this.add.rectangle(512, 142, 320, 28, 0x1a0f08, 0.7)
       .setStrokeStyle(2, 0x5c3825);
     this.currencyText = this.add.text(512, 142, '', {
-      fontSize: '12px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // ===== Reward cards =====
@@ -155,12 +155,12 @@ export class RewardScene extends Phaser.Scene {
 
     // Type label (in the top accent band area)
     const typeLabel = this.add.text(0, -CARD_HEIGHT / 2 + 22, style.label, {
-      fontSize: '13px', color: '#1a0e08', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: '#1a0e08', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // Reward name
     const nameText = this.add.text(0, -CARD_HEIGHT / 2 + 58, this.wrapText(reward.name, 18), {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '17px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
       align: 'center', wordWrap: { width: CARD_WIDTH - 20 },
     }).setOrigin(0.5);
 
@@ -169,7 +169,7 @@ export class RewardScene extends Phaser.Scene {
 
     // Description
     const descText = this.add.text(0, 60, this.wrapText(reward.description, 28), {
-      fontSize: '11px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
       align: 'center', wordWrap: { width: CARD_WIDTH - 24 },
     }).setOrigin(0.5);
 
@@ -281,7 +281,7 @@ export class RewardScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x8b6f47);
     const highlightStrip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.3);
     const skipText = this.add.text(0, 0, 'SKIP', {
-      fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const container = this.add.container(x, y, [shadow, bg, highlightStrip, skipText])
@@ -325,7 +325,7 @@ export class RewardScene extends Phaser.Scene {
     const label = canFreeReroll ? 'REROLL (FREE)' : `REROLL (${cost})`;
     const textColor = canAfford ? '#f5e6d3' : '#888888';
     const txt = this.add.text(0, 0, label, {
-      fontSize: '13px', color: textColor, fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: textColor, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const container = this.add.container(x, y, [shadow, bg, highlightStrip, txt])
