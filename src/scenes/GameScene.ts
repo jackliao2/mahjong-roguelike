@@ -373,7 +373,7 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Feedback overlays =====
   private showCorrectFeedback(q: QuizQuestion): void {
-    const depth = 600;
+    const depth = 1100;
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
     const panelW = 600;
     const panelH = 320;
@@ -426,7 +426,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showWrongFeedback(q: QuizQuestion, chosenIndex: number): void {
-    const depth = 600;
+    const depth = 1100;
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(depth);
     const panelW = 600;
     const panelH = 360;
