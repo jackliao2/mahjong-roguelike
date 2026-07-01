@@ -122,11 +122,11 @@ try {
     await sleep(2500);
 
     let ci = await getCanvasInfo(page);
-    // Select beginner
-    await clickCanvas(page, 442, 156, ci);
-    await sleep(500);
-    // Start run
-    await clickCanvas(page, 624, 610, ci);
+    // Step 1: Select beginner difficulty (left card at x=326, y=300)
+    await clickCanvas(page, 326, 300, ci);
+    await sleep(1200);
+    // Beginner skips pressure -> Step 3: deck -> START RUN (x=700, y=640)
+    await clickCanvas(page, 700, 640, ci);
     await sleep(2500);
 
     const gameResult = { rounds: [], finalScore: 0 };

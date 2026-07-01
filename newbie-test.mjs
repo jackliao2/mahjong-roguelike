@@ -122,17 +122,19 @@ try {
   await sleep(3000);
 
   let ci = await getCanvasInfo(page);
-  console.log('=== 1. DECK SELECT SCENE ===');
+  console.log('=== 1. DECK SELECT SCENE (Step 1: Difficulty) ===');
   await page.screenshot({ path: 'screenshots/newbie-01-deck-select.png' });
   console.log('Screenshot saved: newbie-01-deck-select.png');
 
-  // Click BEGINNER
-  await clickCanvas(page, 442, 156, ci);
-  await sleep(800);
+  // Step 1: Click BEGINNER card (left card, center y=300)
+  // Two cards at x=326 and x=698 (cardW=320, gap=40, centered)
+  await clickCanvas(page, 326, 300, ci);
+  await sleep(1200);
   await page.screenshot({ path: 'screenshots/newbie-02-beginner-selected.png' });
 
-  // START RUN
-  await clickCanvas(page, 624, 610, ci);
+  // Beginner skips pressure step -> now on Step 3: Deck selection
+  // START RUN button at x=700, y=640
+  await clickCanvas(page, 700, 640, ci);
   await sleep(2500);
 
   console.log('\n=== 2. ONBOARDING OVERLAY ===');
