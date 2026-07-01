@@ -1,24 +1,21 @@
 import Phaser from 'phaser';
-import { Tile, Hand, RunState, Relic, CustomTile, Yaku, ChallengeGoal } from '@/types';
+import { Tile, Hand, RunState, Yaku, ChallengeGoal } from '@/types';
 import { TileWall } from '@/game/wall';
 import { createHand, sortHand, getAllTiles, findPairs } from '@/game/hand';
 import { detectWin, findWaitingTiles } from '@/game/winDetector';
 import { calculateScore, createRunState } from '@/game/scoring';
 import { tileKey, getTileDisplay } from '@/game/tiles';
 import { TILE_WIDTH, TILE_HEIGHT } from '@/render/tileRenderer';
-import { generateRewards, Reward } from '@/roguelike/rewards';
-import { addRelicToRun, addCustomTileToRun, applyYakuBoost, advanceRound, checkRunComplete, persistRun, endRun, loadYakuBonuses } from '@/roguelike/run';
+import { advanceRound, checkRunComplete, persistRun, endRun } from '@/roguelike/run';
 import { loadRun, clearRun, loadMeta } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
 import { getUnlockedDecks } from '@/roguelike/meta';
-import { getRelicById } from '@/roguelike/relics';
-import { hasUnlock, loadMetaProgression } from '@/roguelike/meta';
-import { trackRunStart, trackRoundComplete, trackRunComplete, trackRewardSelected, trackReroll, trackWin } from '@/data/analytics';
+import { trackRunStart, trackRoundComplete, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
 import { getYakuProximity, getDiscardHints } from '@/game/yakuProximity';
 import { analyzeHandStructure, recommendDiscard } from '@/game/handStructure';
 
-type GamePhase = 'idle' | 'drew' | 'won' | 'survived' | 'lost' | 'reward';
+type GamePhase = 'idle' | 'drew' | 'won' | 'survived' | 'lost';
 
 type PressureMode = 'off' | 'moves';
 
@@ -63,15 +60,12 @@ export class GameScene extends Phaser.Scene {
   private yakuRefCards: Phaser.GameObjects.Container[] = [];
   private yakuRefProgress: Phaser.GameObjects.Rectangle[] = [];
   private buttonGlowTweens: Map<string, Phaser.Tweens.Tween> = new Map();
-  // Relic effect trackers (per-round usage)
-  private relicUses: Map<string, number> = new Map();
   // 关卡挑战目标系统：每关 1 个主要目标 + 1 个可选目标
   private challengeTexts: Phaser.GameObjects.Text[] = [];
   private challengeGoals: ChallengeGoal[] = [];
   private challengeCompletion: Map<string, boolean> = new Map();
   private turnCount: number = 0;
   private hintUsedThisRound: boolean = false;
-  private relicUsedThisRound: boolean = false;
   private pressureText: Phaser.GameObjects.Text | null = null;
 
   constructor() {
@@ -130,7 +124,7 @@ export class GameScene extends Phaser.Scene {
           if (this.state.phase === 'idle' && !this.state.runState.isRiichi) this.declareRiichi();
           break;
         case 'N':
-          if (this.state.phase === 'won' || this.state.phase === 'survived') this.triggerRewardScreen();
+          if (this.state.phase === 'won' || this.state.phase === 'survived') this.proceedToNextRound();
           break;
         case 'H':
           this.showHints = !this.showHints;
@@ -286,34 +280,18 @@ export class GameScene extends Phaser.Scene {
     this.tutorialStep++;
     if (this.tutorialStep >= GameConfig.beginner.tutorialSteps.length) {
       this.tutorialOverlay?.destroy();
+      this.tutorialStep = -1; // tutorial ended
+      // Tutorial 完成后若当前回合已赢/存活，自动进入下一关（避免卡在 won 界面）
+      if (this.state.phase === 'won' || this.state.phase === 'survived') {
+        this.proceedToNextRound();
+      }
       return;
     }
     this.showInteractiveTutorial();
   }
 
-  // Called when scene resumes from RewardScene
-  private handleResume(sys: Phaser.Scenes.Systems, data: { action?: string; reward?: Reward; excludeIds?: string[]; runState?: RunState }): void {
-    if (data.action === 'reward_selected' && data.reward) {
-      this.applyReward(data.reward);
-      this.proceedAfterReward();
-    } else if (data.action === 'skip_reward') {
-      this.proceedAfterReward();
-    } else if (data.action === 'reroll_rewards') {
-      // Player spent currency/token to reroll — regenerate rewards and relaunch RewardScene
-      if (data.runState) this.state.runState = data.runState;
-      trackReroll(this.state.runState.rerollTokens > 0);
-      const newRewards = generateRewards(
-        this.state.runState.relics.map(r => r.id),
-        this.state.runState.customTiles.map(t => t.id),
-        this.state.runState.unlockedYaku,
-        data.excludeIds || []
-      );
-      this.scene.launch('RewardScene', { runState: this.state.runState, rewards: newRewards });
-    }
-  }
-
   private startNewRun(deckId?: string, difficulty?: string, pressureMode?: PressureMode): void {
-    // Try to resume a persisted run (preserves round, score, relics, customTiles)
+    // Try to resume a persisted run (preserves round, score)
     const savedRun = loadRun();
     const isBeginner = difficulty === 'beginner';
     const maxRounds = isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
@@ -326,23 +304,8 @@ export class GameScene extends Phaser.Scene {
       runState.targetScore = Math.floor(runState.targetScore * GameConfig.beginner.scoreMultiplier);
     }
 
-    // Apply starting relics from the selected deck (only for fresh runs)
-    if (!savedRun && deckId) {
-      const meta = loadMeta();
-      const unlocked = getUnlockedDecks(meta);
-      const deck = unlocked.find(d => d.id === deckId);
-      if (deck) {
-        for (const relicId of deck.startingRelics) {
-          const relic = getRelicById(relicId);
-          if (relic) {
-            runState.relics = addRelicToRun(runState, relic).relics;
-          }
-        }
-      }
-    }
-
     this.state = {
-      wall: new TileWall(runState.customTiles),
+      wall: new TileWall(),
       hand: createHand(),
       runState,
       phase: 'idle',
@@ -378,7 +341,7 @@ export class GameScene extends Phaser.Scene {
     runState.unlockedYaku = ['riichi', 'tanyao', 'pinfu', 'yakuhai', 'iipeikou'];
 
     this.state = {
-      wall: new TileWall([]),
+      wall: new TileWall(),
       hand: createHand(tiles),
       runState,
       phase: 'idle',
@@ -395,21 +358,6 @@ export class GameScene extends Phaser.Scene {
     const tiles = this.isBeginner
       ? this.dealBeginnerFriendlyHand()
       : this.dealRandomHand();
-    
-    // Apply Early Tenpai relic effect (start with 14 tiles)
-    for (const relic of this.state.runState.relics) {
-      if (relic.effect?.type === 'extraInitialTiles') {
-        const extraTiles = relic.effect.value || 1;
-        for (let i = 0; i < extraTiles; i++) {
-          const tile = this.state.wall.draw();
-          if (tile) tiles.push(tile);
-        }
-        this.relicUsedThisRound = true;
-        this.showMessage('Early Tenpai! Starting with extra tile!');
-        break;
-      }
-    }
-    
     this.state.hand = createHand(tiles);
   }
 
@@ -552,17 +500,11 @@ export class GameScene extends Phaser.Scene {
     this.createButton('draw', 512, 475, GameConfig.ui.drawButton, () => this.drawTile());
     this.createButton('riichi', 330, 475, GameConfig.ui.riichiButton, () => this.declareRiichi());
     this.createButton('win', 512, 475, GameConfig.ui.winButton, () => this.declareWin(), true);
-    this.createButton('nextRound', 512, 475, GameConfig.ui.nextRoundButton, () => this.triggerRewardScreen());
+    this.createButton('nextRound', 512, 475, GameConfig.ui.nextRoundButton, () => this.proceedToNextRound());
     this.createButton('newRun', 512, 475, GameConfig.ui.newRunButton, () => {
       this.scene.start('DeckSelectScene');
     });
     this.createButton('undo', 694, 475, GameConfig.ui.undoButton, () => this.undoDiscard());
-
-    // Register resume handler (only once)
-    this.events.removeAllListeners('resume');
-    this.events.on('resume', (sys: Phaser.Scenes.Systems, data: { action?: string; reward?: Reward }) => {
-      this.handleResume(sys, data);
-    });
   }
 
   private createButton(
@@ -688,14 +630,6 @@ export class GameScene extends Phaser.Scene {
       fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     });
 
-    // Relics display (with icon)
-    this.add.text(800, 8, 'RELICS', {
-      fontSize: '16px', color: '#8b6f47', fontFamily: 'monospace',
-    });
-    this.uiText.relics = this.add.text(800, 24, '', {
-      fontSize: '20px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
-    });
-
     // Sound toggle button (top-right corner)
     this.createSoundToggleButton();
     // Hint toggle button (next to SFX)
@@ -761,7 +695,6 @@ export class GameScene extends Phaser.Scene {
     // 重置每轮追踪状态
     this.turnCount = 0;
     this.hintUsedThisRound = false;
-    this.relicUsedThisRound = false;
     this.challengeCompletion.clear();
 
     const goalGroups = GameConfig.challenges.goalsByRound;
@@ -812,9 +745,6 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'fastWin':
           done = goal.count ? this.turnCount <= goal.count : false;
-          break;
-        case 'noRelic':
-          done = !this.relicUsedThisRound && score.breakdown.relicFlat === 0 && score.breakdown.relicMultiplier === 0;
           break;
       }
       if (done) {
@@ -1130,36 +1060,6 @@ export class GameScene extends Phaser.Scene {
 
     this.turnCount++;
 
-    // Apply Lucky Draw relic effect (draw 2 tiles)
-    let extraDraw = false;
-    for (const relic of this.state.runState.relics) {
-      if (relic.effect?.type === 'extraDraw') {
-        const uses = this.relicUses.get(relic.id) || 0;
-        if (uses < (relic.effect.value || 1)) {
-          extraDraw = true;
-          this.relicUsedThisRound = true;
-          this.relicUses.set(relic.id, uses + 1);
-          this.showMessage('Lucky Draw! Drawing 2 tiles...');
-          break;
-        }
-      }
-    }
-
-    // Apply Smooth Discard effect (skip discard after drawing)
-    let skipDiscard = false;
-    for (const relic of this.state.runState.relics) {
-      if (relic.effect?.type === 'skipDiscard') {
-        const uses = this.relicUses.get(relic.id) || 0;
-        if (uses < (relic.effect.value || 1)) {
-          skipDiscard = true;
-          this.relicUsedThisRound = true;
-          this.relicUses.set(relic.id, uses + 1);
-          this.showMessage('Smooth Discard! Keep the drawn tile!');
-          break;
-        }
-      }
-    }
-
     const tile = this.state.wall.draw();
     if (!tile) {
       this.endRound(false);
@@ -1169,25 +1069,9 @@ export class GameScene extends Phaser.Scene {
     // Clear undo snapshot — drawing a new tile commits the previous discard
     this.undoSnapshot = null;
 
-    if (skipDiscard) {
-      // Keep the drawn tile, no discard needed
-      this.state.hand.tiles.push(tile);
-      this.state.hand.tiles = sortHand(this.state.hand.tiles);
-      this.state.phase = 'idle';
-      this.showMessage('');
-    } else {
-      this.state.hand.drawnTile = tile;
-      this.state.phase = 'drew';
+    this.state.hand.drawnTile = tile;
+    this.state.phase = 'drew';
 
-      // Extra draw from relic
-      if (extraDraw) {
-        const extraTile = this.state.wall.draw();
-        if (extraTile) {
-          this.state.hand.tiles.push(extraTile);
-          this.soundManager.playDraw();
-        }
-      }
-    }
     if (this.state.runState.isRiichi) {
       this.state.runState.riichiTurns += 1;
     }
@@ -1400,17 +1284,13 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const yakuBonuses = loadYakuBonuses();
     // Ippatsu: only if riichi was declared this round AND we won on the first turn after declaration
     const isIppatsu = this.state.runState.isRiichi && this.state.runState.riichiTurns <= 1;
     const score = calculateScore(
       win,
       allTiles,
       this.state.runState.isRiichi,
-      this.state.runState.relics,
       this.state.runState.unlockedYaku,
-      yakuBonuses,
-      this.state.runState.customTiles,
       isIppatsu,
       this.state.runState.doraIndicators
     );
@@ -1470,11 +1350,14 @@ export class GameScene extends Phaser.Scene {
 
     persistRun(this.state.runState);
     this.endRound(true);
-    // 延迟显示教学卡片，让赢牌动画先播完
-    this.time.delayedCall(900, () => this.showLessonCard(score));
+    // 延迟显示教学卡片，让赢牌动画先播完（tutorial 期间不显示，tutorial 自身会推进）
+    const inTutorial = this.isBeginner && this.tutorialStep >= 0;
+    if (!inTutorial) {
+      this.time.delayedCall(900, () => this.showLessonCard(score));
+    }
 
     // Auto-advance tutorial after winning
-    if (this.isBeginner && this.tutorialStep >= 0) {
+    if (inTutorial) {
       const current = GameConfig.beginner.tutorialSteps[this.tutorialStep];
       if (current?.id === 'win') {
         this.advanceTutorial();
@@ -1506,22 +1389,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     lines.push(`Total: ${score.totalHan} han -> ${b.basePoints} base pts`);
-
-    // Multipliers
-    const multParts: string[] = [];
-    if (b.relicMultiplier > 0) multParts.push(`Relic x${(1 + b.relicMultiplier).toFixed(2)}`);
-    if (b.customTileMultiplier > 0) multParts.push(`Custom x${(1 + b.customTileMultiplier).toFixed(2)}`);
-    if (multParts.length > 0) {
-      lines.push(`Multipliers: ${multParts.join(' | ')}`);
-    }
-
-    // Flat bonuses
-    const flatParts: string[] = [];
-    if (b.relicFlat > 0) flatParts.push(`Relic +${b.relicFlat}`);
-    if (b.customTileFlat > 0) flatParts.push(`Custom +${b.customTileFlat}`);
-    if (flatParts.length > 0) {
-      lines.push(`Flat: ${flatParts.join(' | ')}`);
-    }
 
     lines.push(`=> FINAL: ${score.finalScore} pts`);
 
@@ -1774,9 +1641,9 @@ export class GameScene extends Phaser.Scene {
     this.updateUI();
   }
 
-  // ========== REWARD SYSTEM ==========
+  // ========== ROUND TRANSITION ==========
 
-  private triggerRewardScreen(): void {
+  private proceedToNextRound(): void {
     if (this.state.phase !== 'won' && this.state.phase !== 'survived') return;
 
     // Check if run is complete (final round)
@@ -1793,34 +1660,22 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Generate 3 rewards and show RewardScene
-    const rewards = generateRewards(
-      this.state.runState.relics.map(r => r.id),
-      this.state.runState.customTiles.map(t => t.id),
-      this.state.runState.unlockedYaku
-    );
-
-    this.state.phase = 'reward';
-    this.scene.launch('RewardScene', { runState: this.state.runState, rewards });
-    this.scene.pause();
-  }
-
-  private applyReward(reward: Reward): void {
-    switch (reward.type) {
-      case 'relic':
-        this.state.runState = addRelicToRun(this.state.runState, reward.data as Relic);
-        break;
-      case 'customTile':
-        this.state.runState = addCustomTileToRun(this.state.runState, reward.data as CustomTile);
-        break;
-      case 'yakuBoost':
-        const boost = reward.data as { yaku: Yaku; hanBonus: number };
-        this.state.runState = applyYakuBoost(this.state.runState, boost.yaku.id, boost.hanBonus);
-        break;
-    }
-    persistRun(this.state.runState);
-    // Analytics: track which rewards players pick
-    trackRewardSelected(reward.type, reward.name);
+    // Advance to next round (no reward screen — learning lab flow: win → lesson card → next round)
+    this.state.runState = advanceRound(this.state.runState);
+    this.state.runState.isRiichi = false;
+    this.state.runState.riichiTurns = 0;
+    this.state.runState.doraIndicators = [];
+    this.state.wall = new TileWall();
+    this.state.hand = createHand();
+    this.state.discardedTiles = [];
+    this.state.roundScore = 0;
+    this.state.phase = 'idle';
+    this.dealInitialHand();
+    this.setChallengeForRound(this.state.runState.round);
+    this.showMessage('');
+    this.renderHand();
+    this.updateUI();
+    this.showRoundIntro();
   }
 
   /**
@@ -1867,29 +1722,6 @@ export class GameScene extends Phaser.Scene {
     banner.setInteractive({ useHandCursor: true });
     banner.on('pointerdown', dismiss);
     this.time.delayedCall(6000, dismiss);
-  }
-
-  private proceedAfterReward(): void {
-    // Advance to next round
-    this.state.runState = advanceRound(this.state.runState);
-    // Reset per-round riichi/dora state
-    this.state.runState.isRiichi = false;
-    this.state.runState.riichiTurns = 0;
-    this.state.runState.doraIndicators = [];
-    this.state.wall = new TileWall(this.state.runState.customTiles);
-    this.state.hand = createHand();
-    this.state.discardedTiles = [];
-    this.state.roundScore = 0;
-    this.state.phase = 'idle';
-    // Reset relic uses for new round
-    this.relicUses.clear();
-    this.dealInitialHand();
-    this.setChallengeForRound(this.state.runState.round);
-    this.showMessage('');
-    this.showYakuInfo('');
-    this.renderHand();
-    this.updateUI();
-    this.showRoundIntro();
   }
 
   // ========== RENDERING ==========
@@ -2108,16 +1940,9 @@ export class GameScene extends Phaser.Scene {
 
     const phaseLabels: Record<GamePhase, string> = {
       idle: 'Your Turn', drew: 'Discard or Win', won: 'Round Won!',
-      survived: 'Round Survived!', lost: 'Game Over', reward: 'Pick Reward',
+      survived: 'Round Survived!', lost: 'Game Over',
     };
     this.uiText.phase.setText(phaseLabels[this.state.phase]);
-
-    // Relics display
-    if (rs.relics.length > 0) {
-      this.uiText.relics.setText(`${rs.relics.length}x`);
-    } else {
-      this.uiText.relics.setText('-');
-    }
 
     // Update progress bar
     this.updateScoreProgressBar();
@@ -2240,7 +2065,9 @@ export class GameScene extends Phaser.Scene {
       this.showYakuInfo(`READY HAND — waiting for: ${this.describeWaitingTiles(waiting)}`);
     }
 
-    const masterHints = hasUnlock(loadMetaProgression(), 'hint-level-3');
+    // Master hints were a purchasable unlock; the unlock shop has been removed,
+    // so master hints are permanently off in the learning lab.
+    const masterHints = false;
 
     // Recommended next action
     let recommendation = '';

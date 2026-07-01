@@ -1,5 +1,4 @@
-import { MetaProgression, Unlockable } from '@/types';
-import { GameConfig } from '@/config/game-config';
+import { MetaProgression } from '@/types';
 
 const META_KEY = 'mjrg_meta';
 
@@ -8,9 +7,7 @@ const DEFAULT_META: MetaProgression = {
   bestScore: 0,
   totalWins: 0,
   unlockedDecks: ['default'],
-  currency: 0,
   achievements: [],
-  purchasedUnlocks: [],
 };
 
 export interface Achievement {
@@ -86,7 +83,6 @@ export function recordRunResult(meta: MetaProgression, score: number, won: boole
     totalRuns: meta.totalRuns + 1,
     totalWins: meta.totalWins + (won ? 1 : 0),
     bestScore: Math.max(meta.bestScore, score),
-    currency: meta.currency + Math.floor(score / 100),
   };
 
   // Check for new achievements
@@ -106,50 +102,51 @@ export function getNewAchievements(oldMeta: MetaProgression, newMeta: MetaProgre
   );
 }
 
-// Starting decks for unlock system
+// Starting decks are cosmetic practice themes — no mechanical effect.
+// Unlocked as milestone rewards to give long-term progression goals.
 export interface StartingDeck {
   id: string;
   name: string;
   description: string;
   unlockCondition: string;
-  startingRelics: string[];
+  theme: string; // short flavor label shown in place of the old relic line
 }
 
 export const STARTING_DECKS: StartingDeck[] = [
   {
     id: 'default',
-    name: 'Beginner Deck',
-    description: 'A balanced starting hand. No special bonuses.',
+    name: 'Practice Deck',
+    description: 'Balanced standard tile distribution. The recommended starting point for learning yaku.',
     unlockCondition: 'Available from start',
-    startingRelics: [],
+    theme: 'Balanced practice',
   },
   {
     id: 'riichi-master',
-    name: 'Riichi Master',
-    description: 'Start with Riichi Stone relic. Focus on riichi plays.',
+    name: 'Riichi Focus',
+    description: 'A thematic practice theme for drilling riichi hands.',
     unlockCondition: 'Win 1 run',
-    startingRelics: ['riichi-stone'],
+    theme: 'Riichi drill theme',
   },
   {
     id: 'dragon-deck',
-    name: 'Dragon Deck',
-    description: 'Start with Dragon Pendant. Dragon tiles are your power.',
+    name: 'Dragon Focus',
+    description: 'A thematic practice theme for hands centered on dragon tiles.',
     unlockCondition: 'Win 3 runs',
-    startingRelics: ['dragon-pendant'],
+    theme: 'Dragon drill theme',
   },
   {
     id: 'tanyao-deck',
-    name: 'Tanyao Deck',
-    description: 'Start with Tanyao Charm. All Simples scores double.',
+    name: 'Tanyao Focus',
+    description: 'A thematic practice theme for all-simples (tanyao) hands.',
     unlockCondition: 'Score 5000+ in a run',
-    startingRelics: ['tanyao-charm'],
+    theme: 'Tanyao drill theme',
   },
   {
     id: 'izakaya-deck',
-    name: 'Izakaya Deck',
-    description: 'Start with Lucky Coin and Izakaya Menu. Pure bonus build.',
+    name: 'Free Practice',
+    description: 'Open-ended practice with no specific focus. Mix any yaku you have learned.',
     unlockCondition: 'Complete 5 runs',
-    startingRelics: ['lucky-coin', 'izakaya-menu'],
+    theme: 'Free practice theme',
   },
 ];
 
@@ -164,28 +161,4 @@ export function getUnlockedDecks(meta: MetaProgression): StartingDeck[] {
       default: return false;
     }
   });
-}
-
-/** Permanent unlockables from config. */
-export const UNLOCKABLES: Unlockable[] = GameConfig.unlockables.items;
-
-/** Check if a permanent unlock has already been purchased. */
-export function hasUnlock(meta: MetaProgression, unlockId: string): boolean {
-  return meta.purchasedUnlocks?.includes(unlockId) ?? false;
-}
-
-/** Attempt to buy a permanent unlock. Returns success flag and updated meta. */
-export function buyUnlock(meta: MetaProgression, unlockId: string): { success: boolean; meta: MetaProgression } {
-  const item = UNLOCKABLES.find(u => u.id === unlockId);
-  if (!item) return { success: false, meta };
-  if (hasUnlock(meta, unlockId)) return { success: false, meta };
-  if ((meta.currency || 0) < item.cost) return { success: false, meta };
-
-  const updated: MetaProgression = {
-    ...meta,
-    currency: meta.currency - item.cost,
-    purchasedUnlocks: [...(meta.purchasedUnlocks || []), unlockId],
-  };
-  saveMetaProgression(updated);
-  return { success: true, meta: updated };
 }

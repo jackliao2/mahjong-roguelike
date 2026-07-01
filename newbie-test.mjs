@@ -87,13 +87,28 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 800 });
+  // Disable cache to ensure latest code is loaded
+  const client = await page.target().createCDPSession();
+  await client.send('Network.setCacheDisabled', { cacheDisabled: true });
   page.on('pageerror', err => console.log('[PAGEERROR]', err.message));
   page.on('console', msg => {
-    if (msg.type() === 'error') console.log('[CONSOLE.error]', msg.text());
+    const text = msg.text();
+    if (msg.type() === 'error') {
+      console.log(`[CONSOLE.${msg.type()}]`, text);
+    }
+  });
+  // Block external analytics beacons so networkidle2 is not blocked by 400 responses
+  await page.setRequestInterception(true);
+  page.on('request', req => {
+    if (req.url().includes('umami.is') || req.url().includes('google-analytics') || req.url().includes('googletagmanager')) {
+      req.abort();
+    } else {
+      req.continue();
+    }
   });
 
-  await page.goto(URL, { waitUntil: 'networkidle2' });
-  await sleep(3000);
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await sleep(3500);
 
   // Clear progress to simulate absolute beginner
   await page.evaluate(() => {
@@ -101,8 +116,9 @@ try {
     localStorage.removeItem('mjrg_beginner_done');
     localStorage.removeItem('mjrg_run');
     localStorage.removeItem('mjrg_meta');
+    localStorage.removeItem('mjrg_tutorial_seen');
   });
-  await page.reload({ waitUntil: 'networkidle2' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await sleep(3000);
 
   let ci = await getCanvasInfo(page);
@@ -116,7 +132,7 @@ try {
   await page.screenshot({ path: 'screenshots/newbie-02-beginner-selected.png' });
 
   // START RUN
-  await clickCanvas(page, 624, 640, ci);
+  await clickCanvas(page, 624, 610, ci);
   await sleep(2500);
 
   console.log('\n=== 2. ONBOARDING OVERLAY ===');
@@ -132,9 +148,9 @@ try {
   await page.screenshot({ path: 'screenshots/newbie-04-tutorial-1.png' });
   console.log('Screenshot saved: newbie-04-tutorial-1.png');
 
-  // Interactive tutorial: click START on welcome banner
-  // bannerY=595, bannerH=110, btnY = 595 + 55 - 6 = 644
-  await clickCanvas(page, 512, 644, ci);
+  // Interactive tutorial: click NEXT on welcome banner
+  // Tutorial panel at panelY=140, panelH=180, btnY = 140 + 90 - 24 = 206
+  await clickCanvas(page, 512, 206, ci);
   await sleep(900);
 
   // Tutorial DRAW step
@@ -175,7 +191,7 @@ try {
   console.log('\n=== 3f. TUTORIAL DONE ===');
   await page.screenshot({ path: 'screenshots/newbie-05-tutorial-end.png' });
   console.log('Screenshot saved: newbie-05-tutorial-end.png');
-  await clickCanvas(page, 512, 644, ci); // LET'S GO!
+  await clickCanvas(page, 512, 206, ci); // LET'S GO!
   await sleep(900);
 
   // Now the actual game idle

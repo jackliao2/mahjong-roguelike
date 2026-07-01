@@ -148,7 +148,6 @@ export class GameOverScene extends Phaser.Scene {
     this.createStatRow(cx - 110, metaStatsY + 36, 'BEST SCORE',
       `${meta.bestScore}${isNewBest ? '  *NEW*' : ''}`,
       isNewBest ? '#e5b567' : '#c9b89a');
-    this.createStatRow(cx + 110, metaStatsY + 36, 'CURRENCY', `${meta.currency}`, '#e5b567');
   }
 
   // ===== Single labeled stat row =====
@@ -161,39 +160,21 @@ export class GameOverScene extends Phaser.Scene {
     }).setOrigin(1, 0.5);
   }
 
-  // ===== Relics & Custom Tiles summary =====
+  // ===== Yaku collection summary =====
   private createCollectionSummary(cx: number, y: number, runState: RunState): void {
-    const relicCount = runState.relics.length;
-    const tileCount = runState.customTiles.length;
     const yakuCount = runState.unlockedYaku.length;
 
     // Background bar
     this.add.rectangle(cx, y, 700, 56, 0x1a0f08, 0.6)
       .setStrokeStyle(2, 0x5c3825);
 
-    // Three stat columns: Relics / Custom Tiles / Yaku
-    const colX = [cx - 200, cx, cx + 200];
-    const labels = ['RELICS', 'CUSTOM TILES', 'YAKU UNLOCKED'];
-    const counts = [relicCount, tileCount, yakuCount];
-    const colors = ['#d4a574', '#c73e3a', '#2d6a4f'];
-
-    for (let i = 0; i < 3; i++) {
-      this.add.text(colX[i], y - 12, labels[i], {
-        fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
-      }).setOrigin(0.5);
-      this.add.text(colX[i], y + 8, `${counts[i]}`, {
-        fontSize: '24px', color: colors[i], fontFamily: 'monospace', fontStyle: 'bold',
-      }).setOrigin(0.5);
-    }
-
-    // Relic name list (small, below counts) — only if relics exist
-    if (relicCount > 0) {
-      const names = runState.relics.map(r => r.name).join('  ·  ');
-      this.add.text(cx, y + 36, names, {
-        fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
-        align: 'center', wordWrap: { width: 680 },
-      }).setOrigin(0.5);
-    }
+    // Single centered stat column: Yaku unlocked
+    this.add.text(cx, y - 12, 'YAKU UNLOCKED', {
+      fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
+    }).setOrigin(0.5);
+    this.add.text(cx, y + 8, `${yakuCount}`, {
+      fontSize: '24px', color: '#2d6a4f', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
   }
 
   // ===== New achievements unlocked banner =====

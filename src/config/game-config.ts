@@ -161,20 +161,9 @@ export const GameConfig = {
       // Round 5
       [
         { id: 'r5-primary', type: 'han', count: 3, bonus: 1000, desc: 'Win with 3+ han', optional: false },
-        { id: 'r5-opt1', type: 'noRelic', bonus: 600, desc: 'Win without relic bonuses', optional: true },
+        { id: 'r5-opt1', type: 'noHint', bonus: 600, desc: 'Win without using hints', optional: true },
       ],
     ] as import('@/types').ChallengeGoal[][],
-  },
-
-  // ===== Meta Progression Unlockables =====
-  // Spend currency earned from runs to permanently upgrade the learning experience.
-  unlockables: {
-    items: [
-      { id: 'hint-level-2', name: 'Sharper Hints', description: 'Recommended discard highlights both best and second-best tiles.', cost: 200, category: 'hint', icon: '💡' },
-      { id: 'classic-tiles', name: 'Classic Tile Theme', description: 'Traditional ivory tile faces with red and blue accents.', cost: 300, category: 'theme', icon: '🀄' },
-      { id: 'advanced-lessons', name: 'Advanced Lessons', description: 'Unlock rounds 6-8 featuring Pure Straight and Half Flush goals.', cost: 500, category: 'lesson', icon: '📖' },
-      { id: 'hint-level-3', name: 'Master Hints', description: 'Shows waiting tiles and explains why a discard is recommended.', cost: 700, category: 'hint', icon: '🔍' },
-    ] as import('@/types').Unlockable[],
   },
 
   // ===== Optional Pressure Mode =====

@@ -33,14 +33,6 @@ export function trackRunComplete(won: boolean, score: number, rounds: number): v
   trackEvent('run_complete', { won, score, rounds });
 }
 
-export function trackRewardSelected(rewardType: string, rewardName: string): void {
-  trackEvent('reward_selected', { type: rewardType, name: rewardName });
-}
-
-export function trackReroll(free: boolean): void {
-  trackEvent('reroll', { free });
-}
-
 export function trackWin(yakuList: string[], han: number, score: number, isRiichi: boolean): void {
   trackEvent('win', {
     yaku: yakuList,

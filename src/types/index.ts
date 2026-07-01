@@ -34,60 +34,15 @@ export interface Yaku {
   check: (hand: WinningHand, rawTiles: Tile[], isRiichi: boolean) => boolean;
 }
 
-export interface Relic {
-  id: string;
-  name: string;
-  description: string;
-  multiplier: number;
-  flatBonus: number;
-  condition?: (ctx: RelicContext) => boolean;
-  effect?: RelicEffect;
-}
-
-export type RelicEffectType = 
-  | 'extraDraw' 
-  | 'skipDiscard' 
-  | 'wallWeight' 
-  | 'extraInitialTiles' 
-  | 'guaranteedTenpai'
-  | 'autoRiichi'
-  | 'scoreMultiplier';
-
-export interface RelicEffect {
-  type: RelicEffectType;
-  value?: number;
-  suit?: Suit;
-}
-
-export interface RelicContext {
-  rawTiles: Tile[];
-  winningHand: WinningHand;
-  yakuList: { yaku: Yaku; han: number }[];
-  isRiichi: boolean;
-}
-
-export interface CustomTile {
-  id: string;
-  name: string;
-  description: string;
-  baseTile: Tile;
-  bonusChips: number; // flat chip bonus
-  multiplier: number; // score multiplier
-  isRed?: boolean; // marks red five dora tiles
-}
-
 export interface RunState {
   round: number;
   score: number;
   targetScore: number;
   maxRounds: number;
-  relics: Relic[];
-  customTiles: CustomTile[];
   unlockedYaku: string[];
   isRiichi: boolean;
   riichiTurns: number; // turns since riichi declared (for ippatsu)
   doraIndicators: Tile[]; // revealed dora indicators from wall
-  rerollTokens: number; // currency-paid reward rerolls available this run
 }
 
 export interface MetaProgression {
@@ -95,16 +50,13 @@ export interface MetaProgression {
   bestScore: number;
   totalWins: number;
   unlockedDecks: string[];
-  currency: number;
   achievements: string[];
-  /** IDs of purchased permanent unlocks (hint upgrades, themes, lessons). */
-  purchasedUnlocks: string[];
 }
 
 /** A single challenge goal for a round. */
 export interface ChallengeGoal {
   id: string;
-  type: 'yaku' | 'multiYaku' | 'han' | 'noHint' | 'fastWin' | 'noRelic';
+  type: 'yaku' | 'multiYaku' | 'han' | 'noHint' | 'fastWin';
   /** Yaku ID when type === 'yaku'. */
   targetId?: string;
   count?: number;
@@ -114,24 +66,11 @@ export interface ChallengeGoal {
   optional: boolean;
 }
 
-/** Permanent unlockable upgrade for meta progression. */
-export interface Unlockable {
-  id: string;
-  name: string;
-  description: string;
-  cost: number;
-  category: 'hint' | 'theme' | 'lesson';
-  icon: string;
-}
-
 export interface ScoreResult {
   basePoints: number;
   yakuList: { yaku: Yaku; han: number }[];
   totalHan: number;
   finalScore: number;
-  relicMultipliers: number;
-  relicBonuses: number;
-  customTileBonus: number;
   doraCount: number;
   isIppatsu: boolean;
   breakdown: ScoreBreakdown;
@@ -143,9 +82,5 @@ export interface ScoreBreakdown {
   ippatsuHan: number;
   uraDoraHan: number;
   basePoints: number;
-  relicMultiplier: number;
-  relicFlat: number;
-  customTileFlat: number;
-  customTileMultiplier: number;
   finalScore: number;
 }

@@ -98,8 +98,16 @@ try {
   await page.setViewport({ width: 1280, height: 800 });
   page.on('pageerror', err => console.log('[PAGEERROR]', err.message));
   page.on('console', msg => { if (msg.type() === 'error') console.log('[CONSOLE.error]', msg.text()); });
+  await page.setRequestInterception(true);
+  page.on('request', req => {
+    if (req.url().includes('umami.is') || req.url().includes('google-analytics') || req.url().includes('googletagmanager')) {
+      req.abort();
+    } else {
+      req.continue();
+    }
+  });
 
-  await page.goto(URL, { waitUntil: 'networkidle2' });
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
   await sleep(3000);
 
   for (let game = 0; game < GAMES; game++) {
@@ -110,7 +118,7 @@ try {
       localStorage.removeItem('mjrg_run');
       localStorage.removeItem('mjrg_meta');
     });
-    await page.reload({ waitUntil: 'networkidle2' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await sleep(2500);
 
     let ci = await getCanvasInfo(page);
@@ -118,7 +126,7 @@ try {
     await clickCanvas(page, 442, 156, ci);
     await sleep(500);
     // Start run
-    await clickCanvas(page, 624, 640, ci);
+    await clickCanvas(page, 624, 610, ci);
     await sleep(2500);
 
     const gameResult = { rounds: [], finalScore: 0 };

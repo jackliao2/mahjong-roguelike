@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { GameConfig } from '@/config/game-config';
 import { GameScene } from '@/scenes/GameScene';
 import { BootScene } from '@/scenes/BootScene';
-import { RewardScene } from '@/scenes/RewardScene';
 import { GameOverScene } from '@/scenes/GameOverScene';
 import { DeckSelectScene } from '@/scenes/DeckSelectScene';
 
@@ -19,7 +18,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, DeckSelectScene, GameScene, RewardScene, GameOverScene],
+    scene: [BootScene, DeckSelectScene, GameScene, GameOverScene],
   });
   (window as any).game = game;
   return game;

@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { MetaProgression } from '@/types';
-import { StartingDeck, getUnlockedDecks, STARTING_DECKS, UNLOCKABLES, buyUnlock, hasUnlock } from '@/roguelike/meta';
-import { getRelicById } from '@/roguelike/relics';
+import { StartingDeck, getUnlockedDecks, STARTING_DECKS } from '@/roguelike/meta';
 import { SoundManager } from '@/render/sound';
 import { GameConfig } from '@/config/game-config';
 
@@ -47,7 +46,7 @@ export class DeckSelectScene extends Phaser.Scene {
     const titleText = this.add.text(512, 56, 'CHOOSE YOUR DECK', {
       fontSize: '28px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add.text(512, 86, 'Each deck offers a different starting relic build', {
+    this.add.text(512, 86, 'Choose a practice theme — all decks play identically', {
       fontSize: '16px', color: '#c9b89a', fontFamily: 'monospace',
     }).setOrigin(0.5);
 
@@ -72,10 +71,6 @@ export class DeckSelectScene extends Phaser.Scene {
 
     // ===== Render deck cards =====
     this.renderDeckCards();
-
-    // ===== Currency & unlock shop =====
-    this.createCurrencyDisplay();
-    this.createUnlockShopButton();
 
     // ===== Buttons =====
     this.createStartButton();
@@ -169,22 +164,11 @@ export class DeckSelectScene extends Phaser.Scene {
       align: 'center', wordWrap: { width: CARD_W - 24 },
     }).setOrigin(0.5);
 
-    // Starting relics label
-    let relicsSection: Phaser.GameObjects.Text;
-    if (deck.startingRelics.length > 0) {
-      const relicNames = deck.startingRelics
-        .map(id => getRelicById(id)?.name || id)
-        .join('\n');
-      relicsSection = this.add.text(0, 60, `STARTING RELIC:\n${relicNames}`, {
-        fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-        align: 'center', wordWrap: { width: CARD_W - 24 },
-      }).setOrigin(0.5);
-    } else {
-      relicsSection = this.add.text(0, 60, 'No starting relic\n(pure skill build)', {
-        fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
-        align: 'center',
-      }).setOrigin(0.5);
-    }
+    // Theme label (cosmetic only — no mechanical effect)
+    const relicsSection = this.add.text(0, 60, `THEME:\n${deck.theme}`, {
+      fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      align: 'center', wordWrap: { width: CARD_W - 24 },
+    }).setOrigin(0.5);
 
     // Unlock status / lock icon
     const statusText = isUnlocked
@@ -510,123 +494,6 @@ export class DeckSelectScene extends Phaser.Scene {
     elements.push(closeBg, closeText, closeHit);
   }
 
-  private createCurrencyDisplay(): void {
-    const amount = this.meta.currency || 0;
-    const label = this.add.text(900, 60, `COINS: ${amount}`, {
-      fontSize: '14px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    // Simple coin icon
-    const coin = this.add.rectangle(900 - label.width / 2 - 16, 60, 12, 12, 0xe5b567)
-      .setStrokeStyle(2, 0x2b1810);
-  }
-
-  private createUnlockShopButton(): void {
-    const x = 512;
-    const y = 545;
-    const width = 160;
-    const height = 40;
-    const shadow = this.add.rectangle(4, 4, width, height, 0x000000, 0.5);
-    const bg = this.add.rectangle(0, 0, width, height, 0x2b1810)
-      .setStrokeStyle(3, 0xe5b567);
-    const highlightStrip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.4);
-    const text = this.add.text(0, 0, 'UNLOCKS', {
-      fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    const container = this.add.container(x, y, [shadow, bg, highlightStrip, text])
-      .setSize(width, height)
-      .setInteractive({ useHandCursor: true });
-
-    container.on('pointerover', () => {
-      container.setScale(1.05);
-      container.setY(y - 2);
-    });
-    container.on('pointerout', () => {
-      container.setScale(1);
-      container.setY(y);
-    });
-    container.on('pointerdown', () => {
-      this.soundManager.playClick();
-      this.showUnlockShop();
-    });
-  }
-
-  private showUnlockShop(): void {
-    const depth = 200;
-    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(depth);
-    const panelW = 560;
-    const panelH = 420;
-    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
-      .setStrokeStyle(3, 0xd4a574).setDepth(depth);
-    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 3, 0xe5b567).setDepth(depth);
-
-    const title = this.add.text(512, 360 - panelH / 2 + 36, 'UNLOCK SHOP', {
-      fontSize: '22px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const subtitle = this.add.text(512, 360 - panelH / 2 + 64, `COINS: ${this.meta.currency || 0}`, {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
-    }).setOrigin(0.5).setDepth(depth + 1);
-
-    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, subtitle];
-
-    const itemH = 72;
-    const gap = 10;
-    const startY = 360 - panelH / 2 + 110;
-    UNLOCKABLES.forEach((item, i) => {
-      const y = startY + i * (itemH + gap);
-      const owned = hasUnlock(this.meta, item.id);
-      const canBuy = !owned && (this.meta.currency || 0) >= item.cost;
-
-      const bg = this.add.rectangle(512, y, panelW - 40, itemH, owned ? 0x1a3a2a : 0x2b1810)
-        .setStrokeStyle(2, owned ? 0x2d6a4f : (canBuy ? 0xe5b567 : 0x5c3825)).setDepth(depth);
-      const name = this.add.text(280, y - 14, `${item.icon} ${item.name}`, {
-        fontSize: '14px', color: owned ? '#2d6a4f' : '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-      }).setOrigin(0, 0.5).setDepth(depth + 1);
-      const desc = this.add.text(280, y + 6, item.description, {
-        fontSize: '11px', color: '#c9b89a', fontFamily: 'monospace',
-        wordWrap: { width: panelW - 140 },
-      }).setOrigin(0, 0.5).setDepth(depth + 1);
-      const cost = this.add.text(512 + panelW / 2 - 50, y, owned ? 'OWNED' : `${item.cost} COINS`, {
-        fontSize: '13px', color: owned ? '#2d6a4f' : (canBuy ? '#e5b567' : '#5c3825'),
-        fontFamily: 'monospace', fontStyle: 'bold',
-      }).setOrigin(0.5).setDepth(depth + 1);
-      elements.push(bg, name, desc, cost);
-
-      if (canBuy) {
-        const hit = this.add.rectangle(512, y, panelW - 40, itemH, 0xffffff, 0).setDepth(depth + 2);
-        hit.setInteractive({ useHandCursor: true });
-        hit.on('pointerover', () => bg.setFillStyle(0x3d2418));
-        hit.on('pointerout', () => bg.setFillStyle(0x2b1810));
-        hit.on('pointerdown', () => {
-          const result = buyUnlock(this.meta, item.id);
-          if (result.success) {
-            this.meta = result.meta;
-            this.soundManager.playClick();
-            this.children.removeAll();
-            this.create();
-          }
-        });
-        elements.push(hit);
-      }
-    });
-
-    // Close button
-    const closeBtnY = 360 + panelH / 2 - 32;
-    const closeBg = this.add.rectangle(512, closeBtnY, 120, 36, 0xc73e3a)
-      .setStrokeStyle(3, 0x2b1810).setDepth(depth);
-    const closeText = this.add.text(512, closeBtnY, 'CLOSE', {
-      fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const closeHit = this.add.rectangle(512, closeBtnY, 120, 36, 0xffffff, 0).setDepth(depth + 2);
-    closeHit.setInteractive({ useHandCursor: true });
-    closeHit.on('pointerover', () => closeBg.setFillStyle(0xe04e4a));
-    closeHit.on('pointerout', () => closeBg.setFillStyle(0xc73e3a));
-    closeHit.on('pointerdown', () => {
-      this.soundManager.playClick();
-      elements.forEach(el => el.destroy());
-    });
-    elements.push(closeBg, closeText, closeHit);
-  }
 
   private createBackButton(): void {
     const x = 400;

@@ -36,9 +36,7 @@ export function loadMeta(): MetaProgression {
     bestScore: 0,
     totalWins: 0,
     unlockedDecks: ['default'],
-    currency: 0,
     achievements: [],
-    purchasedUnlocks: [],
   };
 }
 

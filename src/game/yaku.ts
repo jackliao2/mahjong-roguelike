@@ -296,17 +296,14 @@ export function checkAllYaku(
   winningHand: WinningHand,
   rawTiles: Tile[],
   isRiichi: boolean,
-  unlockedYaku?: string[],
-  yakuBonuses?: Record<string, number>
+  unlockedYaku?: string[]
 ): { yaku: Yaku; han: number }[] {
   const matched: { yaku: Yaku; han: number }[] = [];
   for (const yaku of YAKU_LIST) {
     // Skip yaku not yet unlocked (if filter is provided)
     if (unlockedYaku && !unlockedYaku.includes(yaku.id)) continue;
     if (yaku.check(winningHand, rawTiles, isRiichi)) {
-      // Apply yaku boost bonus if any
-      const bonus = yakuBonuses?.[yaku.id] || 0;
-      matched.push({ yaku, han: yaku.han + bonus });
+      matched.push({ yaku, han: yaku.han });
     }
   }
   return matched;
