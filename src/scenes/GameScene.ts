@@ -7,7 +7,7 @@ import { loadRun, clearRun } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
 import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
-import { generateQuestionForRound, QuizQuestion } from '@/game/quizGenerator';
+import { generateQuestionForRound, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
 
 const OPTION_TILE_W = 64;
 const OPTION_TILE_H = 82;
@@ -36,7 +36,7 @@ export class GameScene extends Phaser.Scene {
 
     this.isBeginner = data?.difficulty === 'beginner';
     this.maxRounds = this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
-    this.lives = 1; // 1 wrong = game over (rogue tension)
+    this.lives = this.isBeginner ? GameConfig.beginner.lives : GameConfig.rounds.lives;
 
     // Fresh run
     if (data?.action === 'new_run') {
@@ -77,16 +77,20 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // ===== Top bar: round, score, quit =====
+  // ===== Top bar: round, score, lives, quit =====
   private createTopBar(): void {
     const y = 30;
-    // Round
+    // Round + chapter
     this.add.text(40, y, '', {
-      fontSize: '18px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '17px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setName('roundLabel');
+    // Lives (left-center)
+    this.add.text(360, y, '', {
+      fontSize: '17px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setName('livesLabel');
     // Score
     this.add.text(512, y, '', {
-      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '17px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('scoreLabel');
     // Quit button
     const quitBg = this.add.rectangle(980, y, 70, 32, 0x5c3825)
@@ -106,9 +110,18 @@ export class GameScene extends Phaser.Scene {
 
   private updateTopBar(): void {
     const roundLabel = this.children.getByName('roundLabel') as Phaser.GameObjects.Text;
+    const livesLabel = this.children.getByName('livesLabel') as Phaser.GameObjects.Text;
     const scoreLabel = this.children.getByName('scoreLabel') as Phaser.GameObjects.Text;
-    if (roundLabel) roundLabel.setText(`ROUND ${this.round} / ${this.maxRounds}`);
-    if (scoreLabel) scoreLabel.setText(`SCORE: ${this.score}`);
+    const ch = getChapterForRound(this.round);
+    if (roundLabel) {
+      const bossTag = ch.isBoss ? ' [BOSS]' : '';
+      roundLabel.setText(`Q${this.round}/${this.maxRounds} · ${ch.chapter}${bossTag}`);
+    }
+    if (livesLabel) {
+      const hearts = '♥'.repeat(Math.max(0, this.lives));
+      livesLabel.setText(`LIVES ${hearts}`);
+    }
+    if (scoreLabel) scoreLabel.setText(`SCORE ${this.score}`);
   }
 
   // ===== Round flow =====
@@ -125,27 +138,27 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showRoundIntro(onComplete: () => void): void {
-    const lessons: Record<number, { title: string; subtitle: string }> = {
-      1: { title: 'LESSON 1: TENPAI', subtitle: 'Learn to spot a ready hand' },
-      2: { title: 'LESSON 2: TANYAO', subtitle: 'Win with only simple tiles (2-8)' },
-      3: { title: 'LESSON 3: PINFU', subtitle: 'All sequences + simple pair' },
-      4: { title: 'LESSON 4: YAKUHAI', subtitle: 'Win with a dragon triplet' },
-      5: { title: 'LESSON 5: ADVANCED', subtitle: 'Test your skills' },
-    };
-    const lesson = lessons[this.round] || lessons[5];
+    const ch = getChapterForRound(this.round);
+    const accentColor = ch.isBoss ? 0xc73e3a : 0xe5b567;
+    const titleColor = ch.isBoss ? '#c73e3a' : '#d4a574';
+    const bossTag = ch.isBoss ? ' [BOSS]' : '';
+    const title = `${ch.chapter}${bossTag}`;
+    const subtitle = ch.isBoss
+      ? 'Boss question — multiple waiting tiles may exist'
+      : ch.title;
 
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7).setDepth(500);
     const panel = this.add.rectangle(512, 320, 600, 160, 0x1a0f08)
-      .setStrokeStyle(3, 0xd4a574).setDepth(501);
-    const accent = this.add.rectangle(512, 320 - 80 + 4, 590, 4, 0xe5b567).setDepth(501);
-    const title = this.add.text(512, 300, lesson.title, {
-      fontSize: '28px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+      .setStrokeStyle(3, accentColor).setDepth(501);
+    const accent = this.add.rectangle(512, 320 - 80 + 4, 590, 4, accentColor).setDepth(501);
+    const titleText = this.add.text(512, 300, title, {
+      fontSize: '28px', color: titleColor, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
-    const subtitle = this.add.text(512, 340, lesson.subtitle, {
+    const subtitleText = this.add.text(512, 340, subtitle, {
       fontSize: '16px', color: '#c9b89a', fontFamily: 'monospace',
     }).setOrigin(0.5).setDepth(502);
 
-    const elements = [overlay, panel, accent, title, subtitle];
+    const elements = [overlay, panel, accent, titleText, subtitleText];
     elements.forEach(el => el.setAlpha(0));
     this.tweens.add({
       targets: elements,
@@ -196,9 +209,11 @@ export class GameScene extends Phaser.Scene {
     const sortedHand = sortHand([...q.hand]);
     this.renderHandTiles(sortedHand, 512, 240);
 
-    // "CHOOSE ONE:" label
-    const chooseLabel = this.add.text(512, 350, 'CHOOSE ONE:', {
-      fontSize: '16px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    // "CHOOSE ONE:" label (BOSS gets red accent)
+    const chooseText = q.isBoss ? 'BOSS · CHOOSE ONE:' : 'CHOOSE ONE:';
+    const chooseColor = q.isBoss ? '#c73e3a' : '#e5b567';
+    const chooseLabel = this.add.text(512, 350, chooseText, {
+      fontSize: '16px', color: chooseColor, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.questionContainer.add(chooseLabel);
 
@@ -264,12 +279,16 @@ export class GameScene extends Phaser.Scene {
 
   /** Create a clickable option tile button */
   private createOptionButton(tile: Tile, x: number, y: number, index: number): Phaser.GameObjects.Container {
+    const isBoss = this.currentQuestion?.isBoss ?? false;
+    const frameColor = isBoss ? 0xc73e3a : 0xd4a574;
+    const hoverColor = isBoss ? 0xe04e4a : 0xe5b567;
+
     const textureKey = `tile-${tileKey(tile)}`;
     const sprite = this.add.image(0, 0, textureKey);
     const shadow = this.add.rectangle(3, 5, OPTION_TILE_W, OPTION_TILE_H, 0x000000, 0.4);
     // Button background frame
     const frame = this.add.rectangle(0, 0, OPTION_TILE_W + 8, OPTION_TILE_H + 8, 0x1a0f08)
-      .setStrokeStyle(3, 0xd4a574);
+      .setStrokeStyle(isBoss ? 4 : 3, frameColor);
     const container = this.add.container(x, y, [frame, shadow, sprite]);
     container.setSize(OPTION_TILE_W + 8, OPTION_TILE_H + 8);
 
@@ -294,13 +313,13 @@ export class GameScene extends Phaser.Scene {
     container.on('pointerover', () => {
       if (!this.answered) {
         container.setScale(1.08);
-        frame.setStrokeStyle(4, 0xe5b567);
+        frame.setStrokeStyle(5, hoverColor);
       }
     });
     container.on('pointerout', () => {
       if (!this.answered) {
         container.setScale(1);
-        frame.setStrokeStyle(3, 0xd4a574);
+        frame.setStrokeStyle(isBoss ? 4 : 3, frameColor);
       }
     });
     container.on('pointerdown', () => {
@@ -329,13 +348,20 @@ export class GameScene extends Phaser.Scene {
 
     if (isCorrect) {
       this.soundManager.playWin();
-      this.score += 1000;
+      this.score += q.isBoss ? 1500 : 1000;
       trackWin([q.targetYaku || q.type], 1, 1000, false);
       this.showCorrectFeedback(q);
     } else {
-      this.soundManager.playGameOver();
       this.lives -= 1;
-      this.showWrongFeedback(q, optionIndex);
+      this.updateTopBar();
+      if (this.lives > 0) {
+        // Still alive — show retry, allow re-answer same question
+        this.soundManager.playClick();
+        this.showRetryFeedback(q, optionIndex);
+      } else {
+        this.soundManager.playGameOver();
+        this.showWrongFeedback(q, optionIndex);
+      }
     }
   }
 
@@ -422,6 +448,54 @@ export class GameScene extends Phaser.Scene {
       targets: elements,
       alpha: 1,
       duration: 300,
+    });
+  }
+
+  /** Retry feedback: wrong answer but lives remain — let player try again */
+  private showRetryFeedback(q: QuizQuestion, chosenIndex: number): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7).setDepth(depth);
+    const panelW = 480;
+    const panelH = 200;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0xc73e3a).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0xc73e3a).setDepth(depth);
+
+    const title = this.add.text(512, 320, 'WRONG!', {
+      fontSize: '28px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const sub = this.add.text(512, 360, `${this.lives} ${this.lives === 1 ? 'LIFE' : 'LIVES'} LEFT — TRY AGAIN`, {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const hint = this.add.text(512, 392, '(pick another option)', {
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub, hint];
+    this.feedbackContainer.add(elements);
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 200,
+      onComplete: () => {
+        this.time.delayedCall(1500, () => {
+          this.tweens.add({
+            targets: elements,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => {
+              elements.forEach(el => el.destroy());
+              // Clear highlights and re-enable answering on the same question
+              this.questionContainer.removeAll(true);
+              this.answered = false;
+              this.renderQuestion();
+            },
+          });
+        });
+      },
     });
   }
 

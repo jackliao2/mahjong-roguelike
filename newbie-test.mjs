@@ -88,15 +88,16 @@ try {
   console.log('State:', JSON.stringify(state, null, 2));
   await page.screenshot({ path: 'screenshots/newbie-03-quiz-start.png' });
 
-  // Answer 3 questions
-  for (let round = 1; round <= 3; round++) {
-    console.log(`\n=== ROUND ${round} ===`);
+  // Answer all questions (8 for beginner)
+  const maxRounds = await getQuizState(page).then(s => s.maxRounds || 8);
+  for (let round = 1; round <= maxRounds; round++) {
+    console.log(`\n=== ROUND ${round}/${maxRounds} ===`);
 
-    // Wait for round intro to fade and question to appear
+    // Wait for round intro to fade and NEW question for this round to appear
     let waited = 0;
-    while (waited < 8000) {
+    while (waited < 10000) {
       state = await getQuizState(page);
-      if (state.hasQuestion && !state.answered) break;
+      if (state.hasQuestion && !state.answered && state.round === round) break;
       await sleep(500);
       waited += 500;
     }
@@ -123,7 +124,7 @@ try {
 
     // Click NEXT ROUND button (x=512, y=480)
     // For last round, button says "COMPLETE!"
-    const isLast = round === state.maxRounds;
+    const isLast = round === maxRounds;
     if (!isLast) {
       ci = await getCanvasInfo(page);
       await clickCanvas(page, 512, 480, ci);

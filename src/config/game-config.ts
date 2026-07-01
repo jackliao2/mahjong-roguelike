@@ -46,19 +46,21 @@ export const GameConfig = {
 
   // ===== Round Configuration =====
   rounds: {
-    maxRounds: 5,
+    maxRounds: 12,
     baseScore: 1000,
     scoreMultiplier: 1.5,
     bossRoundMultiplier: 1.5,
+    lives: 1,            // NORMAL: 1 wrong = game over (rogue tension)
   },
 
   // ===== Beginner Mode =====
   beginner: {
-    maxRounds: 3,
+    maxRounds: 8,
     scoreMultiplier: 0.4, // 40% of normal target scores — a single basic yaku clears round 1
     unlockedYaku: ['riichi', 'tanyao', 'pinfu', 'yakuhai'],
     completedKey: 'mjrg_beginner_done',
     tutorialSeenKey: 'mjrg_tutorial_seen',
+    lives: 2,            // BEGINNER: 2 lives — more forgiving for learners
     tutorialSteps: [
       { id: 'welcome', text: "Welcome! Goal: 4 sets + 1 pair (14 tiles). Let's learn by playing.", target: 'center' },
       { id: 'draw', text: 'Press D or click DRAW TILE to take a new tile.', target: 'drawButton' },

@@ -82,12 +82,14 @@ try {
     await sleep(3000);
 
     let wins = 0;
-    for (let round = 1; round <= 3; round++) {
-      // Wait for question
+    const startState = await getQuizState(page);
+    const maxRounds = startState.maxRounds || 8;
+    for (let round = 1; round <= maxRounds; round++) {
+      // Wait for NEW question for this round
       let waited = 0;
-      while (waited < 8000) {
+      while (waited < 10000) {
         const state = await getQuizState(page);
-        if (state.hasQuestion && !state.answered) break;
+        if (state.hasQuestion && !state.answered && state.round === round) break;
         await sleep(500);
         waited += 500;
       }
@@ -103,7 +105,7 @@ try {
       await sleep(1500);
 
       // Click NEXT (not on last round)
-      if (round < state.maxRounds) {
+      if (round < maxRounds) {
         ci = await getCanvasInfo(page);
         await clickCanvas(page, 512, 480, ci);
         await sleep(2000);
@@ -114,8 +116,8 @@ try {
     await sleep(2000);
     const finalState = await getQuizState(page);
     const hasGameOver = finalState.activeScenes?.includes('GameOverScene');
-    console.log(`  Wins: ${wins}/3, GameOver: ${hasGameOver}`);
-    if (wins === 3 && hasGameOver) {
+    console.log(`  Wins: ${wins}/${maxRounds}, GameOver: ${hasGameOver}`);
+    if (wins === maxRounds && hasGameOver) {
       console.log('  ✅ PASS');
     } else {
       console.log('  ❌ FAIL');

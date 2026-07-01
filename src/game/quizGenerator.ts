@@ -28,6 +28,8 @@ export interface QuizQuestion {
   correctIndices: number[];   // indices into options (multiple for waiting-tiles)
   explanation: string;
   targetYaku?: string;
+  isBoss?: boolean;           // BOSS round — styled differently
+  chapter?: string;           // e.g. "CH 1: TENPAI"
 }
 
 // ===== Helpers =====
@@ -436,27 +438,66 @@ export function generateDiscardBest(): QuizQuestion {
   return generateFallback();
 }
 
+// ===== Chapter / BOSS system =====
+
+/** Chapter metadata for a given round. Every 3rd round is a BOSS. */
+export interface ChapterInfo {
+  chapter: string;     // e.g. "CH 1"
+  title: string;       // e.g. "TENPAI BASICS"
+  isBoss: boolean;
+}
+
+const CHAPTER_DEFS: { name: string; title: string }[] = [
+  { name: 'CH 1', title: 'TENPAI BASICS' },
+  { name: 'CH 2', title: 'TANYAO PATH' },
+  { name: 'CH 3', title: 'PINFU MASTERY' },
+  { name: 'CH 4', title: 'YAKUHAI DRAGONS' },
+  { name: 'CH 5', title: 'ADVANCED TRIALS' },
+];
+
+export function getChapterForRound(round: number): ChapterInfo {
+  // Chapter index (0-based): rounds 1-3 → ch0, 4-6 → ch1, etc.
+  const chIdx = Math.floor((round - 1) / 3);
+  const within = ((round - 1) % 3); // 0,1,2
+  const isBoss = within === 2;
+  const def = CHAPTER_DEFS[Math.min(chIdx, CHAPTER_DEFS.length - 1)];
+  return { chapter: def.name, title: def.title, isBoss };
+}
+
 // ===== Round-based generation =====
 
 /** Generate a question for the given round number */
-export function generateQuestionForRound(round: number, maxRounds: number = 3): QuizQuestion {
-  // Round 1: tenpai-win (easiest)
-  // Round 2: yaku-form tanyao
-  // Round 3: yaku-form pinfu or waiting-tiles
-  if (round === 1) {
-    return generateTenpaiWin();
-  } else if (round === 2) {
-    return generateYakuForm('tanyao');
+export function generateQuestionForRound(round: number, maxRounds: number = 8): QuizQuestion {
+  const ch = getChapterForRound(round);
+  let q: QuizQuestion;
+
+  // Chapter 1 (1-2): tenpai-win basics; BOSS at 3 = waiting-tiles
+  // Chapter 2 (4-5): tanyao; BOSS at 6 = discard-best
+  // Chapter 3 (7-8): pinfu; BOSS at 9 = waiting-tiles
+  // Chapter 4 (10-11): yakuhai; BOSS at 12 = mixed (final)
+  if (round <= 2) {
+    q = generateTenpaiWin();
   } else if (round === 3) {
-    // Alternate between pinfu and waiting-tiles
-    return Math.random() < 0.5 ? generateYakuForm('pinfu') : generateWaitingTiles();
-  } else if (round === 4) {
-    return generateYakuForm('yakuhai');
+    q = generateWaitingTiles();
+  } else if (round === 4 || round === 5) {
+    q = generateYakuForm('tanyao');
+  } else if (round === 6) {
+    q = generateDiscardBest();
+  } else if (round === 7 || round === 8) {
+    q = generateYakuForm('pinfu');
+  } else if (round === 9) {
+    q = generateWaitingTiles();
+  } else if (round === 10 || round === 11) {
+    q = generateYakuForm('yakuhai');
   } else {
-    // Round 5+: random
+    // Final / beyond: random mix
     const generators = [generateTenpaiWin, generateWaitingTiles, generateDiscardBest];
-    return rand(generators)();
+    q = rand(generators)();
   }
+
+  q.isBoss = ch.isBoss;
+  q.chapter = `${ch.chapter}: ${ch.title}`;
+  return q;
 }
 
 // ===== Fallback =====

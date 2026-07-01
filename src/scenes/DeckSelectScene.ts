@@ -54,8 +54,8 @@ export class DeckSelectScene extends Phaser.Scene {
     const y = 320;
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
-      { id: 'beginner', label: 'BEGINNER', desc: '3 questions\nLearn tenpai, tanyao, pinfu\nWrong answer = game over', locked: false, recommended: !beginnerDone },
-      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '5 questions\nIncludes yakuhai + advanced\nHarder hand patterns' : 'Complete Beginner\nmode to unlock', locked: !beginnerDone, recommended: false },
+      { id: 'beginner', label: 'BEGINNER', desc: '8 questions · 2 lives\nChapters 1-3 (tenpai→tanyao→pinfu)\nBoss questions every 3 rounds', locked: false, recommended: !beginnerDone },
+      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nFull course + yakuhai + advanced\n1 wrong = game over' : 'Complete Beginner\nmode to unlock', locked: !beginnerDone, recommended: false },
     ];
 
     const cardW = 340;
