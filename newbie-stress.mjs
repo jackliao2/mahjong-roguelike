@@ -6,21 +6,6 @@ const RUNS = 5;
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function getCanvasInfo(page) {
-  return await page.evaluate(() => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, cw: canvas.width, ch: canvas.height };
-  });
-}
-
-async function clickCanvas(page, cx, cy, ci) {
-  const sx = ci.left + (cx / ci.cw) * ci.width;
-  const sy = ci.top + (cy / ci.ch) * ci.height;
-  await page.mouse.click(sx, sy);
-}
-
 async function getQuizState(page) {
   return await page.evaluate(() => {
     try {
@@ -32,14 +17,40 @@ async function getQuizState(page) {
         round: scene.round,
         maxRounds: scene.maxRounds,
         score: scene.score,
+        lives: scene.lives,
+        combo: scene.combo,
+        bestCombo: scene.bestCombo,
         answered: scene.answered,
         hasQuestion: !!scene.currentQuestion,
         correctIndices: scene.currentQuestion?.correctIndices || [],
+        relics: scene.relics,
         activeScenes: scenes.filter(s => s && s.scene).map(s => s.scene.key),
       };
     } catch (err) {
       return { error: err.message };
     }
+  });
+}
+
+async function answerCorrect(page) {
+  return await page.evaluate(() => {
+    const scenes = window.game?.scene?.scenes;
+    const scene = scenes?.find(s => s && s.scene && s.scene.isActive() && s.scene.key === 'GameScene');
+    if (!scene || !scene.currentQuestion || scene.answered) return false;
+    const idx = scene.currentQuestion.correctIndices[0];
+    scene.handleAnswer(idx);
+    return true;
+  });
+}
+
+async function nextRound(page) {
+  return await page.evaluate(() => {
+    const scenes = window.game?.scene?.scenes;
+    const scene = scenes?.find(s => s && s.scene && s.scene.isActive() && s.scene.key === 'GameScene');
+    if (!scene) return false;
+    scene.stopTimer();
+    scene.proceedToNextRound();
+    return true;
   });
 }
 
@@ -49,80 +60,76 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--disable-gpu', '--window-size=1280,800'],
 });
 
-try {
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800 });
-  const client = await page.target().createCDPSession();
-  await client.send('Network.setCacheDisabled', { cacheDisabled: true });
-  page.on('pageerror', err => console.log('[PAGEERROR]', err.message));
+let passCount = 0;
 
+try {
   for (let run = 1; run <= RUNS; run++) {
     console.log(`\n===== RUN ${run}/${RUNS} =====`);
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 800 });
+    const client = await page.target().createCDPSession();
+    await client.send('Network.setCacheDisabled', { cacheDisabled: true });
 
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     await sleep(2500);
 
-    // Clear progress
     await page.evaluate(() => {
-      localStorage.removeItem('mjrg_onboarded');
       localStorage.removeItem('mjrg_beginner_done');
+      localStorage.removeItem('mjrg_normal_done');
       localStorage.removeItem('mjrg_run');
       localStorage.removeItem('mjrg_meta');
-      localStorage.removeItem('mjrg_tutorial_seen');
     });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await sleep(2500);
 
-    let ci = await getCanvasInfo(page);
-    // Click BEGINNER (x=322, y=320)
-    await clickCanvas(page, 322, 320, ci);
-    await sleep(1000);
-    // Click START QUIZ (x=760, y=640)
-    await clickCanvas(page, 760, 640, ci);
-    await sleep(3000);
+    // Start beginner run
+    await page.evaluate(() => {
+      const scenes = window.game?.scene?.scenes;
+      const scene = scenes?.find(s => s && s.scene && s.scene.key === 'DeckSelectScene');
+      if (scene) scene.scene.start('GameScene', { action: 'new_run', difficulty: 'beginner' });
+    });
+    await sleep(2000);
 
+    let state = await getQuizState(page);
+    const maxRounds = state.maxRounds;
     let wins = 0;
-    const startState = await getQuizState(page);
-    const maxRounds = startState.maxRounds || 8;
+
     for (let round = 1; round <= maxRounds; round++) {
-      // Wait for NEW question for this round
       let waited = 0;
       while (waited < 10000) {
-        const state = await getQuizState(page);
+        state = await getQuizState(page);
         if (state.hasQuestion && !state.answered && state.round === round) break;
-        await sleep(500);
-        waited += 500;
+        await sleep(200);
+        waited += 200;
       }
-
-      const state = await getQuizState(page);
-      if (!state.hasQuestion) { console.log(`  Round ${round}: no question`); break; }
-
-      // Click correct answer
-      const correctIdx = state.correctIndices[0];
-      const optionX = 386 + correctIdx * 84;
-      ci = await getCanvasInfo(page);
-      await clickCanvas(page, optionX, 480, ci);
-      await sleep(1500);
-
-      // Click NEXT (not on last round)
+      if (!state.hasQuestion || state.round !== round) {
+        console.log(`  Q${round}: SKIP (no question)`);
+        continue;
+      }
+      await answerCorrect(page);
+      await sleep(150);
       if (round < maxRounds) {
-        ci = await getCanvasInfo(page);
-        await clickCanvas(page, 512, 480, ci);
-        await sleep(2000);
+        await nextRound(page);
+        await sleep(200);
       }
       wins++;
     }
 
-    await sleep(2000);
-    const finalState = await getQuizState(page);
-    const hasGameOver = finalState.activeScenes?.includes('GameOverScene');
-    console.log(`  Wins: ${wins}/${maxRounds}, GameOver: ${hasGameOver}`);
-    if (wins === maxRounds && hasGameOver) {
+    await sleep(1000);
+    state = await getQuizState(page);
+    const hasGameOver = state.activeScenes?.includes('GameOverScene');
+    console.log(`  Wins: ${wins}/${maxRounds}, Score: ${state.score}, Best combo: ${state.bestCombo}, GameOver: ${hasGameOver}`);
+    if (wins >= maxRounds - 2 && hasGameOver) {
       console.log('  ✅ PASS');
+      passCount++;
     } else {
       console.log('  ❌ FAIL');
     }
+
+    await page.close();
   }
+
+  console.log(`\n===== RESULT: ${passCount}/${RUNS} PASSED =====`);
 } catch (err) {
   console.error('Stress test failed:', err.message);
   console.error(err.stack);

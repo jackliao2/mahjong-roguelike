@@ -8,6 +8,7 @@ import { SoundManager } from '@/render/sound';
 import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
 import { generateQuestionForRound, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
+import { RelicId, getRandomRelics, Relic } from '@/game/relics';
 
 const OPTION_TILE_W = 64;
 const OPTION_TILE_H = 82;
@@ -15,6 +16,7 @@ const HAND_TILE_W = 52;
 const HAND_TILE_H = 68;
 
 export class GameScene extends Phaser.Scene {
+  // Core state
   private round: number = 1;
   private maxRounds: number = 3;
   private score: number = 0;
@@ -26,16 +28,43 @@ export class GameScene extends Phaser.Scene {
   private questionContainer!: Phaser.GameObjects.Container;
   private feedbackContainer!: Phaser.GameObjects.Container;
 
+  // Combo system
+  private combo: number = 0;
+  private bestCombo: number = 0;
+
+  // Timer system
+  private timeLeft: number = 0;
+  private timerActive: boolean = false;
+  private timerEvent: Phaser.Time.TimerEvent | null = null;
+  private baseTime: number = 20; // seconds per question
+  private bossTime: number = 30;
+
+  // Relic system
+  private relics: RelicId[] = [];
+  private doubleTalismanUses: number = 0;
+  private shieldUsedThisChapter: boolean = false;
+
+  // Path system
+  private currentPath: 'safe' | 'risky' = 'safe';
+  private pathMultiplier: number = 1;
+
+  // Endless mode
+  private isEndless: boolean = false;
+  private endlessDifficulty: number = 1;
+
   constructor() {
     super('GameScene');
   }
 
-  create(data?: { action?: string; deckId?: string; difficulty?: string }): void {
+  create(data?: { action?: string; deckId?: string; difficulty?: string; endless?: boolean }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
 
     this.isBeginner = data?.difficulty === 'beginner';
-    this.maxRounds = this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
+    this.isEndless = data?.endless === true;
+    this.maxRounds = this.isEndless
+      ? 999
+      : (this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds);
     this.lives = this.isBeginner ? GameConfig.beginner.lives : GameConfig.rounds.lives;
 
     // Fresh run
@@ -51,6 +80,16 @@ export class GameScene extends Phaser.Scene {
       this.round = 1;
       this.score = 0;
     }
+
+    // Initialize systems
+    this.combo = 0;
+    this.bestCombo = 0;
+    this.relics = [];
+    this.doubleTalismanUses = 0;
+    this.shieldUsedThisChapter = false;
+    this.currentPath = 'safe';
+    this.pathMultiplier = 1;
+    this.endlessDifficulty = 1;
 
     trackRunStart(this.isBeginner ? 'beginner' : 'normal');
 
@@ -77,33 +116,46 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // ===== Top bar: round, score, lives, quit =====
+  // ===== Top bar: round, score, lives, combo, timer, quit =====
   private createTopBar(): void {
     const y = 30;
     // Round + chapter
-    this.add.text(40, y, '', {
-      fontSize: '17px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    this.add.text(30, y, '', {
+      fontSize: '15px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setName('roundLabel');
-    // Lives (left-center)
-    this.add.text(360, y, '', {
-      fontSize: '17px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    // Lives
+    this.add.text(250, y, '', {
+      fontSize: '15px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('livesLabel');
+    // Combo
+    this.add.text(370, y, '', {
+      fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setName('comboLabel');
     // Score
     this.add.text(512, y, '', {
-      fontSize: '17px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('scoreLabel');
+    // Timer
+    this.add.text(660, y, '', {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setName('timerLabel');
+    // Relic icons (right side)
+    this.add.text(780, y, '', {
+      fontSize: '15px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setName('relicLabel');
     // Quit button
-    const quitBg = this.add.rectangle(980, y, 70, 32, 0x5c3825)
+    const quitBg = this.add.rectangle(980, y, 60, 28, 0x5c3825)
       .setStrokeStyle(2, 0x8b6f47);
     const quitText = this.add.text(980, y, 'QUIT', {
-      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
-    const quitHit = this.add.rectangle(980, y, 70, 32, 0xffffff, 0)
+    const quitHit = this.add.rectangle(980, y, 60, 28, 0xffffff, 0)
       .setInteractive({ useHandCursor: true });
     quitHit.on('pointerover', () => quitBg.setFillStyle(0x8b6f47));
     quitHit.on('pointerout', () => quitBg.setFillStyle(0x5c3825));
     quitHit.on('pointerdown', () => {
       this.soundManager.playClick();
+      this.stopTimer();
       window.location.href = '/';
     });
   }
@@ -111,17 +163,81 @@ export class GameScene extends Phaser.Scene {
   private updateTopBar(): void {
     const roundLabel = this.children.getByName('roundLabel') as Phaser.GameObjects.Text;
     const livesLabel = this.children.getByName('livesLabel') as Phaser.GameObjects.Text;
+    const comboLabel = this.children.getByName('comboLabel') as Phaser.GameObjects.Text;
     const scoreLabel = this.children.getByName('scoreLabel') as Phaser.GameObjects.Text;
+    const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
+    const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
     const ch = getChapterForRound(this.round);
     if (roundLabel) {
-      const bossTag = ch.isBoss ? ' [BOSS]' : '';
-      roundLabel.setText(`Q${this.round}/${this.maxRounds} · ${ch.chapter}${bossTag}`);
+      const bossTag = ch.isBoss ? ' BOSS' : '';
+      const endlessTag = this.isEndless ? ' ENDLESS' : '';
+      roundLabel.setText(`Q${this.isEndless ? this.round : `${this.round}/${this.maxRounds}`}·${ch.chapter}${bossTag}${endlessTag}`);
     }
     if (livesLabel) {
       const hearts = '♥'.repeat(Math.max(0, this.lives));
-      livesLabel.setText(`LIVES ${hearts}`);
+      livesLabel.setText(hearts || '✕');
     }
-    if (scoreLabel) scoreLabel.setText(`SCORE ${this.score}`);
+    if (comboLabel) {
+      comboLabel.setText(this.combo >= 2 ? `COMBO x${this.combo}` : '');
+    }
+    if (scoreLabel) scoreLabel.setText(`${this.score}`);
+    if (timerLabel) {
+      timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
+    }
+    if (relicLabel) {
+      const icons: Record<string, string> = {
+        'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
+        'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
+        'lucky-coin': '🪙', 'shield-tile': '🛡',
+      };
+      relicLabel.setText(this.relics.map(r => icons[r] || '?').join(''));
+    }
+  }
+
+  // ===== Timer system =====
+  private startTimer(seconds: number): void {
+    this.stopTimer();
+    this.timeLeft = seconds;
+    this.timerActive = true;
+    this.updateTopBar();
+    this.timerEvent = this.time.addEvent({
+      delay: 100,
+      callback: () => this.tickTimer(),
+      loop: true,
+    });
+  }
+
+  private stopTimer(): void {
+    this.timerActive = false;
+    if (this.timerEvent) {
+      this.timerEvent.remove();
+      this.timerEvent = null;
+    }
+  }
+
+  private tickTimer(): void {
+    if (!this.timerActive) return;
+    this.timeLeft -= 0.1;
+    this.updateTopBar();
+    if (this.timeLeft <= 0) {
+      this.timeLeft = 0;
+      this.stopTimer();
+      this.handleTimeout();
+    }
+  }
+
+  private handleTimeout(): void {
+    if (this.answered || !this.currentQuestion) return;
+    this.answered = true;
+    this.lives -= 1;
+    this.combo = 0;
+    this.updateTopBar();
+    if (this.lives > 0) {
+      this.showTimeoutRetry();
+    } else {
+      this.soundManager.playGameOver();
+      this.showWrongFeedback(this.currentQuestion, -1);
+    }
   }
 
   // ===== Round flow =====
@@ -183,7 +299,16 @@ export class GameScene extends Phaser.Scene {
   // ===== Question rendering =====
   private loadQuestion(): void {
     this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds);
+    if (this.currentPath === 'risky') {
+      this.currentQuestion.isBoss = true;
+    }
     this.renderQuestion();
+    // Start timer
+    const hasHourglass = this.relics.includes('hourglass');
+    const extraSec = hasHourglass ? 5 : 0;
+    const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
+    const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
+    this.startTimer(Math.max(8, base - endlessPenalty));
   }
 
   private renderQuestion(): void {
@@ -266,19 +391,38 @@ export class GameScene extends Phaser.Scene {
 
   /** Render 4 option tiles as large clickable buttons */
   private renderOptions(tiles: Tile[], centerX: number, y: number): void {
+    const hasHint = this.relics.includes('hint-scroll');
+    const hasGlass = this.relics.includes('perspective-glass');
+    const q = this.currentQuestion;
+    if (!q) return;
+
+    // Hint-scroll: hide 1 wrong option (gray it out + disabled)
+    let hiddenWrongIndex = -1;
+    if (hasHint) {
+      const wrongIndices: number[] = [];
+      tiles.forEach((_, i) => {
+        if (!q.correctIndices.includes(i)) wrongIndices.push(i);
+      });
+      if (wrongIndices.length > 0) {
+        hiddenWrongIndex = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+      }
+    }
+
     const gap = 20;
     const totalW = tiles.length * OPTION_TILE_W + (tiles.length - 1) * gap;
     const startX = centerX - totalW / 2 + OPTION_TILE_W / 2;
 
     tiles.forEach((tile, i) => {
       const x = startX + i * (OPTION_TILE_W + gap);
-      const option = this.createOptionButton(tile, x, y, i);
+      const isHidden = i === hiddenWrongIndex;
+      const isCorrectAnswer = q.correctIndices.includes(i);
+      const option = this.createOptionButton(tile, x, y, i, isHidden, hasGlass && isCorrectAnswer);
       this.questionContainer.add(option);
     });
   }
 
   /** Create a clickable option tile button */
-  private createOptionButton(tile: Tile, x: number, y: number, index: number): Phaser.GameObjects.Container {
+  private createOptionButton(tile: Tile, x: number, y: number, index: number, disabled: boolean = false, glowCorrect: boolean = false): Phaser.GameObjects.Container {
     const isBoss = this.currentQuestion?.isBoss ?? false;
     const frameColor = isBoss ? 0xc73e3a : 0xd4a574;
     const hoverColor = isBoss ? 0xe04e4a : 0xe5b567;
@@ -292,9 +436,32 @@ export class GameScene extends Phaser.Scene {
     const container = this.add.container(x, y, [frame, shadow, sprite]);
     container.setSize(OPTION_TILE_W + 8, OPTION_TILE_H + 8);
 
+    // Perspective glass: correct answer glows faintly
+    let glow: Phaser.GameObjects.Rectangle | null = null;
+    if (glowCorrect) {
+      glow = this.add.rectangle(0, 0, OPTION_TILE_W + 12, OPTION_TILE_H + 12, 0xe5b567, 0.15)
+        .setStrokeStyle(2, 0xe5b567, 0.4);
+      container.addAt(glow, 0);
+      // subtle pulse
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0.3, to: 0.6 },
+        duration: 1200,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
+
+    // Disabled (hint-scroll removed): gray out
+    if (disabled) {
+      sprite.setAlpha(0.25);
+      frame.setFillStyle(0x000000);
+      frame.setStrokeStyle(2, 0x444444);
+    }
+
     // Option label (A/B/C/D)
     const letter = String.fromCharCode(65 + index); // A, B, C, D
-    const letterBg = this.add.rectangle(-OPTION_TILE_W / 2 + 2, -OPTION_TILE_H / 2 - 2, 22, 22, 0xc73e3a);
+    const letterBg = this.add.rectangle(-OPTION_TILE_W / 2 + 2, -OPTION_TILE_H / 2 - 2, 22, 22, disabled ? 0x666666 : 0xc73e3a);
     const letterText = this.add.text(-OPTION_TILE_W / 2 + 2, -OPTION_TILE_H / 2 - 2, letter, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -309,29 +476,31 @@ export class GameScene extends Phaser.Scene {
     container.add([labelBg, labelText]);
 
     // Interactivity
-    container.setInteractive({ useHandCursor: true });
-    container.on('pointerover', () => {
-      if (!this.answered) {
-        container.setScale(1.08);
-        frame.setStrokeStyle(5, hoverColor);
-      }
-    });
-    container.on('pointerout', () => {
-      if (!this.answered) {
-        container.setScale(1);
-        frame.setStrokeStyle(isBoss ? 4 : 3, frameColor);
-      }
-    });
-    container.on('pointerdown', () => {
-      if (!this.answered) {
-        this.handleAnswer(index);
-      }
-    });
+    if (!disabled) {
+      container.setInteractive({ useHandCursor: true });
+      container.on('pointerover', () => {
+        if (!this.answered) {
+          container.setScale(1.08);
+          frame.setStrokeStyle(5, hoverColor);
+        }
+      });
+      container.on('pointerout', () => {
+        if (!this.answered) {
+          container.setScale(1);
+          frame.setStrokeStyle(isBoss ? 4 : 3, frameColor);
+        }
+      });
+      container.on('pointerdown', () => {
+        if (!this.answered) {
+          this.handleAnswer(index);
+        }
+      });
 
-    // Hover tooltip
-    container.on('pointerover', () => {
-      this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
-    });
+      // Hover tooltip
+      container.on('pointerover', () => {
+        this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
+      });
+    }
 
     return container;
   }
@@ -340,6 +509,7 @@ export class GameScene extends Phaser.Scene {
   private handleAnswer(optionIndex: number): void {
     if (!this.currentQuestion || this.answered) return;
     this.answered = true;
+    this.stopTimer();
     const q = this.currentQuestion;
     const isCorrect = q.correctIndices.includes(optionIndex);
 
@@ -348,14 +518,54 @@ export class GameScene extends Phaser.Scene {
 
     if (isCorrect) {
       this.soundManager.playWin();
-      this.score += q.isBoss ? 1500 : 1000;
+      this.combo += 1;
+      this.bestCombo = Math.max(this.bestCombo, this.combo);
+
+      // Base score
+      let baseScore = q.isBoss ? 1500 : 1000;
+
+      // Path multiplier
+      baseScore *= this.pathMultiplier;
+
+      // Lucky coin: +10%
+      if (this.relics.includes('lucky-coin')) baseScore *= 1.1;
+
+      // Combo bonus (each combo above 1 adds +10% base; combo-feather adds +50% more)
+      if (this.combo >= 2) {
+        const comboBonusBase = Math.min(1, (this.combo - 1) * 0.1);
+        const featherBoost = this.relics.includes('combo-feather') ? 1.5 : 1;
+        baseScore *= 1 + comboBonusBase * featherBoost;
+      }
+
+      // Speed bonus: faster = more points (up to +50%)
+      const totalTime = q.isBoss ? this.bossTime : this.baseTime;
+      const usedRatio = 1 - Math.max(0, this.timeLeft / totalTime);
+      const speedBonus = Math.max(0, 1 - usedRatio) * 0.5; // up to +50%
+      baseScore *= 1 + speedBonus;
+
+      // Double talisman
+      if (this.doubleTalismanUses > 0) {
+        baseScore *= 2;
+        this.doubleTalismanUses -= 1;
+      }
+
+      this.score += Math.round(baseScore);
       trackWin([q.targetYaku || q.type], 1, 1000, false);
+      this.updateTopBar();
       this.showCorrectFeedback(q);
     } else {
+      // Shield Tile: first wrong per chapter is free
+      if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
+        this.shieldUsedThisChapter = true;
+        this.combo = 0;
+        this.showShieldBlockFeedback(optionIndex);
+        this.updateTopBar();
+        return;
+      }
       this.lives -= 1;
+      this.combo = 0;
       this.updateTopBar();
       if (this.lives > 0) {
-        // Still alive — show retry, allow re-answer same question
         this.soundManager.playClick();
         this.showRetryFeedback(q, optionIndex);
       } else {
@@ -448,6 +658,92 @@ export class GameScene extends Phaser.Scene {
       targets: elements,
       alpha: 1,
       duration: 300,
+    });
+  }
+
+  /** Shield block feedback: relic absorbed the damage */
+  private showShieldBlockFeedback(chosenIndex: number): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.65).setDepth(depth);
+    const panelW = 480;
+    const panelH = 180;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0x4a6fa5).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0x4a6fa5).setDepth(depth);
+
+    const title = this.add.text(512, 330, 'SHIELD TILE!', {
+      fontSize: '24px', color: '#4a9ebf', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const sub = this.add.text(512, 370, 'Mistake absorbed. Try again!', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub];
+    this.feedbackContainer.add(elements);
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 200,
+      onComplete: () => {
+        this.time.delayedCall(1200, () => {
+          this.tweens.add({
+            targets: elements,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => {
+              elements.forEach(el => el.destroy());
+              this.questionContainer.removeAll(true);
+              this.answered = false;
+              this.renderQuestion();
+            },
+          });
+        });
+      },
+    });
+  }
+
+  /** Timeout retry: ran out of time but lives remain */
+  private showTimeoutRetry(): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7).setDepth(depth);
+    const panelW = 480;
+    const panelH = 180;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0xe5b567).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0xe5b567).setDepth(depth);
+
+    const title = this.add.text(512, 330, "TIME'S UP!", {
+      fontSize: '28px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const sub = this.add.text(512, 370, `${this.lives} ${this.lives === 1 ? 'LIFE' : 'LIVES'} LEFT`, {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub];
+    this.feedbackContainer.add(elements);
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 200,
+      onComplete: () => {
+        this.time.delayedCall(1200, () => {
+          this.tweens.add({
+            targets: elements,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => {
+              elements.forEach(el => el.destroy());
+              // Next question (same round? Actually advance to next round)
+              // Timeout = wrong, consume a life but move on
+              this.proceedToNextRound();
+            },
+          });
+        });
+      },
     });
   }
 
@@ -572,9 +868,49 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Round progression =====
   private proceedToNextRound(): void {
-    // Persist state
+    const wasBoss = getChapterForRound(this.round).isBoss;
+    const nextRound = this.round + 1;
+    const isNewChapter = nextRound > 1 && (nextRound - 1) % 3 === 0; // next is first of new chapter
+
+    // Check run complete
+    if (!this.isEndless && this.round >= this.maxRounds) {
+      this.finishRun(true);
+      return;
+    }
+
+    // Advance round
+    this.round = nextRound;
+
+    // Endless: bump difficulty every chapter
+    if (this.isEndless && isNewChapter) {
+      this.endlessDifficulty += 1;
+    }
+
+    // Reset shield at new chapter
+    if (isNewChapter) {
+      this.shieldUsedThisChapter = false;
+    }
+
+    // After BOSS: relic choice + path choice
+    if (wasBoss) {
+      this.showRelicChoice(() => {
+        // After relic, show path choice if next is start of chapter
+        if (isNewChapter) {
+          this.showPathChoice(() => this.startRound());
+        } else {
+          this.startRound();
+        }
+      });
+    } else if (isNewChapter) {
+      this.showPathChoice(() => this.startRound());
+    } else {
+      this.startRound();
+    }
+  }
+
+  private finishRun(won: boolean): void {
     const runState: RunState = {
-      round: this.round + 1,
+      round: this.round,
       score: this.score,
       targetScore: 0,
       maxRounds: this.maxRounds,
@@ -585,22 +921,206 @@ export class GameScene extends Phaser.Scene {
     };
     persistRun(runState);
 
-    // Check if run complete
-    if (checkRunComplete({ round: this.round, maxRounds: this.maxRounds, score: this.score, targetScore: 0, unlockedYaku: [], isRiichi: false, riichiTurns: 0, doraIndicators: [] } as RunState)) {
-      // Run won!
+    if (won) {
       const { meta, newAchievements } = endRun(runState, true);
       trackRunComplete(true, this.score, this.round);
       if (this.isBeginner) {
         localStorage.setItem(GameConfig.beginner.completedKey, '1');
       }
-      this.scene.launch('GameOverScene', { runState, won: true, meta, newAchievements });
+      if (!this.isBeginner && !this.isEndless && this.round >= this.maxRounds) {
+        localStorage.setItem('mjrg_normal_done', '1');
+      }
+      this.scene.launch('GameOverScene', { runState, won: true, meta, newAchievements, bestCombo: this.bestCombo });
       this.scene.pause();
-      return;
     }
+  }
 
-    // Advance to next round
-    this.round += 1;
-    this.startRound();
+  // ===== Relic choice screen (after BOSS) =====
+  private showRelicChoice(onDone: () => void): void {
+    const depth = 1200;
+    const choices = getRandomRelics(3, this.relics);
+
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.8).setDepth(depth);
+    const title = this.add.text(512, 140, 'CHOOSE A RELIC', {
+      fontSize: '28px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const subtitle = this.add.text(512, 175, 'Pick one power-up for the next chapter', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
+    const cardW = 220;
+    const cardH = 260;
+    const gap = 30;
+    const startX = 512 - cardW - gap;
+
+    const rarityColors: Record<string, { border: number; title: string }> = {
+      common: { border: 0x8b6f47, title: '#c9b89a' },
+      rare: { border: 0x4a6fa5, title: '#6aa3e0' },
+      epic: { border: 0x8b4a9e, title: '#c77ae0' },
+    };
+
+    choices.forEach((relic, i) => {
+      const x = startX + i * (cardW + gap);
+      const y = 360;
+      const colors = rarityColors[relic.rarity];
+
+      const cardBg = this.add.rectangle(x, y, cardW, cardH, 0x1a0f08)
+        .setStrokeStyle(3, colors.border).setDepth(depth);
+      const rarityTag = this.add.text(x, y - cardH / 2 + 20, relic.rarity.toUpperCase(), {
+        fontSize: '11px', color: colors.title, fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+
+      const iconMap: Record<string, string> = {
+        'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
+        'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
+        'lucky-coin': '🪙', 'shield-tile': '🛡',
+      };
+      const icon = this.add.text(x, y - 20, iconMap[relic.id] || '?', {
+        fontSize: '48px',
+      }).setOrigin(0.5).setDepth(depth + 1);
+
+      const nameText = this.add.text(x, y + 40, relic.name, {
+        fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+
+      const descText = this.add.text(x, y + 75, relic.description, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+        align: 'center', wordWrap: { width: cardW - 30 }, lineSpacing: 4,
+      }).setOrigin(0.5, 0).setDepth(depth + 1);
+
+      const hit = this.add.rectangle(x, y, cardW, cardH, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+      hit.on('pointerover', () => cardBg.setStrokeStyle(5, colors.border));
+      hit.on('pointerout', () => cardBg.setStrokeStyle(3, colors.border));
+      hit.on('pointerdown', () => {
+        this.soundManager.playClick();
+        this.applyRelic(relic.id);
+        elements.forEach(el => el.destroy());
+        onDone();
+      });
+
+      elements.push(cardBg, rarityTag, icon, nameText, descText, hit);
+    });
+
+    // Skip button
+    const skipBg = this.add.rectangle(512, 590, 140, 36, 0x5c3825)
+      .setStrokeStyle(2, 0x8b6f47).setDepth(depth);
+    const skipText = this.add.text(512, 590, 'SKIP', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const skipHit = this.add.rectangle(512, 590, 140, 36, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    skipHit.on('pointerover', () => skipBg.setFillStyle(0x8b6f47));
+    skipHit.on('pointerout', () => skipBg.setFillStyle(0x5c3825));
+    skipHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      elements.forEach(el => el.destroy());
+      onDone();
+    });
+    elements.push(skipBg, skipText, skipHit);
+
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
+  }
+
+  private applyRelic(id: RelicId): void {
+    this.relics.push(id);
+    // Apply immediate effects
+    if (id === 'time-charm') {
+      this.lives += 1;
+    }
+    if (id === 'double-talisman') {
+      this.doubleTalismanUses += 3;
+    }
+    this.updateTopBar();
+  }
+
+  // ===== Path choice screen (start of each chapter) =====
+  private showPathChoice(onDone: () => void): void {
+    const depth = 1200;
+    const nextCh = getChapterForRound(this.round);
+
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
+    const title = this.add.text(512, 160, `CHOOSE YOUR PATH`, {
+      fontSize: '26px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const subtitle = this.add.text(512, 195, `${nextCh.chapter}: ${nextCh.title}`, {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
+    const cardW = 280;
+    const cardH = 320;
+    const gap = 50;
+
+    // Safe path
+    const safeX = 512 - cardW / 2 - gap / 2;
+    const riskyX = 512 + cardW / 2 + gap / 2;
+    const y = 380;
+
+    // Safe card
+    const safeBg = this.add.rectangle(safeX, y, cardW, cardH, 0x1a0f08)
+      .setStrokeStyle(3, 0x4a9e4a).setDepth(depth);
+    const safeTitle = this.add.text(safeX, y - 110, 'SAFE PATH', {
+      fontSize: '20px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const safeDesc = this.add.text(safeX, y - 50, 'Normal questions\nNo extra risk\nStandard score', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      align: 'center', lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const safeMul = this.add.text(safeX, y + 20, 'x1.0 SCORE', {
+      fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const safeHit = this.add.rectangle(safeX, y, cardW, cardH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    safeHit.on('pointerover', () => safeBg.setStrokeStyle(5, 0x4a9e4a));
+    safeHit.on('pointerout', () => safeBg.setStrokeStyle(3, 0x4a9e4a));
+    safeHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      this.currentPath = 'safe';
+      this.pathMultiplier = 1;
+      elements.forEach(el => el.destroy());
+      onDone();
+    });
+    elements.push(safeBg, safeTitle, safeDesc, safeMul, safeHit);
+
+    // Risky card
+    const riskyBg = this.add.rectangle(riskyX, y, cardW, cardH, 0x1a0f08)
+      .setStrokeStyle(3, 0xc73e3a).setDepth(depth);
+    const riskyTitle = this.add.text(riskyX, y - 110, 'RISKY PATH', {
+      fontSize: '20px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const riskyDesc = this.add.text(riskyX, y - 50, 'All questions are BOSS\nHarder hand patterns\nHigher rewards', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      align: 'center', lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const riskyMul = this.add.text(riskyX, y + 20, 'x1.5 SCORE', {
+      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const riskyHit = this.add.rectangle(riskyX, y, cardW, cardH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    riskyHit.on('pointerover', () => riskyBg.setStrokeStyle(5, 0xc73e3a));
+    riskyHit.on('pointerout', () => riskyBg.setStrokeStyle(3, 0xc73e3a));
+    riskyHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      this.currentPath = 'risky';
+      this.pathMultiplier = 1.5;
+      elements.forEach(el => el.destroy());
+      onDone();
+    });
+    elements.push(riskyBg, riskyTitle, riskyDesc, riskyMul, riskyHit);
+
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
   }
 
   // ===== Helpers =====

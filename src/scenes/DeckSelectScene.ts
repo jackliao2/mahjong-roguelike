@@ -3,7 +3,7 @@ import { MetaProgression } from '@/types';
 import { SoundManager } from '@/render/sound';
 import { GameConfig } from '@/config/game-config';
 
-type Difficulty = 'beginner' | 'normal';
+type Difficulty = 'beginner' | 'normal' | 'endless';
 
 export class DeckSelectScene extends Phaser.Scene {
   private meta!: MetaProgression;
@@ -51,16 +51,18 @@ export class DeckSelectScene extends Phaser.Scene {
 
   private renderDifficultyCards(): void {
     const beginnerDone = localStorage.getItem(GameConfig.beginner.completedKey) === '1';
+    const normalDone = localStorage.getItem('mjrg_normal_done') === '1';
     const y = 320;
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
-      { id: 'beginner', label: 'BEGINNER', desc: '8 questions · 2 lives\nChapters 1-3 (tenpai→tanyao→pinfu)\nBoss questions every 3 rounds', locked: false, recommended: !beginnerDone },
-      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nFull course + yakuhai + advanced\n1 wrong = game over' : 'Complete Beginner\nmode to unlock', locked: !beginnerDone, recommended: false },
+      { id: 'beginner', label: 'BEGINNER', desc: '8 questions · 2 lives\nChapters 1-3 (tenpai→tanyao→pinfu)\nBoss questions · Relics · Safe/Risky paths', locked: false, recommended: !beginnerDone },
+      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nFull 4-chapter course\nCombo bonuses + timed questions' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
+      { id: 'endless', label: 'ENDLESS', desc: normalDone ? 'Infinite chapters\nDifficulty ramps up\nHow far can you go?' : 'Complete Normal\nto unlock', locked: !normalDone, recommended: false },
     ];
 
-    const cardW = 340;
-    const cardH = 280;
-    const gap = 40;
+    const cardW = 290;
+    const cardH = 290;
+    const gap = 24;
     const startX = 512 - (options.length * cardW + (options.length - 1) * gap) / 2 + cardW / 2;
 
     options.forEach((opt, i) => {
@@ -153,7 +155,12 @@ export class DeckSelectScene extends Phaser.Scene {
     startHit.on('pointerout', () => { startBg.setFillStyle(0xc73e3a); startHit.setScale(1); });
     startHit.on('pointerdown', () => {
       this.soundManager.playClick();
-      this.scene.start('GameScene', { action: 'new_run', difficulty: this.difficulty });
+      const isEndless = this.difficulty === 'endless';
+      this.scene.start('GameScene', {
+        action: 'new_run',
+        difficulty: isEndless ? 'normal' : this.difficulty,
+        endless: isEndless,
+      });
     });
 
     // HOME (left)

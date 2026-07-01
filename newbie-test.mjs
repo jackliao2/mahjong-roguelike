@@ -5,21 +5,6 @@ const URL = 'http://localhost:5176/play.html';
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function getCanvasInfo(page) {
-  return await page.evaluate(() => {
-    const canvas = document.querySelector('canvas');
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height, cw: canvas.width, ch: canvas.height };
-  });
-}
-
-async function clickCanvas(page, cx, cy, ci) {
-  const sx = ci.left + (cx / ci.cw) * ci.width;
-  const sy = ci.top + (cy / ci.ch) * ci.height;
-  await page.mouse.click(sx, sy);
-}
-
 async function getQuizState(page) {
   return await page.evaluate(() => {
     try {
@@ -31,15 +16,45 @@ async function getQuizState(page) {
         round: scene.round,
         maxRounds: scene.maxRounds,
         score: scene.score,
+        lives: scene.lives,
+        combo: scene.combo,
+        bestCombo: scene.bestCombo,
         answered: scene.answered,
         hasQuestion: !!scene.currentQuestion,
         correctIndices: scene.currentQuestion?.correctIndices || [],
-        prompt: scene.currentQuestion?.prompt || '',
+        isBoss: scene.currentQuestion?.isBoss,
+        relics: scene.relics,
+        currentPath: scene.currentPath,
+        isEndless: scene.isEndless,
+        timeLeft: scene.timeLeft,
+        timerActive: scene.timerActive,
         activeScenes: scenes.filter(s => s && s.scene).map(s => s.scene.key),
       };
     } catch (err) {
       return { error: err.message };
     }
+  });
+}
+
+async function answerCorrect(page) {
+  return await page.evaluate(() => {
+    const scenes = window.game?.scene?.scenes;
+    const scene = scenes?.find(s => s && s.scene && s.scene.isActive() && s.scene.key === 'GameScene');
+    if (!scene || !scene.currentQuestion || scene.answered) return false;
+    const idx = scene.currentQuestion.correctIndices[0];
+    scene.handleAnswer(idx);
+    return true;
+  });
+}
+
+async function nextRound(page) {
+  return await page.evaluate(() => {
+    const scenes = window.game?.scene?.scenes;
+    const scene = scenes?.find(s => s && s.scene && s.scene.isActive() && s.scene.key === 'GameScene');
+    if (!scene) return false;
+    scene.stopTimer();
+    scene.proceedToNextRound();
+    return true;
   });
 }
 
@@ -59,10 +74,10 @@ try {
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
   await sleep(3000);
 
-  // Clear progress
   await page.evaluate(() => {
     localStorage.removeItem('mjrg_onboarded');
     localStorage.removeItem('mjrg_beginner_done');
+    localStorage.removeItem('mjrg_normal_done');
     localStorage.removeItem('mjrg_run');
     localStorage.removeItem('mjrg_meta');
     localStorage.removeItem('mjrg_tutorial_seen');
@@ -70,84 +85,63 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await sleep(3000);
 
-  let ci = await getCanvasInfo(page);
-  console.log('=== 1. DECK SELECT SCENE ===');
-  await page.screenshot({ path: 'screenshots/newbie-01-deck-select.png' });
+  // Start beginner run directly via JS
+  await page.evaluate(() => {
+    const scenes = window.game?.scene?.scenes;
+    const scene = scenes?.find(s => s && s.scene && s.scene.key === 'DeckSelectScene');
+    if (scene) {
+      scene.scene.start('GameScene', { action: 'new_run', difficulty: 'beginner' });
+    }
+  });
+  await sleep(2000);
 
-  // Click BEGINNER card (x=322, y=320)
-  await clickCanvas(page, 322, 320, ci);
-  await sleep(1000);
-  await page.screenshot({ path: 'screenshots/newbie-02-beginner-selected.png' });
-
-  // Click START QUIZ (x=760, y=640)
-  await clickCanvas(page, 760, 640, ci);
-  await sleep(3000);
-
-  console.log('\n=== 2. QUIZ STARTED ===');
   let state = await getQuizState(page);
-  console.log('State:', JSON.stringify(state, null, 2));
-  await page.screenshot({ path: 'screenshots/newbie-03-quiz-start.png' });
+  console.log('Start state:', { round: state.round, maxRounds: state.maxRounds, lives: state.lives, timerActive: state.timerActive });
 
-  // Answer all questions (8 for beginner)
-  const maxRounds = await getQuizState(page).then(s => s.maxRounds || 8);
+  const maxRounds = state.maxRounds;
+
   for (let round = 1; round <= maxRounds; round++) {
-    console.log(`\n=== ROUND ${round}/${maxRounds} ===`);
-
-    // Wait for round intro to fade and NEW question for this round to appear
+    // Wait for question
     let waited = 0;
     while (waited < 10000) {
       state = await getQuizState(page);
       if (state.hasQuestion && !state.answered && state.round === round) break;
-      await sleep(500);
-      waited += 500;
+      await sleep(200);
+      waited += 200;
     }
+
     if (!state.hasQuestion) {
-      console.log('ERROR: No question appeared after waiting');
+      console.log(`Round ${round}: no question (state: ${state.error || JSON.stringify(state)})`);
       break;
     }
 
-    console.log('Prompt:', state.prompt);
-    console.log('Correct indices:', state.correctIndices);
-    await page.screenshot({ path: `screenshots/newbie-04-round-${round}-question.png` });
+    console.log(`Q${round}: boss=${state.isBoss}, lives=${state.lives}, timer=${state.timerActive ? state.timeLeft.toFixed(1)+'s' : 'off'}, relics=${state.relics?.length || 0}, path=${state.currentPath}`);
 
-    // Click the first correct option
-    // Options at y=480, x = 386 + i * 84 (for i=0..3)
-    const correctIdx = state.correctIndices[0];
-    const optionX = 386 + correctIdx * 84;
-    ci = await getCanvasInfo(page);
-    await clickCanvas(page, optionX, 480, ci);
-    await sleep(1500);
-
+    await answerCorrect(page);
+    await sleep(200);
     state = await getQuizState(page);
-    console.log('After answer:', { answered: state.answered, score: state.score });
-    await page.screenshot({ path: `screenshots/newbie-05-round-${round}-correct.png` });
+    console.log(`  → correct! score=${state.score}, combo=${state.combo}, bestCombo=${state.bestCombo}`);
 
-    // Click NEXT ROUND button (x=512, y=480)
-    // For last round, button says "COMPLETE!"
-    const isLast = round === maxRounds;
-    if (!isLast) {
-      ci = await getCanvasInfo(page);
-      await clickCanvas(page, 512, 480, ci);
-      await sleep(2000);
+    if (round < maxRounds) {
+      await nextRound(page);
+      await sleep(300);
     }
   }
 
-  // Verify game over / win screen
-  await sleep(2000);
-  state = await getQuizState(page);
-  console.log('\n=== 3. FINAL STATE ===');
-  console.log('Active scenes:', state.activeScenes);
-  const hasGameOver = state.activeScenes?.includes('GameOverScene');
-  console.log('Has GameOverScene:', hasGameOver);
-  await page.screenshot({ path: 'screenshots/newbie-06-game-over.png' });
-
-  if (hasGameOver) {
-    console.log('\n✅ SUCCESS: Quiz completed, game over screen shown');
-  } else {
-    console.log('\n❌ FAIL: Game over screen not shown');
-  }
-
   await sleep(1000);
+  state = await getQuizState(page);
+  console.log('\nFinal:', {
+    round: state.round,
+    score: state.score,
+    lives: state.lives,
+    bestCombo: state.bestCombo,
+    relics: state.relics,
+    activeScenes: state.activeScenes,
+  });
+
+  const hasGameOver = state.activeScenes?.includes('GameOverScene');
+  console.log(hasGameOver ? '\n✅ PASS' : '\n❌ FAIL');
+
 } catch (err) {
   console.error('Test failed:', err.message);
   console.error(err.stack);
