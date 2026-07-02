@@ -15,31 +15,22 @@ export class DeckSelectScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor('#2b1810');
+    this.cameras.main.setBackgroundColor('#1a1008');
     this.soundManager = new SoundManager(this);
 
     // Background
-    this.add.rectangle(0, 0, 1024, 720, 0x2b1810).setOrigin(0);
-    for (let y = 0; y < 720; y += 4) {
-      const alpha = 0.04 + Math.random() * 0.04;
-      this.add.rectangle(0, y, 1024, 2, 0x5c3825, alpha).setOrigin(0);
-    }
-    this.add.rectangle(0, 0, 1024, 720, 0x000000, 0.4).setOrigin(0);
-
-    // Decorative lanterns
-    this.createLantern(60, 90);
-    this.createLantern(964, 90);
+    this.add.rectangle(0, 0, 1024, 720, 0x1a1008).setOrigin(0);
 
     // Load meta
     this.meta = JSON.parse(localStorage.getItem('mjrg_meta') || '{}');
     if (!this.meta.unlockedDecks) this.meta.unlockedDecks = ['default'];
 
     // Title
-    this.add.text(512, 90, 'MAHJONG QUIZ', {
-      fontSize: '30px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    this.add.text(512, 80, 'MAHJONG QUIZ', {
+      fontSize: '28px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add.text(512, 128, 'Test your tile reading skills', {
-      fontSize: '15px', color: '#c9b89a', fontFamily: 'monospace',
+    this.add.text(512, 118, 'Test your tile reading skills', {
+      fontSize: '14px', color: '#8b7a67', fontFamily: 'monospace',
     }).setOrigin(0.5);
 
     // Difficulty cards
@@ -78,57 +69,55 @@ export class DeckSelectScene extends Phaser.Scene {
     isSelected: boolean,
   ): void {
     const elements: Phaser.GameObjects.GameObject[] = [];
-    const shadow = this.add.rectangle(4, 4, w, h, 0x000000, 0.5);
-    const bgColor = opt.locked ? 0x1a0f08 : (isSelected ? 0x3d2418 : 0x2a1d10);
-    const borderColor = isSelected ? 0xc73e3a : (opt.locked ? 0x5c3825 : 0xd4a574);
-    const bg = this.add.rectangle(0, 0, w, h, bgColor).setStrokeStyle(isSelected ? 5 : 3, borderColor);
-    const topAccent = this.add.rectangle(0, -h / 2 + 4, w - 10, 4, isSelected ? 0xc73e3a : 0xe5b567);
-    elements.push(shadow, bg, topAccent);
+    const bgColor = opt.locked ? 0x1a0f08 : (isSelected ? 0x281a10 : 0x1f140c);
+    const borderColor = isSelected ? 0xc73e3a : (opt.locked ? 0x2a2018 : 0x4a3828);
+    const bg = this.add.rectangle(0, 0, w, h, bgColor).setStrokeStyle(2, borderColor);
+    elements.push(bg);
 
     if (opt.recommended) {
-      const badge = this.add.text(0, -h / 2 + 32, '★ RECOMMENDED', {
-        fontSize: '12px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      const badge = this.add.text(0, -h / 2 + 28, '★', {
+        fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace',
       }).setOrigin(0.5);
       elements.push(badge);
     }
 
-    const nameColor = opt.locked ? '#5c3825' : '#f5e6d3';
-    const nameY = opt.recommended ? -h / 2 + 64 : -h / 2 + 50;
+    const nameColor = opt.locked ? '#3a2f26' : '#f5e6d3';
+    const nameY = opt.recommended ? -h / 2 + 56 : -h / 2 + 44;
     const name = this.add.text(0, nameY, opt.label, {
-      fontSize: '26px', color: nameColor, fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '22px', color: nameColor, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     elements.push(name);
 
     if (opt.locked) {
-      const lockIcon = this.add.text(0, nameY + 40, '[ LOCKED ]', {
-        fontSize: '14px', color: '#5c3825', fontFamily: 'monospace',
+      const lockIcon = this.add.text(0, nameY + 36, 'LOCKED', {
+        fontSize: '12px', color: '#3a2f26', fontFamily: 'monospace',
       }).setOrigin(0.5);
       elements.push(lockIcon);
     }
 
-    const descColor = opt.locked ? '#5c3825' : '#c9b89a';
-    const desc = this.add.text(0, 40, opt.desc, {
-      fontSize: '14px', color: descColor, fontFamily: 'monospace',
-      align: 'center', lineSpacing: 7,
+    const descColor = opt.locked ? '#3a2f26' : '#7a6855';
+    const desc = this.add.text(0, 36, opt.desc, {
+      fontSize: '12px', color: descColor, fontFamily: 'monospace',
+      align: 'center', lineSpacing: 6,
     }).setOrigin(0.5);
     elements.push(desc);
 
-    const statusText = opt.locked ? '' : (isSelected ? '✓ SELECTED' : 'CLICK TO SELECT');
+    const statusText = opt.locked ? '' : (isSelected ? 'SELECTED' : '');
     if (statusText) {
-      const status = this.add.text(0, h / 2 - 30, statusText, {
-        fontSize: '14px', color: isSelected ? '#c73e3a' : '#c9b89a',
-        fontFamily: 'monospace', fontStyle: 'bold',
+      const status = this.add.text(0, h / 2 - 24, statusText, {
+        fontSize: '12px', color: '#c73e3a',
+        fontFamily: 'monospace',
       }).setOrigin(0.5);
       elements.push(status);
     }
 
     const card = this.add.container(x, y, elements).setSize(w, h);
-    if (isSelected) card.setScale(1.05);
+    if (isSelected) card.setScale(1.02);
 
     if (!opt.locked) {
       card.setInteractive({ useHandCursor: true });
-      card.on('pointerover', () => { if (this.difficulty !== opt.id) this.tweens.add({ targets: card, scale: 1.04, y: y - 4, duration: 120 }); });
-      card.on('pointerout', () => { if (this.difficulty !== opt.id) this.tweens.add({ targets: card, scale: 1, y: y, duration: 120 }); });
+      card.on('pointerover', () => { if (this.difficulty !== opt.id) this.tweens.add({ targets: card, scale: 1.02, duration: 100 }); });
+      card.on('pointerout', () => { if (this.difficulty !== opt.id) this.tweens.add({ targets: card, scale: 1, duration: 100 }); });
       card.on('pointerdown', () => {
         this.soundManager.playClick();
         this.difficulty = opt.id;
@@ -141,18 +130,16 @@ export class DeckSelectScene extends Phaser.Scene {
     const y = 640;
 
     // START QUIZ (large, right)
-    const startW = 240;
-    const startH = 52;
+    const startW = 220;
+    const startH = 48;
     const startX = 760;
-    const startShadow = this.add.rectangle(startX + 4, y + 4, startW, startH, 0x000000, 0.5);
-    const startBg = this.add.rectangle(startX, y, startW, startH, 0xc73e3a).setStrokeStyle(3, 0x2b1810);
-    const startHighlight = this.add.rectangle(startX, y - startH / 2 + 3, startW - 6, 2, 0xffffff, 0.4);
-    const startText = this.add.text(startX, y, 'START QUIZ ▶', {
-      fontSize: '17px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    const startBg = this.add.rectangle(startX, y, startW, startH, 0xc73e3a).setStrokeStyle(1, 0x8b2b28);
+    const startText = this.add.text(startX, y, 'START QUIZ', {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     const startHit = this.add.rectangle(startX, y, startW, startH, 0xffffff, 0).setInteractive({ useHandCursor: true });
-    startHit.on('pointerover', () => { startBg.setFillStyle(0xe04e4a); startHit.setScale(1.05); });
-    startHit.on('pointerout', () => { startBg.setFillStyle(0xc73e3a); startHit.setScale(1); });
+    startHit.on('pointerover', () => { startBg.setFillStyle(0xd44a46); });
+    startHit.on('pointerout', () => { startBg.setFillStyle(0xc73e3a); });
     startHit.on('pointerdown', () => {
       this.soundManager.playClick();
       const isEndless = this.difficulty === 'endless';
@@ -176,18 +163,16 @@ export class DeckSelectScene extends Phaser.Scene {
     });
 
     // TEACHING (middle)
-    const teachW = 200;
-    const teachH = 48;
+    const teachW = 180;
+    const teachH = 44;
     const teachX = 512;
-    const teachShadow = this.add.rectangle(teachX + 4, y + 4, teachW, teachH, 0x000000, 0.5);
-    const teachBg = this.add.rectangle(teachX, y, teachW, teachH, 0x4a9e4a).setStrokeStyle(3, 0x2b1810);
-    const teachHighlight = this.add.rectangle(teachX, y - teachH / 2 + 3, teachW - 6, 2, 0xffffff, 0.4);
-    const teachText = this.add.text(teachX, y, '🎓 TEACHING MODE', {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    const teachBg = this.add.rectangle(teachX, y, teachW, teachH, 0x281a10).setStrokeStyle(1, 0x4a9e4a);
+    const teachText = this.add.text(teachX, y, 'TEACHING MODE', {
+      fontSize: '13px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     const teachHit = this.add.rectangle(teachX, y, teachW, teachH, 0xffffff, 0).setInteractive({ useHandCursor: true });
-    teachHit.on('pointerover', () => { teachBg.setFillStyle(0x5abf5a); teachHit.setScale(1.05); });
-    teachHit.on('pointerout', () => { teachBg.setFillStyle(0x4a9e4a); teachHit.setScale(1); });
+    teachHit.on('pointerover', () => { teachBg.setFillStyle(0x2f2214); });
+    teachHit.on('pointerout', () => { teachBg.setFillStyle(0x281a10); });
     teachHit.on('pointerdown', () => {
       this.soundManager.playClick();
       this.scene.start('GameScene', {
@@ -198,32 +183,19 @@ export class DeckSelectScene extends Phaser.Scene {
     });
 
     // HOME (left)
-    const homeW = 140;
-    const homeH = 44;
+    const homeW = 120;
+    const homeH = 40;
     const homeX = 140;
-    const homeShadow = this.add.rectangle(homeX + 4, y + 4, homeW, homeH, 0x000000, 0.5);
-    const homeBg = this.add.rectangle(homeX, y, homeW, homeH, 0xd4a574).setStrokeStyle(3, 0x2b1810);
-    const homeHighlight = this.add.rectangle(homeX, y - homeH / 2 + 3, homeW - 6, 2, 0xffffff, 0.4);
-    const homeText = this.add.text(homeX, y, '◀ HOME', {
-      fontSize: '14px', color: '#2b1810', fontFamily: 'monospace', fontStyle: 'bold',
+    const homeBg = this.add.rectangle(homeX, y, homeW, homeH, 0x281a10).setStrokeStyle(1, 0x6a5845);
+    const homeText = this.add.text(homeX, y, 'HOME', {
+      fontSize: '12px', color: '#8b7a67', fontFamily: 'monospace',
     }).setOrigin(0.5);
     const homeHit = this.add.rectangle(homeX, y, homeW, homeH, 0xffffff, 0).setInteractive({ useHandCursor: true });
-    homeHit.on('pointerover', () => { homeBg.setFillStyle(0xe8c088); homeHit.setScale(1.05); });
-    homeHit.on('pointerout', () => { homeBg.setFillStyle(0xd4a574); homeHit.setScale(1); });
+    homeHit.on('pointerover', () => { homeBg.setFillStyle(0x2f2214); });
+    homeHit.on('pointerout', () => { homeBg.setFillStyle(0x281a10); });
     homeHit.on('pointerdown', () => {
       this.soundManager.playClick();
       window.location.href = '/';
-    });
-  }
-
-  private createLantern(x: number, y: number): void {
-    const rope = this.add.rectangle(x, y - 40, 2, 40, 0x8b6f47);
-    const lantern = this.add.ellipse(x, y, 28, 36, 0xc73e3a).setStrokeStyle(2, 0x9b2b28);
-    const glow = this.add.ellipse(x, y, 50, 50, 0xc73e3a, 0.15);
-    this.add.rectangle(x, y - 18, 16, 4, 0x2b1810);
-    this.add.rectangle(x, y + 18, 12, 3, 0xe5b567);
-    this.tweens.add({
-      targets: [rope, lantern, glow], angle: 3, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
   }
 }
