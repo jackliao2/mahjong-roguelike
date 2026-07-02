@@ -8,7 +8,7 @@ import { SoundManager } from '@/render/sound';
 import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
 import { generateQuestionForRound, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
-import { RelicId, getRandomRelics, Relic } from '@/game/relics';
+import { RelicId, getRandomRelics, Relic, RELICS } from '@/game/relics';
 
 const OPTION_TILE_W = 64;
 const OPTION_TILE_H = 82;
@@ -296,23 +296,27 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5).setName('roundLabel');
     // Lives
     this.add.text(210, y, '', {
-      fontSize: '15px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('livesLabel');
     // Combo
     this.add.text(330, y, '', {
       fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('comboLabel');
-    // Score
+    // Score - larger and more prominent
     this.add.text(512, y, '', {
-      fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '20px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      stroke: '#2b1810', strokeThickness: 4,
     }).setOrigin(0.5).setName('scoreLabel');
     // Timer
     this.add.text(670, y, '', {
       fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('timerLabel');
-    // Relic icons (right side, compact)
+    // Relic icons (right side, with hover support)
+    const relicArea = this.add.rectangle(820, y, 200, 30, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true })
+      .setName('relicArea');
     this.add.text(820, y, '', {
-      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setName('relicLabel');
     // Quit button
     const quitBg = this.add.rectangle(980, y, 60, 28, 0x5c3825)
@@ -338,6 +342,7 @@ export class GameScene extends Phaser.Scene {
     const scoreLabel = this.children.getByName('scoreLabel') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
+    const relicArea = this.children.getByName('relicArea') as Phaser.GameObjects.Rectangle;
     const ch = getChapterForRound(this.round);
     if (roundLabel) {
       const bossTag = ch.isBoss ? ' BOSS' : '';
@@ -351,7 +356,7 @@ export class GameScene extends Phaser.Scene {
     if (comboLabel) {
       comboLabel.setText(this.combo >= 2 ? `COMBO x${this.combo}` : '');
     }
-    if (scoreLabel) scoreLabel.setText(`${this.score}`);
+    if (scoreLabel) scoreLabel.setText(`SCORE: ${this.score}`);
     if (timerLabel) {
       timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
     }
@@ -361,7 +366,20 @@ export class GameScene extends Phaser.Scene {
         'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
         'lucky-coin': '🪙', 'shield-tile': '🛡',
       };
-      relicLabel.setText(this.relics.map(r => icons[r] || '?').join(''));
+      relicLabel.setText(this.relics.map(r => icons[r] || '?').join(' '));
+    }
+    // Relic hover tooltip
+    if (relicArea) {
+      relicArea.off('pointerover');
+      relicArea.off('pointerout');
+      if (this.relics.length > 0) {
+        relicArea.on('pointerover', () => {
+          this.showRelicTooltip();
+        });
+        relicArea.on('pointerout', () => {
+          this.hideTooltip();
+        });
+      }
     }
   }
 
@@ -790,11 +808,16 @@ export class GameScene extends Phaser.Scene {
         this.doubleTalismanUses -= 1;
       }
 
-      this.score += Math.round(baseScore);
+      const points = Math.round(baseScore);
+      this.score += points;
+
+      // Show score popup above score label
+      this.showScorePopup(points, 512, 50);
+
       trackWin([q.targetYaku || q.type], 1, 1000, false);
       if (q.isBoss) this.bossKills++;
       this.updateTopBar();
-      this.showCorrectFeedback(q, optionIndex);
+      this.showCorrectFeedback(q, optionIndex, points);
     } else {
       // Shield Tile: first wrong per chapter is free
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
@@ -851,25 +874,30 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ===== Feedback overlays =====
-  private showCorrectFeedback(q: QuizQuestion, correctIndex: number): void {
+  private showCorrectFeedback(q: QuizQuestion, correctIndex: number, points: number = 0): void {
     const depth = 1100;
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
     const panelW = 600;
-    const panelH = 320;
+    const panelH = 340;
     const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
       .setStrokeStyle(3, 0x4a9e4a).setDepth(depth);
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0x4a9e4a).setDepth(depth);
 
-    const title = this.add.text(512, 300, 'CORRECT!', {
+    const title = this.add.text(512, 290, 'CORRECT!', {
       fontSize: '32px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
-    const expText = this.add.text(512, 360, q.explanation, {
+    // Score display
+    const scoreText = this.add.text(512, 335, `+${points} POINTS`, {
+      fontSize: '20px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const expText = this.add.text(512, 380, q.explanation, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
 
-    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, expText];
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, scoreText, expText];
     // Particle effect: emit gold particles from correct answer tile position
     const gap = 20;
     const totalW = q.options.length * OPTION_TILE_W + (q.options.length - 1) * gap;
@@ -1607,7 +1635,45 @@ export class GameScene extends Phaser.Scene {
   private hideTooltip(): void {
     const bg = this.children.getByName('tooltipBg');
     const text = this.children.getByName('tooltipText');
+    const relicBg = this.children.getByName('relicTooltipBg');
+    const relicText = this.children.getByName('relicTooltipText');
     if (bg) bg.destroy();
     if (text) text.destroy();
+    if (relicBg) relicBg.destroy();
+    if (relicText) relicText.destroy();
+  }
+
+  private showRelicTooltip(): void {
+    this.hideTooltip();
+    const lines = ['ACTIVE RELICS:'];
+    this.relics.forEach(r => {
+      const relic = RELICS[r];
+      lines.push(`${relic.name}: ${relic.description}`);
+    });
+
+    const bg = this.add.rectangle(920, 60, 300, Math.max(60, lines.length * 22), 0x1a0f08, 0.95)
+      .setStrokeStyle(2, 0xe5b567)
+      .setDepth(1000)
+      .setName('relicTooltipBg');
+    const text = this.add.text(920, 60, lines.join('\n'), {
+      fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace', align: 'left',
+      wordWrap: { width: 280 },
+    }).setOrigin(0.5).setDepth(1001).setName('relicTooltipText');
+  }
+
+  private showScorePopup(points: number, x: number, y: number): void {
+    const popup = this.add.text(x, y, `+${points}`, {
+      fontSize: '28px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      stroke: '#2b1810', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(1050);
+
+    this.tweens.add({
+      targets: popup,
+      y: y - 80,
+      alpha: 0,
+      duration: 1200,
+      ease: 'Cubic.easeOut',
+      onComplete: () => popup.destroy(),
+    });
   }
 }
