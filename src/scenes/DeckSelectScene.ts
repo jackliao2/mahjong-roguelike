@@ -175,6 +175,28 @@ export class DeckSelectScene extends Phaser.Scene {
       }
     });
 
+    // TEACHING (middle)
+    const teachW = 200;
+    const teachH = 48;
+    const teachX = 512;
+    const teachShadow = this.add.rectangle(teachX + 4, y + 4, teachW, teachH, 0x000000, 0.5);
+    const teachBg = this.add.rectangle(teachX, y, teachW, teachH, 0x4a9e4a).setStrokeStyle(3, 0x2b1810);
+    const teachHighlight = this.add.rectangle(teachX, y - teachH / 2 + 3, teachW - 6, 2, 0xffffff, 0.4);
+    const teachText = this.add.text(teachX, y, '🎓 TEACHING MODE', {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    const teachHit = this.add.rectangle(teachX, y, teachW, teachH, 0xffffff, 0).setInteractive({ useHandCursor: true });
+    teachHit.on('pointerover', () => { teachBg.setFillStyle(0x5abf5a); teachHit.setScale(1.05); });
+    teachHit.on('pointerout', () => { teachBg.setFillStyle(0x4a9e4a); teachHit.setScale(1); });
+    teachHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      this.scene.start('GameScene', {
+        action: 'new_run',
+        difficulty: 'beginner',
+        teaching: true,
+      });
+    });
+
     // HOME (left)
     const homeW = 140;
     const homeH = 44;

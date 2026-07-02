@@ -61,6 +61,43 @@ export const GameConfig = {
     completedKey: 'mjrg_beginner_done',
     tutorialSeenKey: 'mjrg_tutorial_seen',
     lives: 2,            // BEGINNER: 2 lives — more forgiving for learners
+    trainingLevels: [
+      {
+        id: 'win-hand',
+        title: 'LESSON 1: WINNING HAND',
+        subtitle: 'Which tile completes the hand?',
+        description: 'A winning hand has 4 sets + 1 pair = 14 tiles.\nSets can be runs (1-2-3) or triplets (1-1-1).',
+        type: 'tenpai-win',
+      },
+      {
+        id: 'waiting-tiles',
+        title: 'LESSON 2: WAITING TILES',
+        subtitle: 'What tiles is this hand waiting for?',
+        description: 'Tenpai means you are one tile away from winning.\nWaiting tiles are all the tiles that would complete your hand.',
+        type: 'waiting-tiles',
+      },
+      {
+        id: 'yaku-form',
+        title: 'LESSON 3: YAKU PATTERNS',
+        subtitle: 'Which tile forms a specific yaku?',
+        description: 'Yaku are scoring patterns. Tanyao requires all tiles to be 2-8 (no terminals). Riichi means you declare you are ready.',
+        type: 'yaku-form',
+      },
+      {
+        id: 'discard-best',
+        title: 'LESSON 4: BEST DISCARD',
+        subtitle: 'Which tile should you discard?',
+        description: 'Choose the discard that maximizes your chances of drawing a winning tile.\nKeep tiles that can form multiple sets.',
+        type: 'discard-best',
+      },
+      {
+        id: 'safe-discard',
+        title: 'LESSON 5: SAFE DISCARDS',
+        subtitle: 'Which tile is safest to discard?',
+        description: 'Safe tiles are those that cannot complete any of your opponent\'s waiting patterns.\nLook for tiles that form no sequences.',
+        type: 'safe-discard',
+      },
+    ],
     tutorialSteps: [
       {
         id: 'welcome',

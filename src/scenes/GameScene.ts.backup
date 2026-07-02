@@ -28,14 +28,6 @@ export class GameScene extends Phaser.Scene {
   private questionContainer!: Phaser.GameObjects.Container;
   private feedbackContainer!: Phaser.GameObjects.Container;
 
-  // Teaching mode
-  private teachingMode: boolean = false;
-  private currentTrainingLevel: number = 0;
-
-  // Tutorial
-  private tutorialActive: boolean = false;
-  private tutorialStep: number = 0;
-
   // Combo system
   private combo: number = 0;
   private bestCombo: number = 0;
@@ -64,22 +56,16 @@ export class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  create(data?: { action?: string; deckId?: string; difficulty?: string; endless?: boolean; tutorial?: boolean; teaching?: boolean }): void {
+  create(data?: { action?: string; deckId?: string; difficulty?: string; endless?: boolean }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
 
     this.isBeginner = data?.difficulty === 'beginner';
-    this.tutorialActive = data?.tutorial === true;
-    this.teachingMode = data?.teaching === true;
-    this.tutorialStep = 0;
-
-    if (this.teachingMode) {
-      this.maxRounds = GameConfig.beginner.trainingLevels.length;
-      this.lives = 999;
-    } else {
-      this.maxRounds = this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
-      this.lives = this.isBeginner ? GameConfig.beginner.lives : GameConfig.rounds.lives;
-    }
+    this.isEndless = data?.endless === true;
+    this.maxRounds = this.isEndless
+      ? 999
+      : (this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds);
+    this.lives = this.isBeginner ? GameConfig.beginner.lives : GameConfig.rounds.lives;
 
     // Fresh run
     if (data?.action === 'new_run') {
