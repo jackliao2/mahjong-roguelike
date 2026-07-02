@@ -261,9 +261,67 @@ export class GameScene extends Phaser.Scene {
     this.questionContainer.removeAll(true);
     this.updateTopBar();
 
-    // Round intro banner
-    this.showRoundIntro(() => {
-      this.loadQuestion();
+    if (this.teachingMode) {
+      this.currentTrainingLevel = this.round - 1;
+      this.showTeachingIntro(() => {
+        this.loadQuestion();
+      });
+    } else {
+      this.showRoundIntro(() => {
+        this.loadQuestion();
+      });
+    }
+  }
+
+  private showTeachingIntro(onComplete: () => void): void {
+    const levels = GameConfig.beginner.trainingLevels;
+    if (this.currentTrainingLevel < 0 || this.currentTrainingLevel >= levels.length) {
+      onComplete();
+      return;
+    }
+    const level = levels[this.currentTrainingLevel];
+    const accentColor = 0x4a9e4a;
+
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.8).setDepth(500);
+    const panel = this.add.rectangle(512, 360, 620, 300, 0x1a0f08)
+      .setStrokeStyle(2, accentColor).setDepth(501);
+
+    const titleText = this.add.text(512, 260, level.title, {
+      fontSize: '24px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(502);
+
+    const subtitleText = this.add.text(512, 300, level.subtitle, {
+      fontSize: '15px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(502);
+
+    const descText = this.add.text(512, 360, level.description, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: 560 }, lineSpacing: 8,
+    }).setOrigin(0.5).setDepth(502);
+
+    const btnW = 180;
+    const btnH = 44;
+    const btnBg = this.add.rectangle(512, 450, btnW, btnH, 0x4a9e4a)
+      .setStrokeStyle(2, 0x2b1810).setDepth(501);
+    const btnText = this.add.text(512, 450, 'START LESSON', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(502);
+    const btnHit = this.add.rectangle(512, 450, btnW, btnH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(503);
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0x5abf5a));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0x4a9e4a));
+    btnHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      elements.forEach(el => el.destroy());
+      onComplete();
+    });
+
+    const elements = [overlay, panel, titleText, subtitleText, descText, btnBg, btnText, btnHit];
+    elements.forEach(el => el.setAlpha(0));
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
     });
   }
 
@@ -312,17 +370,24 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Question rendering =====
   private loadQuestion(): void {
-    this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds);
-    if (this.currentPath === 'risky') {
-      this.currentQuestion.isBoss = true;
+    if (this.teachingMode) {
+      const levels = GameConfig.beginner.trainingLevels;
+      const levelType = levels[this.currentTrainingLevel]?.type || 'tenpai-win';
+      this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds, levelType);
+    } else {
+      this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds);
+      if (this.currentPath === 'risky') {
+        this.currentQuestion.isBoss = true;
+      }
     }
     this.renderQuestion();
-    // Start timer
-    const hasHourglass = this.relics.includes('hourglass');
-    const extraSec = hasHourglass ? 5 : 0;
-    const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
-    const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
-    this.startTimer(Math.max(8, base - endlessPenalty));
+    if (!this.teachingMode) {
+      const hasHourglass = this.relics.includes('hourglass');
+      const extraSec = hasHourglass ? 5 : 0;
+      const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
+      const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
+      this.startTimer(Math.max(8, base - endlessPenalty));
+    }
   }
 
   private renderQuestion(): void {
@@ -535,37 +600,33 @@ export class GameScene extends Phaser.Scene {
     const q = this.currentQuestion;
     const isCorrect = q.correctIndices.includes(optionIndex);
 
-    // Highlight chosen option
     this.highlightOptions(optionIndex, isCorrect);
 
-    if (isCorrect) {
+    if (this.teachingMode) {
+      if (isCorrect) {
+        this.soundManager.playWin();
+        this.showTeachingComplete(q);
+      } else {
+        this.soundManager.playClick();
+        this.showTeachingRetry(q, optionIndex);
+      }
+    } else if (isCorrect) {
       this.soundManager.playWin();
       this.combo += 1;
       this.bestCombo = Math.max(this.bestCombo, this.combo);
 
-      // Base score
       let baseScore = q.isBoss ? 1500 : 1000;
-
-      // Path multiplier
       baseScore *= this.pathMultiplier;
-
-      // Lucky coin: +10%
       if (this.relics.includes('lucky-coin')) baseScore *= 1.1;
-
-      // Combo bonus (each combo above 1 adds +10% base; combo-feather adds +50% more)
       if (this.combo >= 2) {
         const comboBonusBase = Math.min(1, (this.combo - 1) * 0.1);
         const featherBoost = this.relics.includes('combo-feather') ? 1.5 : 1;
         baseScore *= 1 + comboBonusBase * featherBoost;
       }
-
-      // Speed bonus: faster = more points (up to +50%)
       const totalTime = q.isBoss ? this.bossTime : this.baseTime;
       const usedRatio = 1 - Math.max(0, this.timeLeft / totalTime);
-      const speedBonus = Math.max(0, 1 - usedRatio) * 0.5; // up to +50%
+      const speedBonus = Math.max(0, 1 - usedRatio) * 0.5;
       baseScore *= 1 + speedBonus;
-
-      // Double talisman
       if (this.doubleTalismanUses > 0) {
         baseScore *= 2;
         this.doubleTalismanUses -= 1;
@@ -576,7 +637,6 @@ export class GameScene extends Phaser.Scene {
       this.updateTopBar();
       this.showCorrectFeedback(q);
     } else {
-      // Shield Tile: first wrong per chapter is free
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
         this.shieldUsedThisChapter = true;
         this.combo = 0;
@@ -675,6 +735,116 @@ export class GameScene extends Phaser.Scene {
     this.feedbackContainer.add(elements);
 
     // Entrance animation
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
+  }
+
+  private showTeachingComplete(q: QuizQuestion): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.8).setDepth(depth);
+    const panelW = 620;
+    const panelH = 340;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(2, 0x4a9e4a).setDepth(depth);
+
+    const title = this.add.text(512, 290, 'CORRECT!', {
+      fontSize: '28px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
+    const lessonName = level?.title.split(':')[1]?.trim() || 'Lesson';
+    const subText = this.add.text(512, 330, `You mastered: ${lessonName}`, {
+      fontSize: '16px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const expText = this.add.text(512, 385, q.explanation, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, title, subText, expText];
+
+    const isLastLesson = this.round >= this.maxRounds;
+    const btnLabel = isLastLesson ? 'ALL LESSONS COMPLETE!' : 'NEXT LESSON ▶';
+    const btnW = 220;
+    const btnH = 48;
+    const btnY = 360 + panelH / 2 - 40;
+    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0x4a9e4a)
+      .setStrokeStyle(2, 0x2b1810).setDepth(depth);
+    const btnText = this.add.text(512, btnY, btnLabel, {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0x5abf5a));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0x4a9e4a));
+    btnHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      elements.forEach(el => el.destroy());
+      if (isLastLesson) {
+        window.location.href = '/play.html';
+      } else {
+        this.proceedToNextRound();
+      }
+    });
+    elements.push(btnBg, btnText, btnHit);
+
+    this.feedbackContainer.add(elements);
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
+  }
+
+  private showTeachingRetry(q: QuizQuestion, chosenIndex: number): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
+    const panelW = 580;
+    const panelH = 320;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(2, 0xc73e3a).setDepth(depth);
+
+    const title = this.add.text(512, 290, 'NOT QUITE!', {
+      fontSize: '26px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const subText = this.add.text(512, 330, 'Let\'s understand why — try again!', {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const expText = this.add.text(512, 380, q.explanation, {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const btnW = 180;
+    const btnH = 44;
+    const btnY = 360 + panelH / 2 - 36;
+    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
+      .setStrokeStyle(2, 0x2b1810).setDepth(depth);
+    const btnText = this.add.text(512, btnY, 'TRY AGAIN', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0xd44a46));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
+    btnHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      elements.forEach(el => el.destroy());
+      this.questionContainer.removeAll(true);
+      this.answered = false;
+      this.renderQuestion();
+    });
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, title, subText, expText, btnBg, btnText, btnHit];
+    this.feedbackContainer.add(elements);
     elements.forEach(el => { (el as any).setAlpha?.(0); });
     this.tweens.add({
       targets: elements,

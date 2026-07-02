@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Quiz question generator for the Mahjong Learning Lab.
  *
  * Generates 4 types of questions:
@@ -538,32 +538,40 @@ export function getChapterForRound(round: number): ChapterInfo {
 // ===== Round-based generation =====
 
 /** Generate a question for the given round number */
-export function generateQuestionForRound(round: number, maxRounds: number = 8): QuizQuestion {
+export function generateQuestionForRound(round: number, maxRounds: number = 8, forcedType?: string): QuizQuestion {
   const ch = getChapterForRound(round);
   let q: QuizQuestion;
 
-  // Chapter 1 (1-2): tenpai-win basics; BOSS at 3 = multi-wait
-  // Chapter 2 (4-5): tanyao; BOSS at 6 = safe-discard
-  // Chapter 3 (7-8): pinfu; BOSS at 9 = yaku-combo
-  // Chapter 4 (10-11): yakuhai; BOSS at 12 = mixed (final)
-  if (round <= 2) {
-    q = generateTenpaiWin();
-  } else if (round === 3) {
-    q = generateMultiWait();
-  } else if (round === 4 || round === 5) {
-    q = generateYakuForm('tanyao');
-  } else if (round === 6) {
-    q = generateSafeDiscard();
-  } else if (round === 7 || round === 8) {
-    q = generateYakuForm('pinfu');
-  } else if (round === 9) {
-    q = generateYakuCombo();
-  } else if (round === 10 || round === 11) {
-    q = generateYakuForm('yakuhai');
+  if (forcedType) {
+    switch (forcedType) {
+      case 'tenpai-win': q = generateTenpaiWin(); break;
+      case 'waiting-tiles': q = generateWaitingTiles(); break;
+      case 'yaku-form': q = generateYakuForm('tanyao'); break;
+      case 'discard-best': q = generateDiscardBest(); break;
+      case 'safe-discard': q = generateSafeDiscard(); break;
+      case 'multi-wait': q = generateMultiWait(); break;
+      case 'yaku-combo': q = generateYakuCombo(); break;
+      default: q = generateTenpaiWin(); break;
+    }
   } else {
-    // Final / beyond: random mix
-    const generators = [generateTenpaiWin, generateWaitingTiles, generateDiscardBest, generateMultiWait, generateYakuCombo, generateSafeDiscard];
-    q = rand(generators)();
+    if (round <= 2) {
+      q = generateTenpaiWin();
+    } else if (round === 3) {
+      q = generateMultiWait();
+    } else if (round === 4 || round === 5) {
+      q = generateYakuForm('tanyao');
+    } else if (round === 6) {
+      q = generateSafeDiscard();
+    } else if (round === 7 || round === 8) {
+      q = generateYakuForm('pinfu');
+    } else if (round === 9) {
+      q = generateYakuCombo();
+    } else if (round === 10 || round === 11) {
+      q = generateYakuForm('yakuhai');
+    } else {
+      const generators = [generateTenpaiWin, generateWaitingTiles, generateDiscardBest, generateMultiWait, generateYakuCombo, generateSafeDiscard];
+      q = rand(generators)();
+    }
   }
 
   q.isBoss = ch.isBoss;
