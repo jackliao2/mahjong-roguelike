@@ -41,7 +41,6 @@ export class GameScene extends Phaser.Scene {
 
   // Relic system
   private relics: RelicId[] = [];
-  private doubleTalismanUses: number = 0;
   private shieldUsedThisChapter: boolean = false;
 
   // Consumables
@@ -108,7 +107,6 @@ export class GameScene extends Phaser.Scene {
     this.combo = 0;
     this.bestCombo = 0;
     this.relics = [];
-    this.doubleTalismanUses = 0;
     this.shieldUsedThisChapter = false;
     this.skipTokens = 0;
     this.currentPath = 'safe';
@@ -565,10 +563,24 @@ export class GameScene extends Phaser.Scene {
 
     // Start timer
     const hasHourglass = this.relics.includes('hourglass');
-    const extraSec = hasHourglass ? 5 : 0;
+    const extraSec = hasHourglass ? 10 : 0;
     const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
     const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
-    this.startTimer(Math.max(8, base - endlessPenalty));
+    const totalTime = Math.max(8, base - endlessPenalty);
+
+    // Time Charm: pause timer for 3 seconds at start of each question
+    const hasTimeCharm = this.relics.includes('time-charm');
+    if (hasTimeCharm) {
+      this.startTimer(totalTime + 3);
+      // Pause the timer for 3 seconds
+      this.timerActive = false;
+      this.time.delayedCall(3000, () => {
+        this.timerActive = true;
+        this.updateTopBar();
+      });
+    } else {
+      this.startTimer(totalTime);
+    }
   }
 
   private renderQuestion(): void {
@@ -713,15 +725,17 @@ export class GameScene extends Phaser.Scene {
     const q = this.currentQuestion;
     if (!q) return;
 
-    // Hint-scroll: hide 1 wrong option (gray it out + disabled)
-    let hiddenWrongIndex = -1;
+    // Hint-scroll: hide 2 wrong options (gray them out + disabled)
+    const hiddenWrongIndices: number[] = [];
     if (hasHint) {
       const wrongIndices: number[] = [];
       tiles.forEach((_, i) => {
         if (!q.correctIndices.includes(i)) wrongIndices.push(i);
       });
-      if (wrongIndices.length > 0) {
-        hiddenWrongIndex = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+      // Remove up to 2 wrong options
+      const shuffledWrong = [...wrongIndices].sort(() => Math.random() - 0.5);
+      for (let w = 0; w < Math.min(2, shuffledWrong.length); w++) {
+        hiddenWrongIndices.push(shuffledWrong[w]);
       }
     }
 
@@ -731,7 +745,7 @@ export class GameScene extends Phaser.Scene {
 
     tiles.forEach((tile, i) => {
       const x = startX + i * (OPTION_TILE_W + gap);
-      const isHidden = i === hiddenWrongIndex;
+      const isHidden = hiddenWrongIndices.includes(i);
       const isCorrectAnswer = q.correctIndices.includes(i);
       const option = this.createOptionButton(tile, x, y, i, isHidden, hasGlass && isCorrectAnswer);
       this.questionContainer.add(option);
@@ -768,16 +782,16 @@ export class GameScene extends Phaser.Scene {
     container.setSize(OPTION_TILE_W + 8, OPTION_TILE_H + 8);
     container.setName(`option-${index}`);
 
-    // Perspective glass: correct answer glows faintly
+    // Perspective glass: correct answer highlighted with bright golden glow
     let glow: Phaser.GameObjects.Rectangle | null = null;
     if (glowCorrect) {
-      glow = this.add.rectangle(0, 0, OPTION_TILE_W + 12, OPTION_TILE_H + 12, 0xe5b567, 0.15)
-        .setStrokeStyle(2, 0xe5b567, 0.4);
+      glow = this.add.rectangle(0, 0, OPTION_TILE_W + 16, OPTION_TILE_H + 16, 0xe5b567, 0.35)
+        .setStrokeStyle(4, 0xe5b567, 0.8);
       container.addAt(glow, 0);
       this.tweens.add({
         targets: glow,
-        alpha: { from: 0.3, to: 0.6 },
-        duration: 1200,
+        alpha: { from: 0.5, to: 0.9 },
+        duration: 800,
         yoyo: true,
         repeat: -1,
       });
@@ -870,14 +884,14 @@ export class GameScene extends Phaser.Scene {
       // Path multiplier
       baseScore *= this.pathMultiplier;
 
-      // Lucky coin: +10%
-      if (this.relics.includes('lucky-coin')) baseScore *= 1.1;
+      // Lucky coin: +30%
+      if (this.relics.includes('lucky-coin')) baseScore *= 1.3;
 
-      // Combo bonus (each combo above 1 adds +10% base; combo-feather adds +50% more)
+      // Combo bonus (each combo above 1 adds +10% base; combo-feather: x2 multiplier)
       if (this.combo >= 2) {
         const comboBonusBase = Math.min(1, (this.combo - 1) * 0.1);
-        const featherBoost = this.relics.includes('combo-feather') ? 1.5 : 1;
-        baseScore *= 1 + comboBonusBase * featherBoost;
+        const featherMultiplier = this.relics.includes('combo-feather') ? 2 : 1;
+        baseScore *= 1 + comboBonusBase * featherMultiplier;
       }
 
       // Speed bonus: faster = more points (up to +50%)
@@ -886,10 +900,9 @@ export class GameScene extends Phaser.Scene {
       const speedBonus = Math.max(0, 1 - usedRatio) * 0.5; // up to +50%
       baseScore *= 1 + speedBonus;
 
-      // Double talisman
-      if (this.doubleTalismanUses > 0) {
+      // Double talisman: permanent double score
+      if (this.relics.includes('double-talisman')) {
         baseScore *= 2;
-        this.doubleTalismanUses -= 1;
       }
 
       const points = Math.round(baseScore);
@@ -906,13 +919,15 @@ export class GameScene extends Phaser.Scene {
       // Shield Tile: first wrong per chapter is free
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
         this.shieldUsedThisChapter = true;
-        this.combo = 0;
+        // Shield blocks the mistake but combo still resets (unless combo-feather)
+        if (!this.relics.includes('combo-feather')) this.combo = 0;
         this.showShieldBlockFeedback(optionIndex);
         this.updateTopBar();
         return;
       }
       this.lives -= 1;
-      this.combo = 0;
+      // Combo feather: combo never resets on wrong answer
+      if (!this.relics.includes('combo-feather')) this.combo = 0;
       this.wrongCount++;
       this.updateTopBar();
       if (this.lives > 0) {
@@ -1480,6 +1495,10 @@ export class GameScene extends Phaser.Scene {
     // Reset shield at new chapter
     if (isNewChapter) {
       this.shieldUsedThisChapter = false;
+      // Lucky coin: +1 skip token at start of each chapter
+      if (this.relics.includes('lucky-coin')) {
+        this.skipTokens += 1;
+      }
     }
 
     // After BOSS: chapter complete -> relic choice -> shop -> (if new chapter) path -> event -> round
@@ -1651,10 +1670,16 @@ export class GameScene extends Phaser.Scene {
     this.relics.push(id);
     // Apply immediate effects
     if (id === 'time-charm') {
-      this.lives += 1;
+      this.lives += 2;
     }
     if (id === 'double-talisman') {
-      this.doubleTalismanUses += 3;
+      // Now permanent double score — no uses counter needed
+    }
+    if (id === 'shield-tile') {
+      this.lives += 1;
+    }
+    if (id === 'lucky-coin') {
+      this.skipTokens += 1;
     }
     this.updateTopBar();
   }
