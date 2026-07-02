@@ -35,11 +35,11 @@ export class DeckSelectScene extends Phaser.Scene {
     if (!this.meta.unlockedDecks) this.meta.unlockedDecks = ['default'];
 
     // Title
-    this.add.text(512, 70, 'MAHJONG QUIZ', {
-      fontSize: '32px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    this.add.text(512, 90, 'MAHJONG QUIZ', {
+      fontSize: '30px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add.text(512, 108, 'Test your tile reading skills', {
-      fontSize: '16px', color: '#c9b89a', fontFamily: 'monospace',
+    this.add.text(512, 128, 'Test your tile reading skills', {
+      fontSize: '15px', color: '#c9b89a', fontFamily: 'monospace',
     }).setOrigin(0.5);
 
     // Difficulty cards
@@ -55,13 +55,13 @@ export class DeckSelectScene extends Phaser.Scene {
     const y = 320;
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
-      { id: 'beginner', label: 'BEGINNER', desc: '8 questions · 2 lives\nChapters 1-3 (tenpai→tanyao→pinfu)\nBoss questions · Relics · Safe/Risky paths', locked: false, recommended: !beginnerDone },
-      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nFull 4-chapter course\nCombo bonuses + timed questions' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
+      { id: 'beginner', label: 'BEGINNER', desc: '8 questions · 2 lives\nCh.1-3: tenpai / tanyao / pinfu\nBoss qs · Relics · Paths', locked: false, recommended: !beginnerDone },
+      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nFull 4-chapter course\nCombo + timed questions' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
       { id: 'endless', label: 'ENDLESS', desc: normalDone ? 'Infinite chapters\nDifficulty ramps up\nHow far can you go?' : 'Complete Normal\nto unlock', locked: !normalDone, recommended: false },
     ];
 
     const cardW = 290;
-    const cardH = 290;
+    const cardH = 310;
     const gap = 24;
     const startX = 512 - (options.length * cardW + (options.length - 1) * gap) / 2 + cardW / 2;
 
@@ -107,9 +107,9 @@ export class DeckSelectScene extends Phaser.Scene {
     }
 
     const descColor = opt.locked ? '#5c3825' : '#c9b89a';
-    const desc = this.add.text(0, 30, opt.desc, {
-      fontSize: '15px', color: descColor, fontFamily: 'monospace',
-      align: 'center', lineSpacing: 8,
+    const desc = this.add.text(0, 40, opt.desc, {
+      fontSize: '14px', color: descColor, fontFamily: 'monospace',
+      align: 'center', lineSpacing: 7,
     }).setOrigin(0.5);
     elements.push(desc);
 

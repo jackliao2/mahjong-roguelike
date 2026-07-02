@@ -45,15 +45,22 @@
   .game-topbar {
     position: fixed;
     top: 0; left: 0; right: 0;
-    height: 48px;
+    height: 52px;
     background: var(--ink);
     border-bottom: 4px solid var(--vermillion);
     box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
     z-index: 10;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 0 18px;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 16px;
+    flex-wrap: nowrap;
+  }
+  .game-topbar .nav-left,
+  .game-topbar .nav-right {
+    display: flex;
+    align-items: center;
     gap: 18px;
     flex-wrap: nowrap;
   }
@@ -77,10 +84,11 @@
   }
   .game-topbar .game-title {
     font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--cream);
     text-shadow: 2px 2px 0 var(--vermillion-dark);
     letter-spacing: 1px;
+    white-space: nowrap;
   }
 
   /* Full-screen game container — Phaser manages canvas centering via
@@ -88,7 +96,7 @@
      to avoid double-centering conflicts with flex. */
   #game-container {
     position: fixed;
-    top: 48px;
+    top: 52px;
     left: 0;
     right: 0;
     bottom: 0;
@@ -202,10 +210,14 @@
 <body>
 
   <header class="game-topbar">
-    <a href="/" class="home-link" aria-label="Back to home">Back to Home</a>
+    <div class="nav-left">
+      <a href="/" class="home-link" aria-label="Back to home">Home</a>
+    </div>
     <span class="game-title">MAHJONG QUIZ</span>
-    <a href="/blog.html">Blog</a>
-    <a href="/how-to-play.html">How to Play</a>
+    <div class="nav-right">
+      <a href="/blog.html">Blog</a>
+      <a href="/how-to-play.html">How to Play</a>
+    </div>
   </header>
 
   <div id="game-container">
