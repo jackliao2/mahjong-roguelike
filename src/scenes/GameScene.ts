@@ -44,6 +44,9 @@ export class GameScene extends Phaser.Scene {
   private doubleTalismanUses: number = 0;
   private shieldUsedThisChapter: boolean = false;
 
+  // Consumables
+  private skipTokens: number = 0;
+
   // Path system
   private currentPath: 'safe' | 'risky' = 'safe';
   private pathMultiplier: number = 1;
@@ -107,6 +110,7 @@ export class GameScene extends Phaser.Scene {
     this.relics = [];
     this.doubleTalismanUses = 0;
     this.shieldUsedThisChapter = false;
+    this.skipTokens = 0;
     this.currentPath = 'safe';
     this.pathMultiplier = 1;
     this.endlessDifficulty = 1;
@@ -577,6 +581,28 @@ export class GameScene extends Phaser.Scene {
 
     // Render 4 option tiles
     this.renderOptions(q.options, 512, 480);
+
+    // Skip button (bottom right)
+    if (this.skipTokens > 0) {
+      const skipBg = this.add.rectangle(900, 620, 160, 40, 0x5c3825)
+        .setStrokeStyle(2, 0xe5b567);
+      const skipText = this.add.text(900, 620, `SKIP (${this.skipTokens})`, {
+        fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      const skipHit = this.add.rectangle(900, 620, 160, 40, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true });
+      skipHit.on('pointerover', () => skipBg.setFillStyle(0x8b6f47));
+      skipHit.on('pointerout', () => skipBg.setFillStyle(0x5c3825));
+      skipHit.on('pointerdown', () => {
+        this.soundManager.playClick();
+        this.skipTokens -= 1;
+        this.updateTopBar();
+        // Count as correct but no points
+        this.soundManager.playWin();
+        this.showSkipFeedback();
+      });
+      this.questionContainer.add([skipBg, skipText, skipHit]);
+    }
   }
 
   /** Render the hand tiles in a centered row */
@@ -1197,6 +1223,39 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private showSkipFeedback(): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.6).setDepth(depth);
+    const panelW = 500;
+    const panelH = 220;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0xd4a574).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0xd4a574).setDepth(depth);
+
+    const title = this.add.text(512, 340, 'SKIPPED', {
+      fontSize: '24px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const sub = this.add.text(512, 375, 'No points, but you live to fight another day.', {
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+      align: 'center',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub];
+    this.feedbackContainer.add(elements);
+
+    this.time.delayedCall(1200, () => {
+      this.tweens.add({
+        targets: elements,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => {
+          elements.forEach(el => el.destroy());
+          this.proceedToNextRound();
+        },
+      });
+    });
+  }
+
   private showWrongFeedback(q: QuizQuestion, chosenIndex: number): void {
     // Record run stats for achievement tracking even on loss
     const runState: RunState = {
@@ -1365,18 +1424,37 @@ export class GameScene extends Phaser.Scene {
       this.shieldUsedThisChapter = false;
     }
 
-    // After BOSS: relic choice + path choice
+    // After BOSS: chapter complete -> relic choice -> shop -> (if new chapter) path -> event -> round
     if (wasBoss) {
-      this.showRelicChoice(() => {
-        // After relic, show path choice if next is start of chapter
-        if (isNewChapter) {
-          this.showPathChoice(() => this.startRound());
-        } else {
-          this.startRound();
-        }
+      const prevChapter = getChapterForRound(this.round - 1);
+      const prevChapterNum = Math.floor((this.round - 2) / 3) + 1;
+      this.showChapterComplete(prevChapterNum, prevChapter.title, () => {
+        this.showRelicChoice(() => {
+          this.showShop(() => {
+            if (isNewChapter) {
+              this.showPathChoice(() => {
+                this.tryStartRoundWithEvent();
+              });
+            } else {
+              this.tryStartRoundWithEvent();
+            }
+          });
+        });
       });
     } else if (isNewChapter) {
-      this.showPathChoice(() => this.startRound());
+      this.showPathChoice(() => {
+        this.tryStartRoundWithEvent();
+      });
+    } else {
+      this.tryStartRoundWithEvent();
+    }
+  }
+
+  private tryStartRoundWithEvent(): void {
+    // 40% chance of random event at chapter start (round 1, 4, 7, 10...)
+    const isChapterStart = (this.round - 1) % 3 === 0;
+    if (isChapterStart && this.round > 1 && Math.random() < 0.4) {
+      this.showEvent(() => this.startRound());
     } else {
       this.startRound();
     }
@@ -1521,6 +1599,438 @@ export class GameScene extends Phaser.Scene {
       this.doubleTalismanUses += 3;
     }
     this.updateTopBar();
+  }
+
+  // ===== Shop (after BOSS / chapter end) =====
+  private showShop(onDone: () => void): void {
+    const depth = 1200;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.8).setDepth(depth);
+    const title = this.add.text(512, 100, 'SHOP', {
+      fontSize: '28px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const subtitle = this.add.text(512, 135, 'Spend your score on power-ups', {
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const scoreLabel = this.add.text(512, 165, `GOLD: ${this.score}`, {
+      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle, scoreLabel];
+
+    // Generate shop items
+    type ShopItem = {
+      id: string;
+      name: string;
+      desc: string;
+      icon: string;
+      price: number;
+      sold: boolean;
+      color: number;
+    };
+
+    const availableRelics = getRandomRelics(2, this.relics);
+    const items: ShopItem[] = [];
+
+    availableRelics.forEach((r, i) => {
+      const basePrice = r.rarity === 'common' ? 800 : (r.rarity === 'rare' ? 1500 : 2500);
+      items.push({
+        id: 'relic-' + r.id,
+        name: r.name,
+        desc: r.description,
+        icon: ({ 'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦', 'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛', 'lucky-coin': '🪙', 'shield-tile': '🛡' } as Record<string, string>)[r.id] || '?',
+        price: basePrice,
+        sold: false,
+        color: r.rarity === 'common' ? 0x8b6f47 : (r.rarity === 'rare' ? 0x4a6fa5 : 0x8b4a9e),
+      });
+    });
+
+    items.push({
+      id: 'life',
+      name: 'Extra Life',
+      desc: '+1 life',
+      icon: '❤️',
+      price: 1200,
+      sold: false,
+      color: 0xc73e3a,
+    });
+
+    items.push({
+      id: 'skip',
+      name: 'Skip Token',
+      desc: 'Skip 1 question with no penalty',
+      icon: '⏭️',
+      price: 600,
+      sold: false,
+      color: 0xd4a574,
+    });
+
+    items.push({
+      id: 'heal',
+      name: 'Healing Tonic',
+      desc: 'Full heal (restores all lives)',
+      icon: '💖',
+      price: 2000,
+      sold: false,
+      color: 0x4a9e7a,
+    });
+
+    const cardW = 180;
+    const cardH = 240;
+    const gap = 20;
+    const totalW = items.length * cardW + (items.length - 1) * gap;
+    const startX = 512 - totalW / 2 + cardW / 2;
+
+    const itemCards: { cardBg: Phaser.GameObjects.Rectangle; priceText: Phaser.GameObjects.Text; hit: Phaser.GameObjects.Rectangle; item: ShopItem }[] = [];
+
+    items.forEach((item, i) => {
+      const x = startX + i * (cardW + gap);
+      const y = 350;
+
+      const cardBg = this.add.rectangle(x, y, cardW, cardH, 0x1a0f08)
+        .setStrokeStyle(3, item.color).setDepth(depth);
+      const iconText = this.add.text(x, y - 50, item.icon, {
+        fontSize: '42px',
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const nameText = this.add.text(x, y + 5, item.name, {
+        fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const descText = this.add.text(x, y + 35, item.desc, {
+        fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace',
+        align: 'center', wordWrap: { width: cardW - 20 }, lineSpacing: 3,
+      }).setOrigin(0.5, 0).setDepth(depth + 1);
+      const priceText = this.add.text(x, y + cardH / 2 - 25, `${item.price} G`, {
+        fontSize: '16px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+
+      const hit = this.add.rectangle(x, y, cardW, cardH, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+      hit.on('pointerover', () => {
+        if (!item.sold && this.score >= item.price) cardBg.setStrokeStyle(5, item.color);
+      });
+      hit.on('pointerout', () => cardBg.setStrokeStyle(3, item.sold ? 0x3d2418 : item.color));
+      hit.on('pointerdown', () => {
+        if (item.sold || this.score < item.price) return;
+        this.soundManager.playWin();
+        this.score -= item.price;
+        item.sold = true;
+        cardBg.setStrokeStyle(3, 0x3d2418);
+        cardBg.setFillStyle(0x150a04);
+        priceText.setText('SOLD');
+        priceText.setColor('#5c3825');
+        scoreLabel.setText(`GOLD: ${this.score}`);
+        this.updateTopBar();
+
+        // Apply item effect
+        if (item.id === 'life') {
+          this.lives += 1;
+          this.updateTopBar();
+        } else if (item.id === 'skip') {
+          this.skipTokens += 1;
+          this.updateTopBar();
+        } else if (item.id === 'heal') {
+          this.lives = this.isBeginner ? GameConfig.beginner.lives : GameConfig.rounds.lives;
+          this.updateTopBar();
+        } else if (item.id.startsWith('relic-')) {
+          const relicId = item.id.replace('relic-', '') as RelicId;
+          this.applyRelic(relicId);
+        }
+      });
+
+      itemCards.push({ cardBg, priceText, hit, item });
+      elements.push(cardBg, iconText, nameText, descText, priceText, hit);
+    });
+
+    // Leave button
+    const leaveBg = this.add.rectangle(512, 620, 160, 44, 0xc73e3a)
+      .setStrokeStyle(3, 0x9b2b28).setDepth(depth);
+    const leaveText = this.add.text(512, 620, 'LEAVE SHOP', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const leaveHit = this.add.rectangle(512, 620, 160, 44, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    leaveHit.on('pointerover', () => leaveBg.setFillStyle(0xe04e4a));
+    leaveHit.on('pointerout', () => leaveBg.setFillStyle(0xc73e3a));
+    leaveHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      elements.forEach(el => el.destroy());
+      onDone();
+    });
+    elements.push(leaveBg, leaveText, leaveHit);
+
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
+  }
+
+  // ===== Random events =====
+  private showEvent(onDone: () => void): void {
+    const depth = 1200;
+
+    type EventChoice = {
+      label: string;
+      desc: string;
+      effect: () => void;
+    };
+    type GameEvent = {
+      title: string;
+      text: string;
+      icon: string;
+      choices: EventChoice[];
+    };
+
+    const events: GameEvent[] = [
+      {
+        title: 'THE GAMBLER',
+        icon: '🎰',
+        text: 'A mysterious figure offers you a wager. Double your score... or lose half of it.',
+        choices: [
+          {
+            label: 'TAKE THE BET',
+            desc: '50% chance to double score, 50% to lose half',
+            effect: () => {
+              if (Math.random() < 0.5) {
+                this.score = Math.floor(this.score * 2);
+                this.showEventResult('LUCKY!', 'Score doubled!', true);
+              } else {
+                this.score = Math.floor(this.score / 2);
+                this.showEventResult('UNLUCKY...', 'Lost half your score.', false);
+              }
+            },
+          },
+          {
+            label: 'WALK AWAY',
+            desc: 'Nothing gained, nothing lost',
+            effect: () => {
+              this.showEventResult('SAFE', 'You walked away with your gold.', true);
+            },
+          },
+        ],
+      },
+      {
+        title: 'HEALING SPRING',
+        icon: '⛲',
+        text: 'You find a magical spring. It costs 500 score to drink, but it may restore your life.',
+        choices: [
+          {
+            label: 'DRINK (500)',
+            desc: 'Spend 500 score for a 70% chance to +1 life',
+            effect: () => {
+              if (this.score < 500) {
+                this.showEventResult('NOT ENOUGH GOLD', 'You cannot afford the spring.', false);
+                return;
+              }
+              this.score -= 500;
+              if (Math.random() < 0.7) {
+                this.lives += 1;
+                this.showEventResult('REFRESHED!', '+1 Life!', true);
+              } else {
+                this.showEventResult('NOTHING...', 'The spring had no effect.', false);
+              }
+            },
+          },
+          {
+            label: 'SKIP',
+            desc: 'Save your score',
+            effect: () => {
+              this.showEventResult('MOVING ON', 'You continue your journey.', true);
+            },
+          },
+        ],
+      },
+      {
+        title: 'MYSTERY CHEST',
+        icon: '🎁',
+        text: 'A glowing chest appears. Open it for a random reward or curse.',
+        choices: [
+          {
+            label: 'OPEN IT',
+            desc: 'Random: relic, score bonus, or -1 life',
+            effect: () => {
+              const roll = Math.random();
+              if (roll < 0.4) {
+                const available = getRandomRelics(1, this.relics);
+                if (available.length > 0) {
+                  this.applyRelic(available[0].id);
+                  this.showEventResult('RELIC!', `You found: ${available[0].name}`, true);
+                } else {
+                  this.score += 500;
+                  this.showEventResult('GOLD!', '+500 score!', true);
+                }
+              } else if (roll < 0.8) {
+                const bonus = 300 + Math.floor(Math.random() * 700);
+                this.score += bonus;
+                this.showEventResult('GOLD!', `+${bonus} score!`, true);
+              } else {
+                this.lives = Math.max(0, this.lives - 1);
+                this.showEventResult('CURSED!', 'You lost 1 life!', false);
+              }
+            },
+          },
+          {
+            label: 'LEAVE IT',
+            desc: 'Better safe than sorry',
+            effect: () => {
+              this.showEventResult('CAUTIOUS', 'You wisely avoid the chest.', true);
+            },
+          },
+        ],
+      },
+      {
+        title: 'MERCHANT OF TIME',
+        icon: '⌛',
+        text: 'An old merchant trades score for a permanent speed buff on all future questions.',
+        choices: [
+          {
+            label: 'BUY (800)',
+            desc: 'Spend 800 score for +5 seconds per question',
+            effect: () => {
+              if (this.score < 800) {
+                this.showEventResult('NOT ENOUGH GOLD', 'You cannot afford this.', false);
+                return;
+              }
+              this.score -= 800;
+              this.baseTime += 5;
+              this.bossTime += 5;
+              this.showEventResult('TIME BLESSING', '+5s on all future questions!', true);
+            },
+          },
+          {
+            label: 'DECLINE',
+            desc: 'Save your gold',
+            effect: () => {
+              this.showEventResult('MAYBE NEXT TIME', 'You decline the offer.', true);
+            },
+          },
+        ],
+      },
+      {
+        title: 'TRAINING GROUNDS',
+        icon: '🏯',
+        text: 'A master offers to train you. Pay 600 score for a chance to gain a skip token and combo knowledge.',
+        choices: [
+          {
+            label: 'TRAIN (600)',
+            desc: 'Gain 2 skip tokens (guaranteed)',
+            effect: () => {
+              if (this.score < 600) {
+                this.showEventResult('NOT ENOUGH GOLD', 'You cannot afford training.', false);
+                return;
+              }
+              this.score -= 600;
+              this.skipTokens += 2;
+              this.showEventResult('TRAINED!', '+2 Skip Tokens!', true);
+            },
+          },
+          {
+            label: 'SKIP',
+            desc: 'Continue on your way',
+            effect: () => {
+              this.showEventResult('MOVING ON', 'You continue your journey.', true);
+            },
+          },
+        ],
+      },
+    ];
+
+    const ev = events[Math.floor(Math.random() * events.length)];
+
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.8).setDepth(depth);
+    const icon = this.add.text(512, 160, ev.icon, {
+      fontSize: '64px',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const title = this.add.text(512, 230, ev.title, {
+      fontSize: '24px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const text = this.add.text(512, 280, ev.text, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: 600 }, lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, icon, title, text];
+
+    const choiceW = 280;
+    const choiceH = 140;
+    const gap = 30;
+    const totalW = ev.choices.length * choiceW + (ev.choices.length - 1) * gap;
+    const startX = 512 - totalW / 2 + choiceW / 2;
+    const choiceY = 450;
+
+    ev.choices.forEach((choice, i) => {
+      const x = startX + i * (choiceW + gap);
+      const cardBg = this.add.rectangle(x, choiceY, choiceW, choiceH, 0x1a0f08)
+        .setStrokeStyle(3, 0xd4a574).setDepth(depth);
+      const label = this.add.text(x, choiceY - 30, choice.label, {
+        fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: choiceW - 20 },
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const desc = this.add.text(x, choiceY + 15, choice.desc, {
+        fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace',
+        align: 'center', wordWrap: { width: choiceW - 20 }, lineSpacing: 4,
+      }).setOrigin(0.5).setDepth(depth + 1);
+
+      const hit = this.add.rectangle(x, choiceY, choiceW, choiceH, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+      hit.on('pointerover', () => cardBg.setStrokeStyle(5, 0xe5b567));
+      hit.on('pointerout', () => cardBg.setStrokeStyle(3, 0xd4a574));
+      hit.on('pointerdown', () => {
+        this.soundManager.playClick();
+        // Clean up
+        elements.forEach(el => el.destroy());
+        // Apply effect and show result
+        choice.effect();
+        this.updateTopBar();
+      });
+
+      elements.push(cardBg, label, desc, hit);
+    });
+
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
+  }
+
+  private showEventResult(title: string, desc: string, good: boolean): void {
+    const depth = 1300;
+    const color = good ? 0x4a9e4a : 0xc73e3a;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7).setDepth(depth);
+    const panelW = 400;
+    const panelH = 200;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, color).setDepth(depth);
+    const titleText = this.add.text(512, 330, title, {
+      fontSize: '22px', color: good ? '#4a9e4a' : '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const descText = this.add.text(512, 370, desc, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: panelW - 40 },
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const continueBg = this.add.rectangle(512, 420, 140, 36, 0x5c3825)
+      .setStrokeStyle(2, 0x8b6f47).setDepth(depth);
+    const continueText = this.add.text(512, 420, 'CONTINUE', {
+      fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const continueHit = this.add.rectangle(512, 420, 140, 36, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    continueHit.on('pointerover', () => continueBg.setFillStyle(0x8b6f47));
+    continueHit.on('pointerout', () => continueBg.setFillStyle(0x5c3825));
+    continueHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      [overlay, panel, titleText, descText, continueBg, continueText, continueHit].forEach(el => el.destroy());
+      // Check if dead
+      if (this.lives <= 0) {
+        const q = this.currentQuestion;
+        if (q) this.showWrongFeedback(q, -1);
+      } else {
+        this.startRound();
+      }
+    });
   }
 
   // ===== Path choice screen (start of each chapter) =====
