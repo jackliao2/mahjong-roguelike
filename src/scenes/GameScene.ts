@@ -293,42 +293,65 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Top bar: round, score, lives, combo, timer, quit =====
   private createTopBar(): void {
-    const y = 30;
+    const y = 32;
+    const barH = 44;
+
+    const barBg = this.add.rectangle(512, y, 1024, barH, 0x1a0e08, 0.9)
+      .setStrokeStyle(2, 0x5c3825)
+      .setDepth(500);
+
+    const barTop = this.add.rectangle(512, y - barH / 2 + 2, 1024, 3, 0xd4a574, 0.6);
+
     // Round (compact, left-aligned)
-    this.add.text(20, y, '', {
+    this.add.text(24, y, '', {
       fontSize: '13px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setName('roundLabel');
+
     // Lives
-    this.add.text(210, y, '', {
-      fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    this.add.text(180, y, '', {
+      fontSize: '18px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('livesLabel');
-    // Combo
-    this.add.text(330, y, '', {
-      fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+
+    // Combo indicator
+    const comboBg = this.add.rectangle(300, y, 120, 30, 0x150a04, 0.8)
+      .setStrokeStyle(2, 0xe5b567)
+      .setName('comboBg');
+    this.add.text(300, y, '', {
+      fontSize: '16px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('comboLabel');
-    // Score - larger and more prominent
+
+    // Score - larger and more prominent with frame
+    const scoreBg = this.add.rectangle(512, y, 160, 34, 0x150a04, 0.9)
+      .setStrokeStyle(3, 0xe5b567)
+      .setName('scoreBg');
     this.add.text(512, y, '', {
-      fontSize: '20px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-      stroke: '#2b1810', strokeThickness: 4,
+      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      stroke: '#2b1810', strokeThickness: 3,
     }).setOrigin(0.5).setName('scoreLabel');
-    // Timer
-    this.add.text(670, y, '', {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+
+    // Timer with visual warning
+    const timerBg = this.add.rectangle(680, y, 70, 30, 0x150a04, 0.8)
+      .setStrokeStyle(2, 0x8b6f47)
+      .setName('timerBg');
+    this.add.text(680, y, '', {
+      fontSize: '17px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('timerLabel');
+
     // Relic icons (right side, with hover support)
-    const relicArea = this.add.rectangle(820, y, 200, 30, 0xffffff, 0)
+    const relicArea = this.add.rectangle(820, y, 180, 30, 0xffffff, 0)
       .setInteractive({ useHandCursor: true })
       .setName('relicArea');
     this.add.text(820, y, '', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setName('relicLabel');
+
     // Quit button
-    const quitBg = this.add.rectangle(980, y, 60, 28, 0x5c3825)
+    const quitBg = this.add.rectangle(960, y, 70, 32, 0x5c3825)
       .setStrokeStyle(2, 0x8b6f47);
-    const quitText = this.add.text(980, y, 'QUIT', {
+    const quitText = this.add.text(960, y, 'QUIT', {
       fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
-    const quitHit = this.add.rectangle(980, y, 60, 28, 0xffffff, 0)
+    const quitHit = this.add.rectangle(960, y, 70, 32, 0xffffff, 0)
       .setInteractive({ useHandCursor: true });
     quitHit.on('pointerover', () => quitBg.setFillStyle(0x8b6f47));
     quitHit.on('pointerout', () => quitBg.setFillStyle(0x5c3825));
@@ -347,6 +370,8 @@ export class GameScene extends Phaser.Scene {
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
     const relicArea = this.children.getByName('relicArea') as Phaser.GameObjects.Rectangle;
+    const comboBg = this.children.getByName('comboBg') as Phaser.GameObjects.Rectangle;
+    const timerBg = this.children.getByName('timerBg') as Phaser.GameObjects.Rectangle;
     const ch = getChapterForRound(this.round);
     if (roundLabel) {
       const bossTag = ch.isBoss ? ' BOSS' : '';
@@ -357,12 +382,45 @@ export class GameScene extends Phaser.Scene {
       const hearts = '♥'.repeat(Math.max(0, this.lives));
       livesLabel.setText(hearts || '✕');
     }
-    if (comboLabel) {
-      comboLabel.setText(this.combo >= 2 ? `COMBO x${this.combo}` : '');
+    if (comboLabel && comboBg) {
+      if (this.combo >= 2) {
+        comboLabel.setText(`COMBO x${this.combo}`);
+        comboBg.setVisible(true);
+        if (this.combo >= 5) {
+          comboBg.setStrokeStyle(3, 0xe5b567);
+          comboLabel.setColor('#ffd700');
+        } else if (this.combo >= 3) {
+          comboBg.setStrokeStyle(2, 0xe5b567);
+          comboLabel.setColor('#e5b567');
+        }
+      } else {
+        comboLabel.setText('');
+        comboBg.setVisible(false);
+      }
     }
     if (scoreLabel) scoreLabel.setText(`SCORE: ${this.score}`);
-    if (timerLabel) {
-      timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
+    if (timerLabel && timerBg) {
+      if (this.timerActive) {
+        const timeLeft = Math.ceil(this.timeLeft);
+        timerLabel.setText(`${timeLeft}s`);
+        timerBg.setVisible(true);
+        if (timeLeft <= 5) {
+          timerLabel.setColor('#c73e3a');
+          timerBg.setStrokeStyle(2, 0xc73e3a);
+          timerBg.setFillStyle(0xc73e3a, 0.2);
+        } else if (timeLeft <= 10) {
+          timerLabel.setColor('#e5b567');
+          timerBg.setStrokeStyle(2, 0xe5b567);
+          timerBg.setFillStyle(0x150a04, 0.8);
+        } else {
+          timerLabel.setColor('#f5e6d3');
+          timerBg.setStrokeStyle(2, 0x8b6f47);
+          timerBg.setFillStyle(0x150a04, 0.8);
+        }
+      } else {
+        timerLabel.setText('');
+        timerBg.setVisible(false);
+      }
     }
     if (relicLabel) {
       const icons: Record<string, string> = {
@@ -691,13 +749,12 @@ export class GameScene extends Phaser.Scene {
     const yakuName = isYakuCombo ? (tile.id as string) : null;
 
     const shadow = this.add.rectangle(3, 5, OPTION_TILE_W, OPTION_TILE_H, 0x000000, 0.4);
-    // Button background frame
+
     const frame = this.add.rectangle(0, 0, OPTION_TILE_W + 8, OPTION_TILE_H + 8, 0x1a0f08)
       .setStrokeStyle(isBoss ? 4 : 3, frameColor);
 
     let sprite: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
     if (yakuName) {
-      // Text-based option (yaku name)
       sprite = this.add.text(0, 0, yakuName, {
         fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
         align: 'center', wordWrap: { width: OPTION_TILE_W - 10 },
@@ -717,7 +774,6 @@ export class GameScene extends Phaser.Scene {
       glow = this.add.rectangle(0, 0, OPTION_TILE_W + 12, OPTION_TILE_H + 12, 0xe5b567, 0.15)
         .setStrokeStyle(2, 0xe5b567, 0.4);
       container.addAt(glow, 0);
-      // subtle pulse
       this.tweens.add({
         targets: glow,
         alpha: { from: 0.3, to: 0.6 },
@@ -734,43 +790,45 @@ export class GameScene extends Phaser.Scene {
       frame.setStrokeStyle(2, 0x444444);
     }
 
-    // Option label (A/B/C/D)
-    const letter = String.fromCharCode(65 + index); // A, B, C, D
-    const letterBg = this.add.rectangle(-OPTION_TILE_W / 2 + 2, -OPTION_TILE_H / 2 - 2, 22, 22, disabled ? 0x666666 : 0xc73e3a);
-    const letterText = this.add.text(-OPTION_TILE_W / 2 + 2, -OPTION_TILE_H / 2 - 2, letter, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    // Option label (A/B/C/D) - larger and more prominent
+    const letter = String.fromCharCode(65 + index);
+    const letterBg = this.add.rectangle(-OPTION_TILE_W / 2 - 6, -OPTION_TILE_H / 2 - 6, 28, 28, disabled ? 0x666666 : 0xc73e3a);
+    const letterText = this.add.text(-OPTION_TILE_W / 2 - 6, -OPTION_TILE_H / 2 - 6, letter, {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     container.add([letterBg, letterText]);
 
     // Tile name label
     const label = this.getTileLabel(tile);
-    const labelBg = this.add.rectangle(0, OPTION_TILE_H / 2 - 8, 44, 18, 0x000000, 0.85);
+    const labelBg = this.add.rectangle(0, OPTION_TILE_H / 2 - 8, 48, 18, 0x000000, 0.85);
     const labelText = this.add.text(0, OPTION_TILE_H / 2 - 8, label, {
       fontSize: '13px', color: '#ffffff', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     container.add([labelBg, labelText]);
 
-    // Interactivity
+    // Boss border glow
+    if (isBoss) {
+      const bossGlow = this.add.rectangle(0, 0, OPTION_TILE_W + 16, OPTION_TILE_H + 16, 0xc73e3a, 0.2)
+        .setStrokeStyle(2, 0xc73e3a, 0.5);
+      container.addAt(bossGlow, 0);
+    }
+
+    // Hover effects
     if (!disabled) {
       container.setInteractive({ useHandCursor: true });
       container.on('pointerover', () => {
-        if (!this.answered) {
-          container.setScale(1.08);
-          frame.setStrokeStyle(5, hoverColor);
-          this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
-        }
+        frame.setStrokeStyle(isBoss ? 5 : 4, hoverColor);
+        container.setScale(1.05);
+        if (!isYakuCombo) this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
       });
       container.on('pointerout', () => {
-        if (!this.answered) {
-          container.setScale(1);
-          frame.setStrokeStyle(isBoss ? 4 : 3, frameColor);
-          this.hideTooltip();
-        }
+        frame.setStrokeStyle(isBoss ? 4 : 3, frameColor);
+        container.setScale(1);
+        this.hideTooltip();
       });
       container.on('pointerdown', () => {
-        if (!this.answered) {
-          this.handleAnswer(index);
-        }
+        this.soundManager.playClick();
+        this.handleAnswer(index);
       });
     }
 
