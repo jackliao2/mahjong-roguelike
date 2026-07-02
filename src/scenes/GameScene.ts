@@ -181,6 +181,17 @@ export class GameScene extends Phaser.Scene {
     const scoreLabel = this.children.getByName('scoreLabel') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
+
+    if (this.teachingMode) {
+      if (roundLabel) roundLabel.setText(`TEACHING · ${this.round}/${this.maxRounds}`);
+      if (livesLabel) livesLabel.setText('');
+      if (comboLabel) comboLabel.setText('');
+      if (scoreLabel) scoreLabel.setText('');
+      if (timerLabel) timerLabel.setText('');
+      if (relicLabel) relicLabel.setText('');
+      return;
+    }
+
     const ch = getChapterForRound(this.round);
     if (roundLabel) {
       const bossTag = ch.isBoss ? ' BOSS' : '';
@@ -395,42 +406,66 @@ export class GameScene extends Phaser.Scene {
     const q = this.currentQuestion;
     this.questionContainer.removeAll(true);
 
-    // Chapter label above prompt
-    const ch = getChapterForRound(this.round);
-    const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
-    const chapterLabel = this.add.text(512, 80, chapterText, {
-      fontSize: '14px', color: ch.isBoss ? '#c73e3a' : '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    this.questionContainer.add(chapterLabel);
+    if (this.teachingMode) {
+      const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
+      const progressLabel = this.add.text(512, 60, `LESSON ${this.round} OF ${this.maxRounds}`, {
+        fontSize: '13px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.questionContainer.add(progressLabel);
 
-    // Prompt text
-    const promptY = 110;
-    const prompt = this.add.text(512, promptY, q.prompt, {
-      fontSize: '22px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-      align: 'center', wordWrap: { width: 900 },
-    }).setOrigin(0.5);
-    this.questionContainer.add(prompt);
+      const promptY = 95;
+      const prompt = this.add.text(512, promptY, level?.subtitle || q.prompt, {
+        fontSize: '20px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: 900 },
+      }).setOrigin(0.5);
+      this.questionContainer.add(prompt);
 
-    // Instruction for hand
-    const handLabel = this.add.text(512, 135, 'YOUR HAND:', {
-      fontSize: '14px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    this.questionContainer.add(handLabel);
+      const handLabel = this.add.text(512, 135, '↓  THESE ARE YOUR TILES  ↓', {
+        fontSize: '13px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.questionContainer.add(handLabel);
 
-    // Render hand tiles (sorted)
-    const sortedHand = sortHand([...q.hand]);
-    this.renderHandTiles(sortedHand, 512, 250);
+      const sortedHand = sortHand([...q.hand]);
+      this.renderHandTiles(sortedHand, 512, 245);
 
-    // "CHOOSE ONE:" label (BOSS gets red accent)
-    const chooseText = q.isBoss ? 'BOSS · CHOOSE ONE:' : 'CHOOSE ONE:';
-    const chooseColor = q.isBoss ? '#c73e3a' : '#e5b567';
-    const chooseLabel = this.add.text(512, 360, chooseText, {
-      fontSize: '16px', color: chooseColor, fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    this.questionContainer.add(chooseLabel);
+      const chooseLabel = this.add.text(512, 355, '↓  PICK ONE ANSWER  ↓', {
+        fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.questionContainer.add(chooseLabel);
 
-    // Render 4 option tiles
-    this.renderOptions(q.options, 512, 480);
+      this.renderOptions(q.options, 512, 470);
+    } else {
+      const ch = getChapterForRound(this.round);
+      const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
+      const chapterLabel = this.add.text(512, 80, chapterText, {
+        fontSize: '14px', color: ch.isBoss ? '#c73e3a' : '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.questionContainer.add(chapterLabel);
+
+      const promptY = 110;
+      const prompt = this.add.text(512, promptY, q.prompt, {
+        fontSize: '22px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: 900 },
+      }).setOrigin(0.5);
+      this.questionContainer.add(prompt);
+
+      const handLabel = this.add.text(512, 135, 'YOUR HAND:', {
+        fontSize: '14px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.questionContainer.add(handLabel);
+
+      const sortedHand = sortHand([...q.hand]);
+      this.renderHandTiles(sortedHand, 512, 250);
+
+      const chooseText = q.isBoss ? 'BOSS · CHOOSE ONE:' : 'CHOOSE ONE:';
+      const chooseColor = q.isBoss ? '#c73e3a' : '#e5b567';
+      const chooseLabel = this.add.text(512, 360, chooseText, {
+        fontSize: '16px', color: chooseColor, fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.questionContainer.add(chooseLabel);
+
+      this.renderOptions(q.options, 512, 480);
+    }
   }
 
   /** Render the hand tiles in a centered row */
