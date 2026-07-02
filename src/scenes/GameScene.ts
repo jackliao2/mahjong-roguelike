@@ -66,6 +66,10 @@ export class GameScene extends Phaser.Scene {
   private tutorialPanel: Phaser.GameObjects.Rectangle | null = null;
   private tutorialElements: Phaser.GameObjects.GameObject[] = [];
 
+  // Progress map
+  private progressNodes: Phaser.GameObjects.Rectangle[] = [];
+  private progressLabels: Phaser.GameObjects.Text[] = [];
+
   constructor() {
     super('GameScene');
   }
@@ -120,6 +124,9 @@ export class GameScene extends Phaser.Scene {
 
     // Top bar
     this.createTopBar();
+
+    // Chapter progress map (bottom of screen)
+    this.createProgressMap();
 
     // Containers for question + feedback (rebuilt each round)
     this.questionContainer = this.add.container(0, 0);
@@ -286,6 +293,109 @@ export class GameScene extends Phaser.Scene {
     for (let y = 0; y < 720; y += 4) {
       const alpha = 0.04 + Math.random() * 0.04;
       this.add.rectangle(0, y, 1024, 2, 0x5c3825, alpha).setOrigin(0);
+    }
+  }
+
+  // ===== Chapter progress map (bottom of screen) =====
+  private createProgressMap(): void {
+    const totalRounds = this.isEndless ? 0 : this.maxRounds;
+    if (totalRounds === 0) {
+      // Endless mode: just show current chapter
+      this.add.text(512, 695, `ENDLESS MODE — CHAPTER ${Math.ceil(this.round / 3)}`, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(500).setName('progressLabel');
+      return;
+    }
+
+    const nodeSize = 22;
+    const gap = 8;
+    const totalW = totalRounds * nodeSize + (totalRounds - 1) * gap;
+    const startX = 512 - totalW / 2 + nodeSize / 2;
+    const y = 690;
+
+    // Background bar
+    const barBg = this.add.rectangle(512, y, totalW + 40, 36, 0x1a0e08, 0.8)
+      .setStrokeStyle(2, 0x5c3825)
+      .setDepth(499);
+
+    const nodes: Phaser.GameObjects.Rectangle[] = [];
+    const labels: Phaser.GameObjects.Text[] = [];
+
+    for (let i = 0; i < totalRounds; i++) {
+      const x = startX + i * (nodeSize + gap);
+      const roundNum = i + 1;
+      const ch = getChapterForRound(roundNum);
+      const isBoss = ch.isBoss;
+
+      const node = this.add.rectangle(x, y, nodeSize, nodeSize, 0x3d2418)
+        .setStrokeStyle(2, isBoss ? 0xc73e3a : 0x5c3825)
+        .setDepth(500);
+      nodes.push(node);
+
+      const numText = this.add.text(x, y, String(roundNum), {
+        fontSize: '11px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(501);
+      labels.push(numText);
+    }
+
+    // Store references for updating
+    this.progressNodes = nodes;
+    this.progressLabels = labels;
+
+    // Chapter label
+    this.add.text(512, 665, '', {
+      fontSize: '12px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(500).setName('chapterLabel');
+  }
+
+  private updateProgressMap(): void {
+    if (this.isEndless) {
+      const label = this.children.getByName('progressLabel') as Phaser.GameObjects.Text;
+      if (label) label.setText(`ENDLESS MODE — CHAPTER ${Math.ceil(this.round / 3)}`);
+      return;
+    }
+
+    const totalRounds = this.maxRounds;
+    for (let i = 0; i < this.progressNodes.length; i++) {
+      const node = this.progressNodes[i];
+      const label = this.progressLabels[i];
+      const roundNum = i + 1;
+      const ch = getChapterForRound(roundNum);
+      const isBoss = ch.isBoss;
+
+      if (roundNum < this.round) {
+        // Completed
+        node.setFillStyle(0x4a9e4a);
+        node.setStrokeStyle(2, 0x4a9e4a);
+        label.setColor('#f5e6d3');
+      } else if (roundNum === this.round) {
+        // Current
+        node.setFillStyle(0xe5b567);
+        node.setStrokeStyle(3, 0xe5b567);
+        label.setColor('#2b1810');
+        // Pulse
+        this.tweens.add({
+          targets: node,
+          scaleX: { from: 1, to: 1.2 },
+          scaleY: { from: 1, to: 1.2 },
+          duration: 800,
+          yoyo: true,
+          repeat: -1,
+        });
+      } else {
+        // Future
+        node.setFillStyle(0x3d2418);
+        node.setStrokeStyle(2, isBoss ? 0xc73e3a : 0x5c3825);
+        label.setColor('#5c3825');
+      }
+    }
+
+    // Update chapter label
+    const chLabel = this.children.getByName('chapterLabel') as Phaser.GameObjects.Text;
+    if (chLabel) {
+      const ch = getChapterForRound(this.round);
+      const remaining = this.maxRounds - this.round;
+      chLabel.setText(`${ch.chapter}: ${ch.title}  |  ${remaining} question${remaining !== 1 ? 's' : ''} left to win`);
     }
   }
 
@@ -496,6 +606,7 @@ export class GameScene extends Phaser.Scene {
     this.feedbackContainer.removeAll(true);
     this.questionContainer.removeAll(true);
     this.updateTopBar();
+    this.updateProgressMap();
 
     // Round intro banner
     this.showRoundIntro(() => {
@@ -652,14 +763,14 @@ export class GameScene extends Phaser.Scene {
     // Render 4 option tiles
     this.renderOptions(q.options, 512, 480);
 
-    // Skip button (bottom right)
+    // Skip button (above progress bar)
     if (this.skipTokens > 0) {
-      const skipBg = this.add.rectangle(900, 620, 160, 40, 0x5c3825)
+      const skipBg = this.add.rectangle(900, 640, 160, 40, 0x5c3825)
         .setStrokeStyle(2, 0xe5b567);
-      const skipText = this.add.text(900, 620, `SKIP (${this.skipTokens})`, {
+      const skipText = this.add.text(900, 640, `SKIP (${this.skipTokens})`, {
         fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
       }).setOrigin(0.5);
-      const skipHit = this.add.rectangle(900, 620, 160, 40, 0xffffff, 0)
+      const skipHit = this.add.rectangle(900, 640, 160, 40, 0xffffff, 0)
         .setInteractive({ useHandCursor: true });
       skipHit.on('pointerover', () => skipBg.setFillStyle(0x8b6f47));
       skipHit.on('pointerout', () => skipBg.setFillStyle(0x5c3825));
