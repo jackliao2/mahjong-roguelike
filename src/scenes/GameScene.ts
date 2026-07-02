@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Tile, RunState } from '@/types';
 import { sortHand } from '@/game/hand';
-import { tileKey, getTileDisplay } from '@/game/tiles';
+import { tileKey, getTileDisplay, createTile } from '@/game/tiles';
 import { checkRunComplete, persistRun, endRun } from '@/roguelike/run';
 import { loadRun, clearRun } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
@@ -52,20 +52,40 @@ export class GameScene extends Phaser.Scene {
   private isEndless: boolean = false;
   private endlessDifficulty: number = 1;
 
+  // Achievement tracking
+  private wrongCount: number = 0;
+  private bossKills: number = 0;
+
+  // Tutorial system
+  private tutorialActive: boolean = false;
+  private tutorialStep: number = 0;
+  private tutorialQuestion: QuizQuestion | null = null;
+  private tutorialOverlay: Phaser.GameObjects.Rectangle | null = null;
+  private tutorialPanel: Phaser.GameObjects.Rectangle | null = null;
+  private tutorialElements: Phaser.GameObjects.GameObject[] = [];
+
   constructor() {
     super('GameScene');
   }
 
-  create(data?: { action?: string; deckId?: string; difficulty?: string; endless?: boolean }): void {
+  create(data?: { action?: string; deckId?: string; difficulty?: string; endless?: boolean; tutorial?: boolean }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
 
     this.isBeginner = data?.difficulty === 'beginner';
     this.isEndless = data?.endless === true;
+    this.tutorialActive = data?.tutorial === true;
+    this.tutorialStep = 0;
+
     this.maxRounds = this.isEndless
       ? 999
       : (this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds);
     this.lives = this.isBeginner ? GameConfig.beginner.lives : GameConfig.rounds.lives;
+
+    // Tutorial run uses a single fixed, simple question
+    if (this.tutorialActive) {
+      this.tutorialQuestion = this.buildTutorialQuestion();
+    }
 
     // Fresh run
     if (data?.action === 'new_run') {
@@ -103,8 +123,159 @@ export class GameScene extends Phaser.Scene {
     this.questionContainer = this.add.container(0, 0);
     this.feedbackContainer = this.add.container(0, 0);
 
-    // Start first round
-    this.time.delayedCall(400, () => this.startRound());
+    // Start first round (or tutorial sequence)
+    this.time.delayedCall(400, () => {
+      if (this.tutorialActive) {
+        this.startRound();
+        this.showTutorialStep();
+      } else {
+        this.startRound();
+      }
+    });
+  }
+
+  // ===== Tutorial question =====
+  private buildTutorialQuestion(): QuizQuestion {
+    // 123m 456p 789s 23m + pair 9p (13 tiles)
+    // 1m completes the 2-3m ryanmen wait for a winning hand
+    const hand = [
+      createTile('man', 1), createTile('man', 2), createTile('man', 3),
+      createTile('pin', 4), createTile('pin', 5), createTile('pin', 6),
+      createTile('sou', 7), createTile('sou', 8), createTile('sou', 9),
+      createTile('man', 2), createTile('man', 3),
+      createTile('pin', 9), createTile('pin', 9),
+    ];
+
+    return {
+      type: 'tenpai-win',
+      hand,
+      prompt: 'Which tile completes this hand to WIN?',
+      options: [
+        createTile('man', 1), // A: correct
+        createTile('man', 5), // B
+        createTile('sou', 1), // C
+        createTile('dragon', 2), // D: White Dragon
+      ],
+      correctIndices: [0],
+      explanation: '1m completes the 2-3m ryanmen (two-sided wait). This is a common tenpai shape.',
+    };
+  }
+
+  // ===== Tutorial UI =====
+  private showTutorialStep(): void {
+    const steps = GameConfig.beginner.tutorialSteps;
+    if (this.tutorialStep < 0 || this.tutorialStep >= steps.length) return;
+
+    const step = steps[this.tutorialStep];
+    const isLast = this.tutorialStep === steps.length - 1;
+    const depth = 2000;
+
+    // Clean up previous tutorial overlay
+    this.clearTutorialOverlay();
+
+    // Full-screen dim
+    this.tutorialOverlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7)
+      .setDepth(depth)
+      .setInteractive();
+
+    // Dialog panel
+    const panelW = 620;
+    const panelH = 320;
+    this.tutorialPanel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0xd4a574)
+      .setDepth(depth + 1);
+
+    // Step text
+    const text = this.add.text(512, 330, step.text, {
+      fontSize: '17px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 8,
+    }).setOrigin(0.5).setDepth(depth + 2);
+    this.tutorialElements.push(this.tutorialOverlay, this.tutorialPanel, text);
+
+    // NEXT button (last step uses configured label)
+    const stepButton = (step as { button?: string }).button;
+    const btnLabel = (isLast ? stepButton : (stepButton || 'NEXT')) || 'NEXT';
+    const btnW = 200;
+    const btnH = 50;
+    const btnY = 360 + panelH / 2 - 42;
+    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
+      .setStrokeStyle(3, 0x2b1810)
+      .setDepth(depth + 1);
+    const btnText = this.add.text(512, btnY, btnLabel, {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 2);
+    const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(depth + 3);
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0xe04e4a));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
+    btnHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      if (isLast) {
+        this.endTutorial();
+      } else if (step.id === 'options') {
+        // Close dialog but keep the highlight so the player can click the answer
+        this.clearTutorialOverlay();
+      } else {
+        this.tutorialStep += 1;
+        this.showTutorialStep();
+      }
+    });
+    this.tutorialElements.push(btnBg, btnText, btnHit);
+
+    // Entrance animation
+    [this.tutorialOverlay, this.tutorialPanel, text, btnBg, btnText, btnHit].forEach(el => {
+      (el as any).setAlpha?.(0);
+    });
+    this.tweens.add({
+      targets: [this.tutorialOverlay, this.tutorialPanel, text, btnBg, btnText, btnHit],
+      alpha: 1,
+      duration: 250,
+    });
+
+    // Highlight the correct answer during the options step
+    if (step.id === 'options') {
+      this.highlightCorrectOption();
+    }
+  }
+
+  private clearTutorialOverlay(): void {
+    if (this.tutorialOverlay) {
+      this.tutorialOverlay.destroy();
+      this.tutorialOverlay = null;
+    }
+    if (this.tutorialPanel) {
+      this.tutorialPanel.destroy();
+      this.tutorialPanel = null;
+    }
+    this.tutorialElements.forEach(el => el.destroy());
+    this.tutorialElements = [];
+  }
+
+  private highlightCorrectOption(): void {
+    const q = this.currentQuestion || this.tutorialQuestion;
+    if (!q || q.correctIndices.length === 0) return;
+    const targetIndex = q.correctIndices[0];
+    const option = this.questionContainer.getByName(`option-${targetIndex}`) as Phaser.GameObjects.Container | null;
+    if (!option) return;
+
+    const glow = this.add.rectangle(0, 0, OPTION_TILE_W + 16, OPTION_TILE_H + 16, 0xe5b567, 0.25)
+      .setStrokeStyle(4, 0xe5b567);
+    option.addAt(glow, 0);
+
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.2, to: 0.7 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  private endTutorial(): void {
+    this.tutorialActive = false;
+    this.clearTutorialOverlay();
+    this.scene.restart({ action: 'new_run', difficulty: 'beginner' });
   }
 
   // ===== Background =====
@@ -119,16 +290,16 @@ export class GameScene extends Phaser.Scene {
   // ===== Top bar: round, score, lives, combo, timer, quit =====
   private createTopBar(): void {
     const y = 30;
-    // Round + chapter
-    this.add.text(30, y, '', {
-      fontSize: '15px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    // Round (compact, left-aligned)
+    this.add.text(20, y, '', {
+      fontSize: '13px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setName('roundLabel');
     // Lives
-    this.add.text(250, y, '', {
+    this.add.text(210, y, '', {
       fontSize: '15px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('livesLabel');
     // Combo
-    this.add.text(370, y, '', {
+    this.add.text(330, y, '', {
       fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('comboLabel');
     // Score
@@ -136,12 +307,12 @@ export class GameScene extends Phaser.Scene {
       fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('scoreLabel');
     // Timer
-    this.add.text(660, y, '', {
+    this.add.text(670, y, '', {
       fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setName('timerLabel');
-    // Relic icons (right side)
-    this.add.text(780, y, '', {
-      fontSize: '15px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+    // Relic icons (right side, compact)
+    this.add.text(820, y, '', {
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setName('relicLabel');
     // Quit button
     const quitBg = this.add.rectangle(980, y, 60, 28, 0x5c3825)
@@ -171,7 +342,7 @@ export class GameScene extends Phaser.Scene {
     if (roundLabel) {
       const bossTag = ch.isBoss ? ' BOSS' : '';
       const endlessTag = this.isEndless ? ' ENDLESS' : '';
-      roundLabel.setText(`Q${this.isEndless ? this.round : `${this.round}/${this.maxRounds}`}·${ch.chapter}${bossTag}${endlessTag}`);
+      roundLabel.setText(`Q${this.isEndless ? this.round : `${this.round}/${this.maxRounds}`}${bossTag}${endlessTag}`);
     }
     if (livesLabel) {
       const hearts = '♥'.repeat(Math.max(0, this.lives));
@@ -298,11 +469,19 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Question rendering =====
   private loadQuestion(): void {
-    this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds);
-    if (this.currentPath === 'risky') {
-      this.currentQuestion.isBoss = true;
+    if (this.tutorialActive && this.tutorialQuestion) {
+      this.currentQuestion = this.tutorialQuestion;
+    } else {
+      this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds);
+      if (this.currentPath === 'risky') {
+        this.currentQuestion.isBoss = true;
+      }
     }
     this.renderQuestion();
+
+    // Timer is disabled during the tutorial
+    if (this.tutorialActive) return;
+
     // Start timer
     const hasHourglass = this.relics.includes('hourglass');
     const extraSec = hasHourglass ? 5 : 0;
@@ -316,8 +495,43 @@ export class GameScene extends Phaser.Scene {
     const q = this.currentQuestion;
     this.questionContainer.removeAll(true);
 
+    // Chapter label above prompt
+    const ch = getChapterForRound(this.round);
+    const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
+    const chapterLabel = this.add.text(512, 80, chapterText, {
+      fontSize: '14px', color: ch.isBoss ? '#c73e3a' : '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.questionContainer.add(chapterLabel);
+    // BOSS question: add pulsing red border around hand area
+    if (q.isBoss) {
+      const handAreaWidth = q.hand.length * HAND_TILE_W + (q.hand.length - 1) * 4 + 40;
+      const handAreaHeight = HAND_TILE_H + 60;
+      const bossBorder = this.add.rectangle(512, 250, handAreaWidth, handAreaHeight)
+        .setStrokeStyle(4, 0xc73e3a, 0.5)
+        .setOrigin(0.5);
+      this.questionContainer.add(bossBorder);
+      
+      // Pulse effect on border
+      this.tweens.add({
+        targets: bossBorder,
+        alpha: { from: 0.3, to: 0.8 },
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+      });
+      
+      // Pulse effect on chapter label
+      this.tweens.add({
+        targets: chapterLabel,
+        alpha: { from: 0.7, to: 1 },
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
+
     // Prompt text
-    const promptY = 90;
+    const promptY = 110;
     const prompt = this.add.text(512, promptY, q.prompt, {
       fontSize: '22px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
       align: 'center', wordWrap: { width: 900 },
@@ -325,19 +539,19 @@ export class GameScene extends Phaser.Scene {
     this.questionContainer.add(prompt);
 
     // Instruction for hand
-    const handLabel = this.add.text(512, 140, 'YOUR HAND:', {
+    const handLabel = this.add.text(512, 135, 'YOUR HAND:', {
       fontSize: '14px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.questionContainer.add(handLabel);
 
     // Render hand tiles (sorted)
     const sortedHand = sortHand([...q.hand]);
-    this.renderHandTiles(sortedHand, 512, 240);
+    this.renderHandTiles(sortedHand, 512, 250);
 
     // "CHOOSE ONE:" label (BOSS gets red accent)
     const chooseText = q.isBoss ? 'BOSS · CHOOSE ONE:' : 'CHOOSE ONE:';
     const chooseColor = q.isBoss ? '#c73e3a' : '#e5b567';
-    const chooseLabel = this.add.text(512, 350, chooseText, {
+    const chooseLabel = this.add.text(512, 360, chooseText, {
       fontSize: '16px', color: chooseColor, fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.questionContainer.add(chooseLabel);
@@ -427,14 +641,30 @@ export class GameScene extends Phaser.Scene {
     const frameColor = isBoss ? 0xc73e3a : 0xd4a574;
     const hoverColor = isBoss ? 0xe04e4a : 0xe5b567;
 
-    const textureKey = `tile-${tileKey(tile)}`;
-    const sprite = this.add.image(0, 0, textureKey);
+    // Check if this is a text-based option (yaku-combo type)
+    const isYakuCombo = this.currentQuestion?.type === 'yaku-combo';
+    const yakuName = isYakuCombo ? (tile.id as string) : null;
+
     const shadow = this.add.rectangle(3, 5, OPTION_TILE_W, OPTION_TILE_H, 0x000000, 0.4);
     // Button background frame
     const frame = this.add.rectangle(0, 0, OPTION_TILE_W + 8, OPTION_TILE_H + 8, 0x1a0f08)
       .setStrokeStyle(isBoss ? 4 : 3, frameColor);
+
+    let sprite: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
+    if (yakuName) {
+      // Text-based option (yaku name)
+      sprite = this.add.text(0, 0, yakuName, {
+        fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: OPTION_TILE_W - 10 },
+      }).setOrigin(0.5);
+    } else {
+      const textureKey = `tile-${tileKey(tile)}`;
+      sprite = this.add.image(0, 0, textureKey);
+    }
+
     const container = this.add.container(x, y, [frame, shadow, sprite]);
     container.setSize(OPTION_TILE_W + 8, OPTION_TILE_H + 8);
+    container.setName(`option-${index}`);
 
     // Perspective glass: correct answer glows faintly
     let glow: Phaser.GameObjects.Rectangle | null = null;
@@ -516,6 +746,18 @@ export class GameScene extends Phaser.Scene {
     // Highlight chosen option
     this.highlightOptions(optionIndex, isCorrect);
 
+    // Tutorial mode: no scoring, no lives lost
+    if (this.tutorialActive) {
+      if (isCorrect) {
+        this.soundManager.playWin();
+        this.showTutorialCorrectFeedback(q, optionIndex);
+      } else {
+        this.soundManager.playClick();
+        this.showTutorialRetryFeedback(q, optionIndex);
+      }
+      return;
+    }
+
     if (isCorrect) {
       this.soundManager.playWin();
       this.combo += 1;
@@ -551,8 +793,9 @@ export class GameScene extends Phaser.Scene {
 
       this.score += Math.round(baseScore);
       trackWin([q.targetYaku || q.type], 1, 1000, false);
+      if (q.isBoss) this.bossKills++;
       this.updateTopBar();
-      this.showCorrectFeedback(q);
+      this.showCorrectFeedback(q, optionIndex);
     } else {
       // Shield Tile: first wrong per chapter is free
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
@@ -564,6 +807,7 @@ export class GameScene extends Phaser.Scene {
       }
       this.lives -= 1;
       this.combo = 0;
+      this.wrongCount++;
       this.updateTopBar();
       if (this.lives > 0) {
         this.soundManager.playClick();
@@ -608,7 +852,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ===== Feedback overlays =====
-  private showCorrectFeedback(q: QuizQuestion): void {
+  private showCorrectFeedback(q: QuizQuestion, correctIndex: number): void {
     const depth = 1100;
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
     const panelW = 600;
@@ -627,6 +871,33 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, expText];
+    // Particle effect: emit gold particles from correct answer tile position
+    const gap = 20;
+    const totalW = q.options.length * OPTION_TILE_W + (q.options.length - 1) * gap;
+    const startX = 512 - totalW / 2 + OPTION_TILE_W / 2;
+    const correctTileX = startX + correctIndex * (OPTION_TILE_W + gap);
+    const correctTileY = 480;
+
+    // Create particle effect using graphics
+    const particleGraphics = this.add.graphics().setDepth(depth);
+    for (let i = 0; i < 30; i++) {
+      const offsetX = (Math.random() - 0.5) * 100;
+      const offsetY = (Math.random() - 0.5) * 80;
+      const size = 4 + Math.random() * 4;
+      const alpha = 0.6 + Math.random() * 0.4;
+      particleGraphics.fillStyle(0xe5b567, alpha);
+      particleGraphics.fillCircle(correctTileX + offsetX, correctTileY + offsetY, size);
+    }
+
+    // Animate particles floating upward
+    this.tweens.add({
+      targets: particleGraphics,
+      y: correctTileY - 150,
+      alpha: 0,
+      duration: 1500,
+      ease: 'Cubic.easeOut',
+      onComplete: () => { particleGraphics.destroy(); },
+    });
 
     // Next button
     const isLastRound = checkRunComplete({ round: this.round, maxRounds: this.maxRounds, score: this.score, targetScore: 0, unlockedYaku: [], isRiichi: false, riichiTurns: 0, doraIndicators: [] } as RunState);
@@ -658,6 +929,110 @@ export class GameScene extends Phaser.Scene {
       targets: elements,
       alpha: 1,
       duration: 300,
+    });
+  }
+
+  /** Tutorial correct feedback: show explanation and wait for NEXT to advance */
+  private showTutorialCorrectFeedback(q: QuizQuestion, correctIndex: number): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
+    const panelW = 600;
+    const panelH = 320;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0x4a9e4a).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0x4a9e4a).setDepth(depth);
+
+    const title = this.add.text(512, 300, 'CORRECT!', {
+      fontSize: '32px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const expText = this.add.text(512, 360, q.explanation, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, expText];
+
+    // NEXT button continues to the feedback tutorial step
+    const btnW = 200;
+    const btnH = 48;
+    const btnY = 360 + panelH / 2 - 40;
+    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
+      .setStrokeStyle(3, 0x2b1810).setDepth(depth);
+    const btnText = this.add.text(512, btnY, 'NEXT', {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0xe04e4a));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
+    btnHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      elements.forEach(el => el.destroy());
+      this.tutorialStep += 1;
+      this.showTutorialStep();
+    });
+    elements.push(btnBg, btnText, btnHit);
+
+    this.feedbackContainer.add(elements);
+
+    // Entrance animation
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
+  }
+
+  /** Tutorial retry: wrong answer costs nothing */
+  private showTutorialRetryFeedback(q: QuizQuestion, chosenIndex: number): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7).setDepth(depth);
+    const panelW = 480;
+    const panelH = 200;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0xc73e3a).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0xc73e4a).setDepth(depth);
+
+    const title = this.add.text(512, 320, 'NOT QUITE!', {
+      fontSize: '28px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const sub = this.add.text(512, 360, 'Try the highlighted option.', {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const hint = this.add.text(512, 392, '(no lives lost in tutorial)', {
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub, hint];
+    this.feedbackContainer.add(elements);
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 200,
+      onComplete: () => {
+        this.time.delayedCall(1500, () => {
+          this.tweens.add({
+            targets: elements,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => {
+              elements.forEach(el => el.destroy());
+              this.questionContainer.removeAll(true);
+              this.answered = false;
+              this.renderQuestion();
+              // Re-apply the highlight for the options step
+              if (GameConfig.beginner.tutorialSteps[this.tutorialStep]?.id === 'options') {
+                this.highlightCorrectOption();
+              }
+            },
+          });
+        });
+      },
     });
   }
 
@@ -796,6 +1171,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showWrongFeedback(q: QuizQuestion, chosenIndex: number): void {
+    // Record run stats for achievement tracking even on loss
+    const runState: RunState = {
+      round: this.round,
+      score: this.score,
+      targetScore: 0,
+      maxRounds: this.maxRounds,
+      unlockedYaku: [],
+      isRiichi: false,
+      riichiTurns: 0,
+      doraIndicators: [],
+    };
+    endRun(runState, false, {
+      score: this.score,
+      won: false,
+      difficulty: this.isEndless ? 'endless' : (this.isBeginner ? 'beginner' : 'normal'),
+      maxRound: this.round,
+      bestCombo: this.bestCombo,
+      perfectRun: false,
+      bossKills: this.bossKills,
+      relicsCollected: this.relics.length,
+    });
+
     const depth = 1100;
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(depth);
     const panelW = 600;
@@ -866,6 +1263,56 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+
+  // ===== Chapter complete celebration screen =====
+  private showChapterComplete(chapterNum: number, chapterTitle: string, onDone: () => void): void {
+    const depth = 1300;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.9).setDepth(depth);
+
+    const title = this.add.text(512, 240, 'CHAPTER ' + chapterNum + ' COMPLETE!', {
+      fontSize: '40px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const subtitle = this.add.text(512, 290, chapterTitle, {
+      fontSize: '18px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    // Reward summary
+    const scoreLine = this.add.text(512, 360, 'SCORE: ' + this.score, {
+      fontSize: '24px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const relicCount = this.relics.length;
+    const relicLine = this.add.text(512, 400, 'RELICS: ' + relicCount, {
+      fontSize: '18px', color: '#6aa3e0', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const comboLine = this.add.text(512, 440, 'BEST COMBO: x' + this.bestCombo, {
+      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle, scoreLine, relicLine, comboLine];
+
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 400,
+      onComplete: () => {
+        this.time.delayedCall(1500, () => {
+          this.tweens.add({
+            targets: elements,
+            alpha: 0,
+            duration: 300,
+            onComplete: () => {
+              elements.forEach(el => el.destroy());
+              onDone();
+            },
+          });
+        });
+      },
+    });
+  }
   // ===== Round progression =====
   private proceedToNextRound(): void {
     const wasBoss = getChapterForRound(this.round).isBoss;
@@ -922,7 +1369,16 @@ export class GameScene extends Phaser.Scene {
     persistRun(runState);
 
     if (won) {
-      const { meta, newAchievements } = endRun(runState, true);
+      const { meta, newAchievements } = endRun(runState, true, {
+        score: this.score,
+        won: true,
+        difficulty: this.isEndless ? 'endless' : (this.isBeginner ? 'beginner' : 'normal'),
+        maxRound: this.round,
+        bestCombo: this.bestCombo,
+        perfectRun: this.wrongCount === 0,
+        bossKills: this.bossKills,
+        relicsCollected: this.relics.length,
+      });
       trackRunComplete(true, this.score, this.round);
       if (this.isBeginner) {
         localStorage.setItem(GameConfig.beginner.completedKey, '1');
@@ -1125,6 +1581,8 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Helpers =====
   private getTileLabel(tile: Tile): string {
+    // yaku-combo options use tile.id as yaku name
+    if (this.currentQuestion?.type === 'yaku-combo') return '';
     if (tile.suit === 'man') return `${tile.rank}m`;
     if (tile.suit === 'pin') return `${tile.rank}p`;
     if (tile.suit === 'sou') return `${tile.rank}s`;

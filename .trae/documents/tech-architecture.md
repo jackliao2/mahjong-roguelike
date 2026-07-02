@@ -122,7 +122,7 @@ interface Relic { id: string; name: string; description: string; effect: (state:
 - Each custom tile can add flat bonuses or multipliers
 
 ## 7. SEO Strategy
-- Target keywords: "mahjong roguelike", "learn mahjong game", "mahjong balatro", "riichi mahjong browser game"
+- Target keywords: "mahjong quiz", "riichi mahjong quiz", "learn mahjong", "mahjong practice", "riichi mahjong browser game"
 - /how-to-play targets "how to play mahjong", "mahjong rules"
 - /yaku-list targets "mahjong yaku", "riichi yaku list"
 - Sitemap, robots.txt, OG image from day 1

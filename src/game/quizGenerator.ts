@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Quiz question generator for the Mahjong Learning Lab.
  *
  * Generates 4 types of questions:
@@ -18,7 +18,7 @@ import { checkAllYaku } from './yaku';
 
 // ===== Types =====
 
-export type QuestionType = 'tenpai-win' | 'yaku-form' | 'waiting-tiles' | 'discard-best';
+export type QuestionType = 'tenpai-win' | 'yaku-form' | 'waiting-tiles' | 'discard-best' | 'multi-wait' | 'yaku-combo' | 'safe-discard';
 
 export interface QuizQuestion {
   type: QuestionType;
@@ -438,6 +438,77 @@ export function generateDiscardBest(): QuizQuestion {
   return generateFallback();
 }
 
+/**
+ * Type 5: multi-wait
+ */
+export function generateMultiWait(): QuizQuestion {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const winning = buildWinningHand();
+    const win = detectWin(winning);
+    if (!win) continue;
+    const removeIdx = Math.floor(Math.random() * 14);
+    winning.splice(removeIdx, 1)[0];
+    const hand13 = winning;
+    const waiting = findWaitingTiles(hand13);
+    if (waiting.length < 3 || waiting.length > 5) continue;
+    const waitingSet = new Set(waiting);
+    const waitingTileObjs = waiting.map(key => {
+      const [suit, rank] = key.split('-');
+      return createTile(suit as Suit, parseInt(rank));
+    });
+    const wrongCount = Math.max(1, 4 - waitingTileObjs.length);
+    const wrongTiles: Tile[] = [];
+    for (let i = 0; i < 30 && wrongTiles.length < wrongCount; i++) {
+      const t = randomTile(waitingSet);
+      if (!t) continue;
+      if (wrongTiles.some(w => tileKey(w) === tileKey(t))) continue;
+      wrongTiles.push(t);
+    }
+    if (wrongTiles.length < wrongCount) continue;
+    const options = shuffle([...waitingTileObjs, ...wrongTiles]);
+    const correctIndices = options.map((t, i) => (waitingSet.has(tileKey(t)) ? i : -1)).filter(i => i >= 0);
+    return { type: 'multi-wait', hand: hand13, prompt: 'This hand has MULTIPLE waits. Which tiles are you waiting for?', options, correctIndices, explanation: 'Multi-wait! Waiting on ' + waiting.length + ' tiles: ' + waiting.join(', ') + '.' };
+  }
+  return generateFallback();
+}
+
+export function generateYakuCombo(): QuizQuestion {
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const winning = buildWinningHand();
+    const win = detectWin(winning);
+    if (!win) continue;
+    const yakuList = checkAllYaku(win, winning, true);
+    if (yakuList.length === 0) continue;
+    const correctYakuId = yakuList[0].yaku.id;
+    const correctYakuName = correctYakuId.toUpperCase();
+    const allYakuOptions = ['TANYAO', 'PINFU', 'YAKUHAI', 'RIICHI', 'IPPATSU', 'MENZEN'];
+    const wrongOptions = allYakuOptions.filter(y => y !== correctYakuName).slice(0, 3);
+    const options = shuffle([correctYakuName, ...wrongOptions.slice(0, 3)]);
+    const correctIndex = options.indexOf(correctYakuName);
+    return { type: 'yaku-combo', hand: winning, prompt: 'This hand wins! Which YAKU does it have?', options: options.map(name => ({ id: name, suit: 'dragon' as Suit, rank: 1 })), correctIndices: [correctIndex], explanation: 'This hand has ' + correctYakuName + '.', targetYaku: correctYakuId };
+  }
+  return generateFallback();
+}
+
+export function generateSafeDiscard(): QuizQuestion {
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const melds: Tile[][] = [];
+    for (let i = 0; i < 3; i++) { melds.push(buildSequence(rand(SUITS), 2 + Math.floor(Math.random() * 6))); }
+    melds.push(buildPair(rand(SUITS), 2 + Math.floor(Math.random() * 7)));
+    const useTerminal = Math.random() < 0.5;
+    let safeTile: Tile;
+    if (useTerminal) { safeTile = createTile(rand(SUITS), Math.random() < 0.5 ? 1 : 9); }
+    else { const hs = rand(['wind','dragon'] as Suit[]); safeTile = createTile(hs, hs === 'wind' ? 1 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 3)); }
+    melds.push([safeTile]);
+    const hand14 = melds.flat();
+    if (hand14.length !== 14 || detectWin(hand14)) continue;
+    const wrongTiles = shuffle(hand14.filter(t => t.id !== safeTile.id)).slice(0, 3);
+    if (wrongTiles.length < 3) continue;
+    const options = shuffle([safeTile, ...wrongTiles]);
+    return { type: 'safe-discard', hand: hand14, prompt: 'Someone declared RIICHI! Which tile is SAFEST to discard?', options, correctIndices: [options.findIndex(t => t.id === safeTile.id)], explanation: tileKey(safeTile).toUpperCase() + ' is safest!' };
+  }
+  return generateFallback();
+}
 // ===== Chapter / BOSS system =====
 
 /** Chapter metadata for a given round. Every 3rd round is a BOSS. */
@@ -471,27 +542,27 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8): 
   const ch = getChapterForRound(round);
   let q: QuizQuestion;
 
-  // Chapter 1 (1-2): tenpai-win basics; BOSS at 3 = waiting-tiles
-  // Chapter 2 (4-5): tanyao; BOSS at 6 = discard-best
-  // Chapter 3 (7-8): pinfu; BOSS at 9 = waiting-tiles
+  // Chapter 1 (1-2): tenpai-win basics; BOSS at 3 = multi-wait
+  // Chapter 2 (4-5): tanyao; BOSS at 6 = safe-discard
+  // Chapter 3 (7-8): pinfu; BOSS at 9 = yaku-combo
   // Chapter 4 (10-11): yakuhai; BOSS at 12 = mixed (final)
   if (round <= 2) {
     q = generateTenpaiWin();
   } else if (round === 3) {
-    q = generateWaitingTiles();
+    q = generateMultiWait();
   } else if (round === 4 || round === 5) {
     q = generateYakuForm('tanyao');
   } else if (round === 6) {
-    q = generateDiscardBest();
+    q = generateSafeDiscard();
   } else if (round === 7 || round === 8) {
     q = generateYakuForm('pinfu');
   } else if (round === 9) {
-    q = generateWaitingTiles();
+    q = generateYakuCombo();
   } else if (round === 10 || round === 11) {
     q = generateYakuForm('yakuhai');
   } else {
     // Final / beyond: random mix
-    const generators = [generateTenpaiWin, generateWaitingTiles, generateDiscardBest];
+    const generators = [generateTenpaiWin, generateWaitingTiles, generateDiscardBest, generateMultiWait, generateYakuCombo, generateSafeDiscard];
     q = rand(generators)();
   }
 

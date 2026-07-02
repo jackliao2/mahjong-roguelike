@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blog | Mahjong Roguelike</title>
-<meta name="description" content="Guides, strategy tips, and deep dives into riichi mahjong. Learn tile efficiency, defense, yaku strategy, and the cognitive benefits of playing mahjong.">
-<meta name="keywords" content="mahjong blog, riichi mahjong guide, mahjong strategy, mahjong tips, learn mahjong">
-<meta property="og:title" content="Blog | Mahjong Roguelike">
-<meta property="og:description" content="Guides, strategy tips, and deep dives into riichi mahjong. Learn tile efficiency, defense, yaku strategy, and the cognitive benefits of playing mahjong.">
+<title>Blog | Mahjong Quiz</title>
+<meta name="description" content="Guides, strategy tips, and deep dives into riichi mahjong. Learn tile efficiency, yaku patterns, waiting tiles, and how to get better at our mahjong quiz game.">
+<meta name="keywords" content="mahjong blog, riichi mahjong guide, mahjong quiz, mahjong strategy, mahjong tips, learn mahjong">
+<meta property="og:title" content="Blog | Mahjong Quiz">
+<meta property="og:description" content="Guides, strategy tips, and deep dives into riichi mahjong. Improve your quiz score with yaku, waits, and discard strategy.">
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/blog.html">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Blog | Mahjong Roguelike">
+<meta name="twitter:title" content="Blog | Mahjong Quiz">
 <meta name="twitter:description" content="Guides, strategy tips, and deep dives into riichi mahjong.">
 <meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -24,10 +24,10 @@
 {
   "@context": "https://schema.org",
   "@type": "Blog",
-  "name": "Mahjong Roguelike Blog",
-  "description": "Guides, strategy tips, and deep dives into riichi mahjong.",
+  "name": "Mahjong Quiz Blog",
+  "description": "Guides, strategy tips, and deep dives into riichi mahjong for players of our mahjong quiz game.",
   "url": "https://mahjongroguelike.com/blog.html",
-  "publisher": { "@type": "Organization", "name": "Mahjong Roguelike" }
+  "publisher": { "@type": "Organization", "name": "Mahjong Quiz" }
 }
 </script>
 <script type="application/ld+json">
@@ -150,6 +150,32 @@
     max-width: 720px; margin: 0 auto;
   }
 
+  /* ===== Category filter ===== */
+  .filter-bar {
+    max-width: 1080px;
+    margin: 0 auto 32px;
+    padding: 0 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .filter-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--cream);
+    background: var(--wood-mid);
+    border: 2px solid var(--wood-light);
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--amber);
+    color: var(--amber-bright);
+    background: var(--ink);
+  }
+
   /* ===== Ad slot (top banner) ===== */
   .ad-banner {
     max-width: 960px;
@@ -181,12 +207,13 @@
     box-shadow: 4px 4px 0 var(--ink);
     padding: 24px;
     display: flex; flex-direction: column;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
     text-decoration: none;
     color: inherit;
     position: relative;
     overflow: hidden;
   }
+  .post-card.hidden { display: none; }
   .post-card::before {
     content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: var(--vermillion);
@@ -289,7 +316,7 @@
 <header class="topbar">
   <a href="/" class="logo">
     <span class="logo-mark"></span>
-    <span>MJ ROGUELIKE</span>
+    <span>MJ QUIZ</span>
   </a>
   <nav class="nav-links" aria-label="Main navigation">
     <a href="/">Home</a>
@@ -304,7 +331,7 @@
   <p class="breadcrumb"><a href="/">Home</a> &gt; Blog</p>
   <p class="page-eyebrow">GUIDES &middot; STRATEGY &middot; CULTURE</p>
   <h1 class="page-title">The <span class="accent">Blog</span></h1>
-  <p class="page-sub">Strategy guides, cultural deep-dives, and science-backed reads on the world of riichi mahjong. New to the game? Start with the basics. Already building hands? Level up your defense.</p>
+  <p class="page-sub">Strategy guides, cultural deep-dives, and science-backed reads on the world of riichi mahjong. New to the game? Start with the basics. Already playing the quiz? Level up your tenpai, yaku, and discard reads.</p>
 </section>
 
 <!-- Top banner ad (content pages only) -->
@@ -315,65 +342,136 @@
 </div>
 
 <main class="blog-wrap">
-  <div class="blog-grid">
 
-    <a class="post-card" href="/how-to-play.html">
+  <nav class="filter-bar" aria-label="Article categories">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="beginner">Beginner</button>
+    <button class="filter-btn" data-filter="strategy">Strategy</button>
+    <button class="filter-btn" data-filter="reference">Reference</button>
+    <button class="filter-btn" data-filter="culture">Culture</button>
+    <button class="filter-btn" data-filter="science">Science</button>
+    <button class="filter-btn" data-filter="games">Games</button>
+  </nav>
+
+  <div class="blog-grid" id="blogGrid">
+
+    <a class="post-card" href="/how-to-play.html" data-category="beginner">
       <span class="post-tag">BEGINNER GUIDE</span>
       <h2 class="post-title">How to Play Riichi Mahjong: A Complete Beginner's Guide</h2>
       <p class="post-excerpt">Learn riichi mahjong from scratch. The 136 tiles, winning hand shapes, yaku patterns, and scoring — explained step by step for total newcomers. No prior experience needed.</p>
       <div class="post-meta">
-        <span>UPDATED JUN 2026</span>
+        <span>UPDATED JUL 2026</span>
         <span class="read-time">~12 MIN READ</span>
       </div>
     </a>
 
-    <a class="post-card" href="/yaku-list.html">
-      <span class="post-tag">REFERENCE</span>
-      <h2 class="post-title">Complete Riichi Mahjong Yaku List (All 40+ Patterns)</h2>
-      <p class="post-excerpt">Every riichi mahjong yaku in one place — English names, romaji, han values, and clear descriptions. From Riichi and Tanyao to Kokushi and Chuuren Poutou. Bookmark this page.</p>
+    <a class="post-card" href="/waiting-tiles-explained.html" data-category="beginner">
+      <span class="post-tag">BEGINNER GUIDE</span>
+      <h2 class="post-title">Waiting Tiles Explained: How to Read Mahjong Tenpai Hands</h2>
+      <p class="post-excerpt">What is a "wait" in mahjong? Learn the four common waits — ryanmen, kanchan, penchan, and tanki — and how to spot them in any hand. Essential for quiz players and beginners.</p>
       <div class="post-meta">
-        <span>UPDATED JUN 2026</span>
-        <span class="read-time">~15 MIN READ</span>
-      </div>
-    </a>
-
-    <a class="post-card" href="/riichi-mahjong-strategy.html">
-      <span class="post-tag">STRATEGY</span>
-      <h2 class="post-title">Riichi Mahjong Strategy: 10 Tips to Win More Hands</h2>
-      <p class="post-excerpt">Master riichi mahjong with 10 actionable strategy tips. Learn tile efficiency, defense, riichi decisions, and when to push vs fold. From beginner fundamentals to intermediate play.</p>
-      <div class="post-meta">
-        <span>PUBLISHED JUN 2026</span>
-        <span class="read-time">~14 MIN READ</span>
-      </div>
-    </a>
-
-    <a class="post-card" href="/riichi-vs-chinese-mahjong.html">
-      <span class="post-tag">CULTURE</span>
-      <h2 class="post-title">Riichi vs Chinese Mahjong: What's the Difference? (2026 Guide)</h2>
-      <p class="post-excerpt">A complete guide to the differences between Japanese and Chinese mahjong — tile sets, rules, scoring, and which variant you should learn first. Plus where they overlap.</p>
-      <div class="post-meta">
-        <span>PUBLISHED JUN 2026</span>
-        <span class="read-time">~11 MIN READ</span>
-      </div>
-    </a>
-
-    <a class="post-card" href="/mahjong-brain-benefits.html">
-      <span class="post-tag">SCIENCE</span>
-      <h2 class="post-title">7 Cognitive Benefits of Playing Mahjong (Backed by Science)</h2>
-      <p class="post-excerpt">Is mahjong good for your brain? Discover 7 science-backed cognitive benefits — from dementia prevention and improved memory to sharper decision-making and better mental health.</p>
-      <div class="post-meta">
-        <span>PUBLISHED JUN 2026</span>
+        <span>PUBLISHED JUL 2026</span>
         <span class="read-time">~10 MIN READ</span>
       </div>
     </a>
 
-    <a class="post-card" href="/games-like-balatro.html">
-      <span class="post-tag">GAMES</span>
-      <h2 class="post-title">12 Games Like Balatro &amp; Slay the Spire to Play in 2026</h2>
-      <p class="post-excerpt">Looking for games like Balatro or Slay the Spire? Here are 12 of the best roguelike deckbuilders, dice-rollers, and card-based strategy games to play in 2026 — including a free browser option.</p>
+    <a class="post-card" href="/beginner-mistakes-riichi-mahjong.html" data-category="beginner">
+      <span class="post-tag">BEGINNER GUIDE</span>
+      <h2 class="post-title">10 Beginner Mistakes to Avoid in Riichi Mahjong</h2>
+      <p class="post-excerpt">New to riichi mahjong? Avoid the ten most common beginner mistakes — from bad riichi calls and ignoring defense to chasing impossible yaku. Save points and frustration.</p>
       <div class="post-meta">
-        <span>PUBLISHED JUN 2026</span>
+        <span>PUBLISHED JUL 2026</span>
+        <span class="read-time">~11 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/yaku-list.html" data-category="reference">
+      <span class="post-tag">REFERENCE</span>
+      <h2 class="post-title">Complete Riichi Mahjong Yaku List (All 40+ Patterns)</h2>
+      <p class="post-excerpt">Every riichi mahjong yaku in one place — English names, romaji, han values, and clear descriptions. From Riichi and Tanyao to Kokushi and Chuuren Poutou. Bookmark this page.</p>
+      <div class="post-meta">
+        <span>UPDATED JUL 2026</span>
+        <span class="read-time">~15 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/riichi-mahjong-strategy.html" data-category="strategy">
+      <span class="post-tag">STRATEGY</span>
+      <h2 class="post-title">Riichi Mahjong Strategy: 10 Tips to Win More Hands</h2>
+      <p class="post-excerpt">Master riichi mahjong with 10 actionable strategy tips. Learn tile efficiency, defense, riichi decisions, and when to push vs fold. From beginner fundamentals to intermediate play.</p>
+      <div class="post-meta">
+        <span>UPDATED JUL 2026</span>
+        <span class="read-time">~14 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/tile-efficiency-mahjong.html" data-category="strategy">
+      <span class="post-tag">STRATEGY</span>
+      <h2 class="post-title">Tile Efficiency: The Key to Faster Mahjong Hands</h2>
+      <p class="post-excerpt">Tile efficiency is the skill that separates beginners from intermediate players. Learn ukeire, shape theory, and which discards give your hand the most paths to tenpai.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUL 2026</span>
+        <span class="read-time">~12 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/mahjong-hand-reading-guide.html" data-category="strategy">
+      <span class="post-tag">STRATEGY</span>
+      <h2 class="post-title">Mahjong Hand Reading: A Step-by-Step Guide</h2>
+      <p class="post-excerpt">Learn to read what your opponents are holding from their discards and calls. A practical guide to suji, kabe, and table awareness for safer defense and smarter attacks.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUL 2026</span>
         <span class="read-time">~13 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/how-to-win-mahjong-quiz.html" data-category="strategy">
+      <span class="post-tag">STRATEGY</span>
+      <h2 class="post-title">How to Win at Mahjong Quiz: Pro Tips for High Scores</h2>
+      <p class="post-excerpt">Dominate the Mahjong Quiz with pro tips for every question type. Learn how combos, relics, boss questions, and path choices affect your score and survival.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUL 2026</span>
+        <span class="read-time">~9 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/riichi-vs-chinese-mahjong.html" data-category="culture">
+      <span class="post-tag">CULTURE</span>
+      <h2 class="post-title">Riichi vs Chinese Mahjong: What's the Difference? (2026 Guide)</h2>
+      <p class="post-excerpt">A complete guide to the differences between Japanese and Chinese mahjong — tile sets, rules, scoring, and which variant you should learn first. Plus where they overlap.</p>
+      <div class="post-meta">
+        <span>UPDATED JUL 2026</span>
+        <span class="read-time">~11 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/mahjong-brain-benefits.html" data-category="science">
+      <span class="post-tag">SCIENCE</span>
+      <h2 class="post-title">7 Cognitive Benefits of Playing Mahjong (Backed by Science)</h2>
+      <p class="post-excerpt">Is mahjong good for your brain? Discover 7 science-backed cognitive benefits — from dementia prevention and improved memory to sharper decision-making and better mental health.</p>
+      <div class="post-meta">
+        <span>UPDATED JUL 2026</span>
+        <span class="read-time">~10 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/games-like-balatro.html" data-category="games">
+      <span class="post-tag">GAMES</span>
+      <h2 class="post-title">12 Puzzle &amp; Roguelike Games to Play in 2026</h2>
+      <p class="post-excerpt">Looking for brainy puzzle games or roguelike challenges? Here are 12 of the best quiz, puzzle, deckbuilder, and strategy games to play in 2026 — including a free browser mahjong quiz.</p>
+      <div class="post-meta">
+        <span>UPDATED JUL 2026</span>
+        <span class="read-time">~13 MIN READ</span>
+      </div>
+    </a>
+
+    <a class="post-card" href="/best-online-mahjong-games-2026.html" data-category="games">
+      <span class="post-tag">GAMES</span>
+      <h2 class="post-title">10 Best Online Mahjong Games to Play in 2026</h2>
+      <p class="post-excerpt">The best places to play riichi mahjong online in 2026 — from ranked clients and mobile apps to free browser quiz trainers. Find the right platform for your skill level.</p>
+      <div class="post-meta">
+        <span>PUBLISHED JUL 2026</span>
+        <span class="read-time">~12 MIN READ</span>
       </div>
     </a>
 
@@ -389,14 +487,36 @@
   <section class="blog-cta">
     <h2>Ready to Play?</h2>
     <p>Put these guides into practice. Free, no install, plays right in your browser.</p>
-    <a href="/play.html" class="btn btn-primary">Play Mahjong Roguelike</a>
+    <a href="/play.html" class="btn btn-primary">Play Mahjong Quiz</a>
   </section>
 </main>
 
 <footer>
-  <p>&copy; 2026 Mahjong Roguelike &middot; <a href="/">Home</a> &middot; <a href="/how-to-play.html">How to Play</a> &middot; <a href="/yaku-list.html">Yaku List</a> &middot; <a href="/blog.html">Blog</a> &middot; <a href="/play.html">Play</a></p>
+  <p>&copy; 2026 Mahjong Quiz &middot; <a href="/">Home</a> &middot; <a href="/how-to-play.html">How to Play</a> &middot; <a href="/yaku-list.html">Yaku List</a> &middot; <a href="/blog.html">Blog</a> &middot; <a href="/play.html">Play</a></p>
   <p><a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/cookies.html">Cookies</a> &middot; <a href="/license.html">License</a> &middot; <a href="/contact.html">Contact</a></p>
 </footer>
+
+<script>
+(function() {
+  const buttons = document.querySelectorAll('.filter-btn');
+  const cards = document.querySelectorAll('.post-card');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const filter = btn.dataset.filter;
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      cards.forEach(card => {
+        const cat = card.dataset.category;
+        if (filter === 'all' || cat === filter) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+})();
+</script>
 
 </body>
 </html>

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Win at Mahjong Quiz: Pro Tips for High Scores | Mahjong Quiz</title>
+<meta name="description" content="Master Mahjong Quiz with pro strategies for chapters, boss questions, relics, combos, and timer management. Boost your score and climb the endless mode ladder.">
+<meta name="keywords" content="how to win mahjong quiz, mahjong quiz tips, mahjong quiz high score, mahjong quiz strategy, riichi mahjong quiz">
+<meta property="og:title" content="How to Win at Mahjong Quiz: Pro Tips for High Scores">
+<meta property="og:description" content="Master Mahjong Quiz with pro strategies for chapters, boss questions, relics, combos, and timer management.">
+<meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
+<meta property="og:url" content="https://mahjongroguelike.com/how-to-win-mahjong-quiz.html">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2026-07-01">
+<meta property="article:author" content="Mahjong Quiz Team">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to Win at Mahjong Quiz: Pro Tips for High Scores">
+<meta name="twitter:description" content="Master Mahjong Quiz with pro strategies for chapters, boss questions, relics, combos, and timer management.">
+<meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mahjongroguelike.com/how-to-win-mahjong-quiz.html">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2B1810">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Mahjong Quiz Team">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to Win at Mahjong Quiz: Pro Tips for High Scores",
+  "description": "A strategy guide for Mahjong Quiz covering chapter progression, relic choices, boss questions, combo chains, timer management, and endless mode.",
+  "datePublished": "2026-07-01",
+  "dateModified": "2026-07-01",
+  "author": { "@type": "Organization", "name": "Mahjong Quiz Team" },
+  "publisher": { "@type": "Organization", "name": "Mahjong Quiz" },
+  "mainEntityOfPage": "https://mahjongroguelike.com/how-to-win-mahjong-quiz.html"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What are the seven question types in Mahjong Quiz?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Mahjong Quiz uses seven question types: tenpai-win, yaku-form, waiting-tiles, discard-best, multi-wait, yaku-combo, and safe-discard. Each tests a different mahjong skill, from reading hands to choosing safe tiles under pressure."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does the combo system work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Each correct answer adds to your combo streak. Higher combos multiply your score and can charge relic abilities faster. A wrong answer breaks the combo, so consistency matters more than speed for long runs."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What are relics in Mahjong Quiz?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Relics are meta-upgrades that give you bonuses during a run. Some add score multipliers, others extend the timer, and some reveal hints or protect your combo. Choosing relics that match your weakest skill is usually the best strategy."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I beat boss questions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Boss questions are harder versions of normal questions, often with multi-wait shapes or unusual yaku combinations. Slow down, count the blocks, identify the yaku, and double-check your wait before answering. Using a relic that adds time or removes wrong options helps a lot."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is endless mode better than chapter mode for practice?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Chapter mode is better for structured practice because it introduces question types gradually. Endless mode is better for testing your stamina and pushing for high scores. Use both: chapters to learn, endless to master."
+      }
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/immersion.css">
+<script defer src="/immersion.js"></script>
+<style>
+  :root {
+    --wood-dark: #2B1810;
+    --wood-mid: #3D2418;
+    --wood-light: #5C3825;
+    --amber: #D4A574;
+    --amber-bright: #E8C088;
+    --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28;
+    --cream: #F5E6D3;
+    --cream-dim: #C9B89A;
+    --gold: #E5B567;
+    --ink: #1A0E08;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px),
+      radial-gradient(ellipse at top, var(--wood-mid) 0%, var(--wood-dark) 70%);
+    color: var(--cream);
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--ink);
+    border-bottom: 4px solid var(--vermillion);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--vermillion-dark);
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .logo-mark {
+    display: inline-block; width: 22px; height: 22px;
+    background: var(--vermillion);
+    border: 2px solid var(--cream);
+    box-shadow: 2px 2px 0 var(--ink);
+    position: relative;
+  }
+  .logo-mark::after {
+    content: "中"; position: absolute; inset: 0;
+    color: var(--cream); font-family: 'Press Start 2P', monospace;
+    font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .nav-links a {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--cream); text-decoration: none; padding: 8px 12px;
+    border: 2px solid transparent; transition: all 0.15s ease;
+  }
+  .nav-links a:hover { color: var(--amber-bright); border-color: var(--amber); background: var(--wood-mid); }
+
+  .page-hero {
+    position: relative;
+    padding: 80px 24px 60px;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 40%, rgba(199,62,58,0.18) 0%, transparent 60%);
+    border-bottom: 4px solid var(--ink);
+    overflow: hidden;
+  }
+  .page-hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 4px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0 16px, transparent 16px 32px);
+  }
+  .breadcrumb {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--cream-dim); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--amber-bright); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .page-eyebrow {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--vermillion); letter-spacing: 2px; margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(22px, 4.4vw, 38px);
+    color: var(--cream);
+    text-shadow: 4px 4px 0 var(--vermillion-dark), 8px 8px 0 var(--ink);
+    line-height: 1.3;
+    margin-bottom: 18px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .page-title .accent { color: var(--amber-bright); }
+  .page-sub {
+    font-size: 17px; color: var(--cream-dim);
+    max-width: 720px; margin: 0 auto;
+  }
+
+  .article-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+  }
+  .article-wrap p { margin-bottom: 18px; font-size: 16px; color: var(--cream); }
+  .article-wrap p.lead {
+    font-size: 19px; color: var(--cream); font-weight: 500;
+    border-left: 4px solid var(--vermillion);
+    padding-left: 18px; margin-bottom: 32px;
+  }
+  .article-wrap h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--ink);
+    margin: 48px 0 18px;
+    line-height: 1.4;
+  }
+  .article-wrap h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px; color: var(--cream);
+    margin: 28px 0 12px;
+  }
+  .article-wrap ul, .article-wrap ol { margin: 0 0 22px 24px; }
+  .article-wrap li { margin-bottom: 8px; color: var(--cream); }
+  .article-wrap strong { color: var(--amber-bright); }
+  .article-wrap a { color: var(--amber-bright); }
+
+  .game-card {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink), inset 0 0 0 2px var(--amber);
+    padding: 28px 26px;
+    margin: 28px 0;
+    position: relative;
+  }
+  .game-card.featured {
+    border-color: var(--vermillion);
+    box-shadow: 6px 6px 0 var(--ink), 0 0 0 4px var(--vermillion-dark), inset 0 0 0 2px var(--gold);
+    background: linear-gradient(135deg, var(--wood-mid) 0%, rgba(199,62,58,0.15) 100%);
+  }
+  .game-rank {
+    position: absolute;
+    top: -14px; left: 22px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    background: var(--amber);
+    color: var(--ink);
+    padding: 6px 12px;
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--vermillion-dark);
+  }
+  .game-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    color: var(--amber-bright);
+    margin: 12px 0 6px;
+    line-height: 1.3;
+  }
+  .game-meta {
+    font-size: 13px;
+    color: var(--cream-dim);
+    margin-bottom: 14px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .game-meta span { margin-right: 14px; }
+  .game-card p { font-size: 15px; color: var(--cream); margin-bottom: 10px; }
+  .game-card .why {
+    background: rgba(0,0,0,0.25);
+    border-left: 3px solid var(--vermillion);
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .game-card .why strong { color: var(--vermillion); }
+
+  .faq-item {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 22px 24px;
+    margin: 18px 0;
+  }
+  .faq-item h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--amber-bright);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .faq-item p { font-size: 15px; color: var(--cream); margin: 0; }
+
+  .related-articles {
+    margin: 40px 0;
+    padding: 32px 24px;
+    background: rgba(43, 24, 16, 0.5);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+  }
+  .related-articles h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--amber-bright);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .related-card {
+    padding: 20px;
+    background: var(--ink);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: block;
+  }
+  .related-card:hover {
+    border-color: var(--amber);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .related-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .related-card p {
+    font-size: 14px;
+    color: var(--cream-dim);
+    margin: 0;
+  }
+
+  .cta-box {
+    background: linear-gradient(135deg, var(--vermillion) 0%, var(--vermillion-dark) 100%);
+    border: 4px solid var(--ink);
+    box-shadow: 8px 8px 0 var(--ink);
+    padding: 40px 32px;
+    margin: 56px 0 32px;
+    text-align: center;
+    position: relative;
+  }
+  .cta-box::before {
+    content: ""; position: absolute; inset: 6px;
+    border: 2px dashed rgba(245,230,211,0.3);
+    pointer-events: none;
+  }
+  .cta-box h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    color: var(--cream);
+    text-shadow: 3px 3px 0 var(--ink);
+    margin: 0 0 14px;
+  }
+  .cta-box p {
+    color: var(--cream);
+    font-size: 16px;
+    max-width: 540px;
+    margin: 0 auto 24px;
+  }
+  .cta-btn {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    background: var(--cream);
+    color: var(--ink);
+    padding: 16px 28px;
+    border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+    text-decoration: none;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .cta-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .cta-btn:active {
+    transform: translate(6px, 6px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  footer {
+    background: var(--ink);
+    border-top: 4px solid var(--vermillion);
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--cream-dim);
+    font-size: 13px;
+  }
+  footer a { color: var(--amber-bright); text-decoration: none; margin: 0 8px; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .article-wrap { padding: 36px 18px 60px; }
+    .game-card { padding: 24px 18px; }
+    .cta-box { padding: 32px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="logo">
+    <span class="logo-mark"></span>
+    <span>MJ QUIZ</span>
+  </a>
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="/">Home</a>
+    <a href="/how-to-play.html">How to Play</a>
+    <a href="/yaku-list.html">Yaku List</a>
+    <a href="/blog.html">Blog</a>
+    <a href="/play.html">Play</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <p class="breadcrumb"><a href="/">Home</a> &gt; <a href="/blog.html">Blog</a> &gt; How to Win at Mahjong Quiz</p>
+  <p class="page-eyebrow">QUIZ MASTERY</p>
+  <h1 class="page-title">How to Win at <span class="accent">Mahjong Quiz</span>: Pro Tips for High Scores</h1>
+  <p class="page-sub">Chapters, boss questions, relics, combos, and the endless ladder. Here is everything you need to push your score higher in Mahjong Quiz.</p>
+</section>
+
+<article class="article-wrap">
+
+  <p class="lead">The first time I played Mahjong Quiz, I treated it like a trivia game. I answered fast, guessed when I was unsure, and wondered why my scores were mediocre. Then I realized the quiz is not just a test. It is a roguelike. Every chapter is a run, every relic is a build, and every combo is a resource. Once I started playing strategically, my scores doubled. This guide is the strategy I wish I had from the start.</p>
+
+  <h2>Understand the Seven Question Types</h2>
+
+  <p>Mahjong Quiz tests seven core skills. Each question type rewards a specific kind of pattern recognition. If you want a high score, you need to be comfortable with all of them.</p>
+
+  <ul>
+    <li><strong>Tenpai-win:</strong> Identify whether a hand is complete and which tile wins it.</li>
+    <li><strong>Yaku-form:</strong> Recognize which yaku a hand qualifies for.</li>
+    <li><strong>Waiting-tiles:</strong> Name the tile or tiles a tenpai hand is waiting on.</li>
+    <li><strong>Discard-best:</strong> Choose the discard that maximizes efficiency or safety.</li>
+    <li><strong>Multi-wait:</strong> Find hands that wait on multiple tiles in complex shapes.</li>
+    <li><strong>Yaku-combo:</strong> Identify which yaku stack together in a single hand.</li>
+    <li><strong>Safe-discard:</strong> Pick the safest tile to discard against an opponent's riichi.</li>
+  </ul>
+
+  <p>Each type uses the same 4-option format, but the mental process is different. Tenpai-win is about completeness. Yaku-form is about memorization. Discard-best is about efficiency. Safe-discard is about defense. Master them one at a time.</p>
+
+  <h2>Chapter Mode: Learn Before You Race</h2>
+
+  <p>Chapter mode is the heart of Mahjong Quiz. Each chapter introduces question types gradually and ends with a boss question. Think of chapters as skill gates. Do not rush through them.</p>
+
+  <p>If you are stuck on a chapter, the problem is usually one skill, not the whole game. Go back and practice that question type in isolation. For example, if boss questions keep beating you on waiting tiles, read our <a href="/waiting-tiles-explained.html">waiting tiles guide</a> and drill that mode specifically.</p>
+
+  <h2>Relic Strategy: Build for Your Weakness</h2>
+
+  <p>Relics are the roguelike layer of Mahjong Quiz. They give you passive bonuses during a run. Some add score multipliers. Some extend the timer. Some protect your combo or reveal hints. The best relic choice depends on what is holding you back.</p>
+
+  <p>If you run out of time often, pick timer relics. If you make careless mistakes, pick combo-protection relics. If you are confident but slow, pick score multipliers. A common mistake is choosing flashy relics that do not match your actual weaknesses. Be honest about where you lose points and build accordingly.</p>
+
+  <h2>Combo and Score Multipliers</h2>
+
+  <p>Your combo streak is your most important scoring asset. Each correct answer adds to the combo, and many relics scale with it. A long combo can turn an average run into a high-score run.</p>
+
+  <p>This means consistency beats speed. It is better to answer carefully and maintain a streak than to rush and break it. If a question feels risky, use the time you have. A wrong answer resets your combo and often costs more than the time you saved.</p>
+
+  <h2>Boss Questions: Slow Down</h2>
+
+  <p>Boss questions are harder versions of normal questions. They often involve multi-wait shapes, unusual yaku combinations, or safe-discard puzzles with multiple opponents. The biggest mistake players make is panicking.</p>
+
+  <p>Slow down. Apply a system. For hand-reading questions, count the blocks first. For yaku questions, check the obvious yaku before the exotic ones. For safe-discard questions, use genbutsu first, then suji, then kabe. If you have a hint relic, this is the time to use it.</p>
+
+  <div class="game-card">
+    <span class="game-rank">PRO TIP</span>
+    <h3>Pre-Read the Question Type</h3>
+    <p>Before the options appear, identify what the question is asking. Is this a wait question or a yaku question? Is it offense or defense? Pre-reading lets you activate the right mental framework before you evaluate the choices.</p>
+    <div class="why"><strong>Why it works:</strong> Each question type uses different patterns. Switching into the right mode faster reduces errors and saves time.</div>
+  </div>
+
+  <h2>Timer Management</h2>
+
+  <p>The timer adds pressure, but it also rewards decisiveness. The key is to spend time where it matters. Easy questions should be instant. Hard questions deserve a few extra seconds. Boss questions deserve your full attention.</p>
+
+  <p>If you find yourself consistently running out of time, the issue is usually recognition speed, not thinking speed. Drill the same question type repeatedly until the patterns become automatic. Speed comes from familiarity.</p>
+
+  <h2>Endless Mode: The Real Test</h2>
+
+  <p>Endless mode is where high scores live. The questions get harder over time, and one mistake can end a great run. Use endless mode after you have cleared the relevant chapters. It is a stamina test, not a learning environment.</p>
+
+  <p>In endless mode, relics that stabilize your run become more valuable than relics that spike your score. Combo protection, extra time, and hint charges help you survive longer. Survival is what produces the highest scores.</p>
+
+  <h2>Study Outside the Game</h2>
+
+  <p>The quiz is a training ground, but it is not the only place to learn. When you miss a question, ask why. If it was a yaku question, review our <a href="/yaku-list.html">yaku list</a>. If it was a hand-reading question, read our <a href="/mahjong-hand-reading-guide.html">hand reading guide</a>. If it was about efficiency, study our <a href="/tile-efficiency-mahjong.html">tile efficiency guide</a>.</p>
+
+  <p>The best players do not just play more. They study the gaps the quiz reveals. Treat every wrong answer as a signal pointing to a specific skill you need to improve.</p>
+
+  <h2>Mindset for High Scores</h2>
+
+  <p>High scores come from calm consistency, not heroic plays. Do not chase big combos with risky guesses. Do not panic on boss questions. Do not get frustrated by wrong answers. Each run is a chance to practice patterns.</p>
+
+  <p>Track your progress informally. Are you getting further in endless mode than last week? Are you missing fewer waiting-tile questions? Those improvements matter more than any single score.</p>
+
+  <div class="related-articles">
+    <h2>Related Articles</h2>
+    <div class="related-grid">
+      <a href="/waiting-tiles-explained.html" class="related-card">
+        <h3>Waiting Tiles</h3>
+        <p>Master the five wait types that appear constantly in quiz questions.</p>
+      </a>
+      <a href="/tile-efficiency-mahjong.html" class="related-card">
+        <h3>Tile Efficiency</h3>
+        <p>Learn ukeire and efficient discard patterns for better quiz scores.</p>
+      </a>
+      <a href="/beginner-mistakes-riichi-mahjong.html" class="related-card">
+        <h3>Beginner Mistakes</h3>
+        <p>Fix the common errors that also show up as wrong answers in the quiz.</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <h2>Put These Tips Into Practice</h2>
+    <p>Open Mahjong Quiz and apply these strategies right now. Your next high score starts with one focused run.</p>
+    <a href="/play.html" class="cta-btn">PLAY MAHJONG QUIZ</a>
+  </div>
+
+  <h2>Frequently Asked Questions</h2>
+
+  <div class="faq-item">
+    <h3>What are the seven question types in Mahjong Quiz?</h3>
+    <p>Mahjong Quiz uses seven question types: tenpai-win, yaku-form, waiting-tiles, discard-best, multi-wait, yaku-combo, and safe-discard. Each tests a different mahjong skill, from reading hands to choosing safe tiles under pressure.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>How does the combo system work?</h3>
+    <p>Each correct answer adds to your combo streak. Higher combos multiply your score and can charge relic abilities faster. A wrong answer breaks the combo, so consistency matters more than speed for long runs.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>What are relics in Mahjong Quiz?</h3>
+    <p>Relics are meta-upgrades that give you bonuses during a run. Some add score multipliers, others extend the timer, and some reveal hints or protect your combo. Choosing relics that match your weakest skill is usually the best strategy.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>How do I beat boss questions?</h3>
+    <p>Boss questions are harder versions of normal questions, often with multi-wait shapes or unusual yaku combinations. Slow down, count the blocks, identify the yaku, and double-check your wait before answering. Using a relic that adds time or removes wrong options helps a lot.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Is endless mode better than chapter mode for practice?</h3>
+    <p>Chapter mode is better for structured practice because it introduces question types gradually. Endless mode is better for testing your stamina and pushing for high scores. Use both: chapters to learn, endless to master.</p>
+  </div>
+
+  <h2>Final Thoughts</h2>
+
+  <p>Winning at Mahjong Quiz is not about being the fastest clicker. It is about building reliable pattern recognition and managing the roguelike systems wisely. Study the question types, choose relics that cover your weaknesses, protect your combo, and stay calm under the timer.</p>
+
+  <p>The quiz is a mirror. It shows you exactly which mahjong skills need work. Use it honestly, and your real-game play will improve alongside your scores. That is the real win.</p>
+
+  <p style="margin-top: 28px; font-size: 14px; color: var(--cream-dim);">Need a rules refresher? Read our <a href="/how-to-play.html">how-to-play guide</a>. Ready to play? <a href="/play.html">Start Mahjong Quiz</a>. Browse every yaku on our <a href="/yaku-list.html">complete yaku list</a>.</p>
+
+</article>
+
+<footer>
+  <p>&copy; 2026 Mahjong Quiz &middot; <a href="/">Home</a> &middot; <a href="/how-to-play.html">How to Play</a> &middot; <a href="/yaku-list.html">Yaku List</a> &middot; <a href="/blog.html">Blog</a> &middot; <a href="/play.html">Play</a></p>
+  <p style="margin-top: 10px;"><a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/cookies.html">Cookies</a></p>
+</footer>
+
+</body>
+</html>

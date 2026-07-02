@@ -1,4 +1,13 @@
-# PROGRESS - Mahjong Roguelike
+# PROGRESS - Mahjong Quiz
+
+## Session: 2026-07-02
+
+### Completed
+- [x] Added 6 high-quality SEO articles: waiting tiles, beginner mistakes, tile efficiency, best online mahjong games, how to win the quiz, mahjong hand reading
+- [x] Updated blog.html with 12 article cards and category filter (All / Beginner / Strategy / Reference / Culture / Science / Games)
+- [x] Updated sitemap.xml (root + public) and vite.config.ts to include all new pages
+- [x] Verified production build succeeds and all 21 dist HTML files have valid internal links
+- [x] Confirmed robots.txt, sitemap.xml, og-image.svg, immersion.css, and immersion.js are present in dist
 
 ## Session: 2026-06-29
 

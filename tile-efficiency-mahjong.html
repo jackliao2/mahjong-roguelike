@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tile Efficiency: The Key to Faster Mahjong Hands | Mahjong Quiz</title>
+<meta name="description" content="Master tile efficiency in riichi mahjong. Learn ukeire, the 5-block theory, common shapes, and how to choose discards that get you to tenpai faster.">
+<meta name="keywords" content="tile efficiency, ukeire, mahjong hand building, 5 block theory, riichi mahjong efficiency, mahjong quiz">
+<meta property="og:title" content="Tile Efficiency: The Key to Faster Mahjong Hands">
+<meta property="og:description" content="Master tile efficiency in riichi mahjong. Learn ukeire, the 5-block theory, common shapes, and how to choose discards that get you to tenpai faster.">
+<meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
+<meta property="og:url" content="https://mahjongroguelike.com/tile-efficiency-mahjong.html">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2026-07-01">
+<meta property="article:author" content="Mahjong Quiz Team">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tile Efficiency: The Key to Faster Mahjong Hands">
+<meta name="twitter:description" content="Master tile efficiency in riichi mahjong. Learn ukeire, the 5-block theory, common shapes, and how to choose discards that get you to tenpai faster.">
+<meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mahjongroguelike.com/tile-efficiency-mahjong.html">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2B1810">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Mahjong Quiz Team">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Tile Efficiency: The Key to Faster Mahjong Hands",
+  "description": "A beginner-friendly guide to tile efficiency in riichi mahjong, covering ukeire, the 5-block theory, common tile shapes, and practical discard decisions.",
+  "datePublished": "2026-07-01",
+  "dateModified": "2026-07-01",
+  "author": { "@type": "Organization", "name": "Mahjong Quiz Team" },
+  "publisher": { "@type": "Organization", "name": "Mahjong Quiz" },
+  "mainEntityOfPage": "https://mahjongroguelike.com/tile-efficiency-mahjong.html"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is ukeire in riichi mahjong?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ukeire means tile acceptance. It is the number of tiles that would improve your hand if you discarded a specific tile. The discard with the highest ukeire is usually the most efficient choice because it gives you the most paths toward tenpai."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the 5-block theory in mahjong?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The 5-block theory says every winning hand is made of five blocks: four melds plus one pair. When you look at your starting hand, group tiles into candidate blocks. If you have more than five, discard from the weakest block. If you have fewer than five, your hand needs development."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why are ryanmen waits more efficient than kanchan waits?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A ryanmen two-sided wait on a 4-5 sequence accepts both 3 and 6, giving eight winning tiles. A kanchan closed wait on 4-6 only accepts 5, giving four winning tiles. Ryanmen gives you twice as many chances to complete your hand."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I always keep a pair over an isolated tile?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Usually yes. A pair is already a complete block and only needs one more tile to become a triplet. An isolated tile needs two specific tiles to become a sequence. Pairs are more flexible and closer to completion."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I practice tile efficiency?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Practice by dealing yourself 13 tiles and calculating the best discard based on ukeire. Use Mahjong Quiz to drill best-discard questions. Over time, common shapes become automatic and you will recognize efficient discards without counting."
+      }
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/immersion.css">
+<script defer src="/immersion.js"></script>
+<style>
+  :root {
+    --wood-dark: #2B1810;
+    --wood-mid: #3D2418;
+    --wood-light: #5C3825;
+    --amber: #D4A574;
+    --amber-bright: #E8C088;
+    --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28;
+    --cream: #F5E6D3;
+    --cream-dim: #C9B89A;
+    --gold: #E5B567;
+    --ink: #1A0E08;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px),
+      radial-gradient(ellipse at top, var(--wood-mid) 0%, var(--wood-dark) 70%);
+    color: var(--cream);
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--ink);
+    border-bottom: 4px solid var(--vermillion);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--vermillion-dark);
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .logo-mark {
+    display: inline-block; width: 22px; height: 22px;
+    background: var(--vermillion);
+    border: 2px solid var(--cream);
+    box-shadow: 2px 2px 0 var(--ink);
+    position: relative;
+  }
+  .logo-mark::after {
+    content: "中"; position: absolute; inset: 0;
+    color: var(--cream); font-family: 'Press Start 2P', monospace;
+    font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .nav-links a {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--cream); text-decoration: none; padding: 8px 12px;
+    border: 2px solid transparent; transition: all 0.15s ease;
+  }
+  .nav-links a:hover { color: var(--amber-bright); border-color: var(--amber); background: var(--wood-mid); }
+
+  .page-hero {
+    position: relative;
+    padding: 80px 24px 60px;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 40%, rgba(199,62,58,0.18) 0%, transparent 60%);
+    border-bottom: 4px solid var(--ink);
+    overflow: hidden;
+  }
+  .page-hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 4px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0 16px, transparent 16px 32px);
+  }
+  .breadcrumb {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--cream-dim); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--amber-bright); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .page-eyebrow {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--vermillion); letter-spacing: 2px; margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(22px, 4.4vw, 38px);
+    color: var(--cream);
+    text-shadow: 4px 4px 0 var(--vermillion-dark), 8px 8px 0 var(--ink);
+    line-height: 1.3;
+    margin-bottom: 18px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .page-title .accent { color: var(--amber-bright); }
+  .page-sub {
+    font-size: 17px; color: var(--cream-dim);
+    max-width: 720px; margin: 0 auto;
+  }
+
+  .article-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+  }
+  .article-wrap p { margin-bottom: 18px; font-size: 16px; color: var(--cream); }
+  .article-wrap p.lead {
+    font-size: 19px; color: var(--cream); font-weight: 500;
+    border-left: 4px solid var(--vermillion);
+    padding-left: 18px; margin-bottom: 32px;
+  }
+  .article-wrap h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--ink);
+    margin: 48px 0 18px;
+    line-height: 1.4;
+  }
+  .article-wrap h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px; color: var(--cream);
+    margin: 28px 0 12px;
+  }
+  .article-wrap ul, .article-wrap ol { margin: 0 0 22px 24px; }
+  .article-wrap li { margin-bottom: 8px; color: var(--cream); }
+  .article-wrap strong { color: var(--amber-bright); }
+  .article-wrap a { color: var(--amber-bright); }
+
+  .game-card {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink), inset 0 0 0 2px var(--amber);
+    padding: 28px 26px;
+    margin: 28px 0;
+    position: relative;
+  }
+  .game-card.featured {
+    border-color: var(--vermillion);
+    box-shadow: 6px 6px 0 var(--ink), 0 0 0 4px var(--vermillion-dark), inset 0 0 0 2px var(--gold);
+    background: linear-gradient(135deg, var(--wood-mid) 0%, rgba(199,62,58,0.15) 100%);
+  }
+  .game-rank {
+    position: absolute;
+    top: -14px; left: 22px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    background: var(--amber);
+    color: var(--ink);
+    padding: 6px 12px;
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--vermillion-dark);
+  }
+  .game-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    color: var(--amber-bright);
+    margin: 12px 0 6px;
+    line-height: 1.3;
+  }
+  .game-meta {
+    font-size: 13px;
+    color: var(--cream-dim);
+    margin-bottom: 14px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .game-meta span { margin-right: 14px; }
+  .game-card p { font-size: 15px; color: var(--cream); margin-bottom: 10px; }
+  .game-card .why {
+    background: rgba(0,0,0,0.25);
+    border-left: 3px solid var(--vermillion);
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .game-card .why strong { color: var(--vermillion); }
+
+  .faq-item {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 22px 24px;
+    margin: 18px 0;
+  }
+  .faq-item h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--amber-bright);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .faq-item p { font-size: 15px; color: var(--cream); margin: 0; }
+
+  .related-articles {
+    margin: 40px 0;
+    padding: 32px 24px;
+    background: rgba(43, 24, 16, 0.5);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+  }
+  .related-articles h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--amber-bright);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .related-card {
+    padding: 20px;
+    background: var(--ink);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: block;
+  }
+  .related-card:hover {
+    border-color: var(--amber);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .related-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .related-card p {
+    font-size: 14px;
+    color: var(--cream-dim);
+    margin: 0;
+  }
+
+  .cta-box {
+    background: linear-gradient(135deg, var(--vermillion) 0%, var(--vermillion-dark) 100%);
+    border: 4px solid var(--ink);
+    box-shadow: 8px 8px 0 var(--ink);
+    padding: 40px 32px;
+    margin: 56px 0 32px;
+    text-align: center;
+    position: relative;
+  }
+  .cta-box::before {
+    content: ""; position: absolute; inset: 6px;
+    border: 2px dashed rgba(245,230,211,0.3);
+    pointer-events: none;
+  }
+  .cta-box h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    color: var(--cream);
+    text-shadow: 3px 3px 0 var(--ink);
+    margin: 0 0 14px;
+  }
+  .cta-box p {
+    color: var(--cream);
+    font-size: 16px;
+    max-width: 540px;
+    margin: 0 auto 24px;
+  }
+  .cta-btn {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    background: var(--cream);
+    color: var(--ink);
+    padding: 16px 28px;
+    border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+    text-decoration: none;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .cta-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .cta-btn:active {
+    transform: translate(6px, 6px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  footer {
+    background: var(--ink);
+    border-top: 4px solid var(--vermillion);
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--cream-dim);
+    font-size: 13px;
+  }
+  footer a { color: var(--amber-bright); text-decoration: none; margin: 0 8px; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .article-wrap { padding: 36px 18px 60px; }
+    .game-card { padding: 24px 18px; }
+    .cta-box { padding: 32px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="logo">
+    <span class="logo-mark"></span>
+    <span>MJ QUIZ</span>
+  </a>
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="/">Home</a>
+    <a href="/how-to-play.html">How to Play</a>
+    <a href="/yaku-list.html">Yaku List</a>
+    <a href="/blog.html">Blog</a>
+    <a href="/play.html">Play</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <p class="breadcrumb"><a href="/">Home</a> &gt; <a href="/blog.html">Blog</a> &gt; Tile Efficiency</p>
+  <p class="page-eyebrow">HAND BUILDING</p>
+  <h1 class="page-title">Tile Efficiency: <span class="accent">The Key</span> to Faster Mahjong Hands</h1>
+  <p class="page-sub">Tile efficiency is the hidden engine of winning mahjong. Learn to count ukeire, use the 5-block theory, and pick discards that speed you toward tenpai.</p>
+</section>
+
+<article class="article-wrap">
+
+  <p class="lead">I used to think mahjong was about luck. You draw tiles, hope for good ones, and eventually someone wins. Then I learned about tile efficiency, and the game changed. Suddenly I could look at a messy starting hand and see the fastest path to tenpai. I stopped hoping and started building. If there is one skill that separates beginners from intermediate players, this is it.</p>
+
+  <h2>What Is Tile Efficiency?</h2>
+
+  <p>Tile efficiency is the practice of choosing discards that maximize your chance of reaching tenpai quickly. It is not about making fancy hands. It is about making every discard count. An efficient hand gets to tenpai in fewer turns, which means it wins more often before an opponent completes their own hand.</p>
+
+  <p>The core idea is simple: every tile in your hand should either be part of a completed meld, close to becoming one, or discarded. Tiles that sit between those two states are inefficient. Your job is to minimize them.</p>
+
+  <h2>The 5-Block Theory</h2>
+
+  <p>The easiest way to think about efficiency is the <strong>5-block theory</strong>. Every winning hand has five blocks: four melds and one pair. When you look at your starting hand, mentally group the tiles into candidate blocks. A pair is one block. A completed sequence is one block. A two-tile sequence that needs a third tile is a partial block.</p>
+
+  <p>If your hand has fewer than five blocks, it is slow. You need to develop more shapes. If your hand has more than five blocks, you have redundancy and can afford to discard from the weakest block. If you have exactly five blocks, your hand is balanced and you should discard the tile that improves the rest of the hand the most.</p>
+
+  <p>This framework answers the eternal beginner question: "Which tile do I discard?" Start by counting blocks. Then discard from the block that contributes least to your overall plan. It sounds simple, but applying it consistently is what makes a player efficient.</p>
+
+  <h2>Ukeire: Counting Tile Acceptance</h2>
+
+  <p><strong>Ukeire</strong> is the Japanese term for tile acceptance. It means: how many tiles in the wall would improve my hand if I make a specific discard? The discard with the highest ukeire is usually the best one.</p>
+
+  <p>Here is a classic example. You hold 2-3-4-5-6 of characters and need to discard one tile. If you discard the 2, your hand can still be completed by drawing 1, 4, or 7 of characters. If you discard the 3, your options shrink. The 2 and 6 are the edge tiles of the run, and they are the correct discards because they preserve the most flexibility.</p>
+
+  <p>You do not need to calculate exact numbers during a live game. With practice, you will recognize patterns. But training yourself to count ukeire during study sessions is the fastest way to build that intuition.</p>
+
+  <h2>Common Efficient Shapes</h2>
+
+  <p>Some tile shapes are naturally efficient. Learn to love them.</p>
+
+  <ul>
+    <li><strong>Ryanmen shape:</strong> Two consecutive tiles like 4-5. They complete with eight possible tiles. This is the gold standard.</li>
+    <li><strong>Kanchan shape:</strong> Two tiles with a gap like 4-6. They complete with four tiles. Keep early, break if you need to.</li>
+    <li><strong>Penchan shape:</strong> Edge tiles like 1-2 or 8-9. They complete with four tiles but only from one side. Weakest of the sequence shapes.</li>
+    <li><strong>Pair:</strong> Two identical tiles. Already a block. One tile away from a triplet.</li>
+    <li><strong>Floating center tile:</strong> A lone 5 of a suit. It can pair with 3, 4, 6, or 7. Very flexible.</li>
+  </ul>
+
+  <p>When you have to choose between keeping a kanchan shape or a floating edge tile, the kanchan is usually better because it is closer to completion. When you have to choose between a floating center tile and a floating edge tile, the center tile is better because it has more partners.</p>
+
+  <div class="game-card">
+    <span class="game-rank">EFFICIENCY TRAP</span>
+    <h3>The Five-Tile Sequence Mistake</h3>
+    <p>You hold 2-3-4-5-6 of bamboo and draw a 7. Should you discard the 7 and keep the five-tile run? Yes. A five-tile sequence already contains two complete sequences no matter how you slice it. Extending it to 2-3-4-5-6-7 does not add value. Discard the 7 and use that slot for something more useful.</p>
+    <div class="why"><strong>Why it matters:</strong> Beginners see a 7 next to a 6 and think "extension." But five tiles already give you two sequences. The 7 is redundant.</div>
+  </div>
+
+  <h2>Pairs vs Isolated Tiles</h2>
+
+  <p>A pair is more valuable than an isolated tile. This is one of the most important rules in tile efficiency. A pair is already a complete block. It only needs one more tile to become a triplet. An isolated tile needs two specific tiles to become a sequence.</p>
+
+  <p>That does not mean you should keep every pair. If you have three pairs, you might be heading toward seven pairs. If you have one pair and it is made of useless honor tiles, you might discard it. But in general, when choosing between keeping a pair and keeping an isolated tile, keep the pair.</p>
+
+  <h2>Efficiency and Yaku Plan</h2>
+
+  <p>Tile efficiency does not exist in a vacuum. It must serve your yaku plan. A hand full of 2-8 tiles is efficient for tanyao. A hand full of honor tiles is inefficient for most yaku but could be the start of an all-triplets hand or half-flush.</p>
+
+  <p>Before you apply efficiency rules, know what yaku you are aiming for. Then choose discards that move you toward that yaku quickly. For a list of all possible yaku, visit our <a href="/yaku-list.html">yaku list</a>. Understanding yaku and efficiency together is what turns a beginner into a thinking player.</p>
+
+  <h2>Efficiency in the Late Game</h2>
+
+  <p>Early in the hand, efficiency is king. Late in the hand, safety becomes more important. If an opponent has declared riichi, you may need to discard a slightly less efficient tile to avoid dealing in. This is the eternal trade-off in mahjong: speed vs safety.</p>
+
+  <p>The key is context. With no riichi on the board, push efficiency. With a riichi on the board, factor in tile safety. The best players switch between these modes without thinking. Beginners tend to stay in efficiency mode too long and deal in.</p>
+
+  <h2>How to Practice Tile Efficiency</h2>
+
+  <p>Efficiency is a pattern-recognition skill. The more hands you evaluate, the faster you get. Here are three ways to train.</p>
+
+  <ul>
+    <li><strong>Deal and decide:</strong> Shuffle tiles, deal yourself 13, and find the best discard. Count the ukeire for each candidate. Verify by drawing a tile and repeating.</li>
+    <li><strong>Use Mahjong Quiz:</strong> Our <a href="/play.html">best-discard quiz mode</a> gives you real hand positions and four choices. It is the fastest way to drill efficiency decisions.</li>
+    <li><strong>Review your games:</strong> After each game, look at three key discards. Ask whether a different discard would have given you more paths to tenpai.</li>
+  </ul>
+
+  <p>Tile efficiency is not glamorous, but it is the skill that wins games. Master it and everything else becomes easier.</p>
+
+  <div class="related-articles">
+    <h2>Related Articles</h2>
+    <div class="related-grid">
+      <a href="/waiting-tiles-explained.html" class="related-card">
+        <h3>Waiting Tiles</h3>
+        <p>Learn the five common wait types and how to read tenpai hands.</p>
+      </a>
+      <a href="/mahjong-hand-reading-guide.html" class="related-card">
+        <h3>Hand Reading</h3>
+        <p>A step-by-step guide to reading any mahjong hand from start to finish.</p>
+      </a>
+      <a href="/beginner-mistakes-riichi-mahjong.html" class="related-card">
+        <h3>Beginner Mistakes</h3>
+        <p>10 common mistakes that cost beginners points, and how to fix them.</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <h2>Drill Tile Efficiency Now</h2>
+    <p>Mahjong Quiz has dedicated best-discard questions that train your eye for efficient shapes. Play free and see your speed improve.</p>
+    <a href="/play.html" class="cta-btn">PLAY FREE</a>
+  </div>
+
+  <h2>Frequently Asked Questions</h2>
+
+  <div class="faq-item">
+    <h3>What is ukeire in riichi mahjong?</h3>
+    <p>Ukeire means tile acceptance. It is the number of tiles that would improve your hand if you discarded a specific tile. The discard with the highest ukeire is usually the most efficient choice because it gives you the most paths toward tenpai.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>What is the 5-block theory in mahjong?</h3>
+    <p>The 5-block theory says every winning hand is made of five blocks: four melds plus one pair. When you look at your starting hand, group tiles into candidate blocks. If you have more than five, discard from the weakest block. If you have fewer than five, your hand needs development.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Why are ryanmen waits more efficient than kanchan waits?</h3>
+    <p>A ryanmen two-sided wait on a 4-5 sequence accepts both 3 and 6, giving eight winning tiles. A kanchan closed wait on 4-6 only accepts 5, giving four winning tiles. Ryanmen gives you twice as many chances to complete your hand.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Should I always keep a pair over an isolated tile?</h3>
+    <p>Usually yes. A pair is already a complete block and only needs one more tile to become a triplet. An isolated tile needs two specific tiles to become a sequence. Pairs are more flexible and closer to completion.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>How do I practice tile efficiency?</h3>
+    <p>Practice by dealing yourself 13 tiles and calculating the best discard based on ukeire. Use Mahjong Quiz to drill best-discard questions. Over time, common shapes become automatic and you will recognize efficient discards without counting.</p>
+  </div>
+
+  <h2>Final Thoughts</h2>
+
+  <p>Tile efficiency is the foundation of good mahjong. It determines how fast your hands reach tenpai, how flexible your waits become, and how often you win before your opponents. It is not the only skill you need, but it is the one everything else rests on.</p>
+
+  <p>Start with the 5-block theory. Practice counting ukeire. Learn the common shapes. Then layer in yaku awareness and defense. If you do this consistently, you will find yourself reaching tenpai faster, waiting on better tiles, and winning more hands. That is the power of tile efficiency.</p>
+
+  <p style="margin-top: 28px; font-size: 14px; color: var(--cream-dim);">New to the game? Read our <a href="/how-to-play.html">how-to-play guide</a> first. Ready to train? <a href="/play.html">Play our free mahjong quiz</a>. Browse all winning hands on our <a href="/yaku-list.html">yaku list</a>.</p>
+
+</article>
+
+<footer>
+  <p>&copy; 2026 Mahjong Quiz &middot; <a href="/">Home</a> &middot; <a href="/how-to-play.html">How to Play</a> &middot; <a href="/yaku-list.html">Yaku List</a> &middot; <a href="/blog.html">Blog</a> &middot; <a href="/play.html">Play</a></p>
+  <p style="margin-top: 10px;"><a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/cookies.html">Cookies</a></p>
+</footer>
+
+</body>
+</html>

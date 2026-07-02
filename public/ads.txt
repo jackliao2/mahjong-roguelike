@@ -1,4 +1,4 @@
-# ads.txt — Mahjong Roguelike
+# ads.txt — Mahjong Quiz
 # AdSense placeholder. Replace YOUR_PUB_ID with your real publisher ID
 # after AdSense approval.
 #

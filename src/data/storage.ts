@@ -37,6 +37,13 @@ export function loadMeta(): MetaProgression {
     totalWins: 0,
     unlockedDecks: ['default'],
     achievements: [],
+    beginnerCompleted: 0,
+    normalCompleted: 0,
+    endlessBestRound: 0,
+    bestCombo: 0,
+    perfectRuns: 0,
+    bossKills: 0,
+    relicsCollected: 0,
   };
 }
 

@@ -62,12 +62,41 @@ export const GameConfig = {
     tutorialSeenKey: 'mjrg_tutorial_seen',
     lives: 2,            // BEGINNER: 2 lives — more forgiving for learners
     tutorialSteps: [
-      { id: 'welcome', text: "Welcome! Goal: 4 sets + 1 pair (14 tiles). Let's learn by playing.", target: 'center' },
-      { id: 'draw', text: 'Press D or click DRAW TILE to take a new tile.', target: 'drawButton' },
-      { id: 'discard', text: 'Click a tile to discard. Try the glowing yellow one.', target: 'hand' },
-      { id: 'riichi', text: "You're 1 tile from winning! Click RIICHI to lock and auto-draw.", target: 'riichiButton' },
-      { id: 'win', text: 'Your winning tile appeared! Press W or click WIN!', target: 'winButton' },
-      { id: 'done', text: 'Great job! Loop: Draw → Discard → Riichi → Win. Good luck!', target: 'center' },
+      {
+        id: 'welcome',
+        text: 'MAHJONG QUIZ\n\nYou will answer 4-option questions about mahjong hands.\nNo mahjong experience needed — you will learn as you play!',
+        button: 'START TUTORIAL',
+      },
+      {
+        id: 'hand',
+        text: 'This is your hand. A winning hand in mahjong has 14 tiles: 4 sets + 1 pair.\n\nFor now, just notice the shapes and colors.',
+        highlight: 'hand',
+      },
+      {
+        id: 'question',
+        text: 'Each question asks something about the hand above.\nRead it slowly — you have enough time.',
+        highlight: 'prompt',
+      },
+      {
+        id: 'options',
+        text: 'Pick ONE of the four options.\nThe correct answer is highlighted this time. Just click it!',
+        highlight: 'correct-option',
+      },
+      {
+        id: 'feedback',
+        text: 'Correct! You will always see an explanation so you learn WHY it is right.',
+        highlight: 'feedback',
+      },
+      {
+        id: 'hud',
+        text: 'Watch the top bar: Round, Lives, Combo, Score, and Timer.\nKeep your combo alive for bigger scores!',
+        highlight: 'topbar',
+      },
+      {
+        id: 'done',
+        text: 'That is everything!\nMistakes are OK — you learn from explanations.\nGood luck!',
+        button: 'PLAY NOW',
+      },
     ],
   },
 
@@ -98,7 +127,7 @@ export const GameConfig = {
 
   // ===== UI Text =====
   ui: {
-    gameTitle: 'MAHJONG ROGUELIKE',
+    gameTitle: 'MAHJONG QUIZ',
     roundLabel: 'ROUND',
     scoreLabel: 'SCORE',
     targetLabel: 'TARGET',
@@ -116,22 +145,25 @@ export const GameConfig = {
       lost: 'Round failed — enjoy your reward!',
     },
     onboardingTips: [
-      'GOAL: Win rounds by forming a winning 14-tile hand.',
-      'Every win needs at least one YAKU (winning pattern).',
+      'GOAL: Answer mahjong questions correctly.',
+      'Each question shows a hand and 4 tile options.',
       '',
       'HOW TO PLAY:',
-      '1. DRAW a tile from the wall',
-      '2. Click a tile in your hand to DISCARD it',
-      '3. When 1 tile from winning, declare RIICHI',
-      '4. WIN! when your hand is complete',
+      '1. READ the question above the hand',
+      '2. PICK one of the 4 options (A/B/C/D)',
+      '3. LEARN from the explanation after each answer',
+      '4. SURVIVE all rounds to win!',
       '',
-      'Easy yaku: Tanyao (only 2-8) · Pinfu (4 runs + pair)',
-      '         Riichi (ready hand) · Yakuhai (dragon triplet)',
+      'Question types:',
+      '· Which tile completes the hand?',
+      '· Which tile forms a yaku?',
+      '· What is the hand waiting for?',
+      '· Which tile should you discard?',
       '',
-      'KEYBOARD: D=Draw  W=Win  R=Riichi  N=Next  H=Hints',
+      'Lives, combo, and relics add strategy.',
     ],
-    onboardingTitle: 'WELCOME, TRAVELER',
-    onboardingButton: 'BEGIN',
+    onboardingTitle: 'WELCOME TO MAHJONG QUIZ',
+    onboardingButton: 'LET\'S GO',
   },
 
   // ===== Round Challenge Goals =====
@@ -244,8 +276,8 @@ export const GameConfig = {
 
   // ===== Branding (for white-label) =====
   branding: {
-    name: 'Mahjong Roguelike',
-    shortName: 'MJ Roguelike',
+    name: 'Mahjong Quiz',
+    shortName: 'MJ Quiz',
     domain: 'mahjongroguelike.com',
     contactEmail: 'hello@mahjongroguelike.com',
   },

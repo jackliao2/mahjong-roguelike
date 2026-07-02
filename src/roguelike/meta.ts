@@ -8,6 +8,13 @@ const DEFAULT_META: MetaProgression = {
   totalWins: 0,
   unlockedDecks: ['default'],
   achievements: [],
+  beginnerCompleted: 0,
+  normalCompleted: 0,
+  endlessBestRound: 0,
+  bestCombo: 0,
+  perfectRuns: 0,
+  bossKills: 0,
+  relicsCollected: 0,
 };
 
 export interface Achievement {
@@ -54,6 +61,55 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Win 5 runs',
     condition: (meta) => meta.totalWins >= 5,
   },
+  // New achievements for quiz era
+  {
+    id: 'beginner-clear',
+    name: 'Beginner Graduate',
+    description: 'Complete Beginner mode for the first time',
+    condition: (meta) => meta.beginnerCompleted >= 1,
+  },
+  {
+    id: 'normal-victory',
+    name: 'Normal Victor',
+    description: 'Complete Normal mode for the first time',
+    condition: (meta) => meta.normalCompleted >= 1,
+  },
+  {
+    id: 'endless-50',
+    name: 'Endless Explorer',
+    description: 'Reach round 50 in Endless mode',
+    condition: (meta) => meta.endlessBestRound >= 50,
+  },
+  {
+    id: 'endless-100',
+    name: 'Endless Master',
+    description: 'Reach round 100 in Endless mode',
+    condition: (meta) => meta.endlessBestRound >= 100,
+  },
+  {
+    id: 'combo-king',
+    name: 'Combo King',
+    description: 'Achieve a 10+ combo in a single run',
+    condition: (meta) => meta.bestCombo >= 10,
+  },
+  {
+    id: 'perfect-run',
+    name: 'Flawless',
+    description: 'Complete a mode with zero wrong answers',
+    condition: (meta) => meta.perfectRuns >= 1,
+  },
+  {
+    id: 'boss-slayer',
+    name: 'Boss Slayer',
+    description: 'Answer 10 BOSS questions correctly',
+    condition: (meta) => meta.bossKills >= 10,
+  },
+  {
+    id: 'relic-hoarder',
+    name: 'Relic Hoarder',
+    description: 'Collect 20 relics across all runs',
+    condition: (meta) => meta.relicsCollected >= 20,
+  },
 ];
 
 export function loadMetaProgression(): MetaProgression {
@@ -77,12 +133,30 @@ export function saveMetaProgression(meta: MetaProgression): void {
   }
 }
 
-export function recordRunResult(meta: MetaProgression, score: number, won: boolean): MetaProgression {
+export interface RunStats {
+  score: number;
+  won: boolean;
+  difficulty: 'beginner' | 'normal' | 'endless';
+  maxRound: number;
+  bestCombo: number;
+  perfectRun: boolean;
+  bossKills: number;
+  relicsCollected: number;
+}
+
+export function recordRunResult(meta: MetaProgression, stats: RunStats): MetaProgression {
   const updated: MetaProgression = {
     ...meta,
     totalRuns: meta.totalRuns + 1,
-    totalWins: meta.totalWins + (won ? 1 : 0),
-    bestScore: Math.max(meta.bestScore, score),
+    totalWins: meta.totalWins + (stats.won ? 1 : 0),
+    bestScore: Math.max(meta.bestScore, stats.score),
+    beginnerCompleted: meta.beginnerCompleted + (stats.won && stats.difficulty === 'beginner' ? 1 : 0),
+    normalCompleted: meta.normalCompleted + (stats.won && stats.difficulty === 'normal' ? 1 : 0),
+    endlessBestRound: Math.max(meta.endlessBestRound, stats.difficulty === 'endless' ? stats.maxRound : 0),
+    bestCombo: Math.max(meta.bestCombo, stats.bestCombo),
+    perfectRuns: meta.perfectRuns + (stats.perfectRun && stats.won ? 1 : 0),
+    bossKills: meta.bossKills + stats.bossKills,
+    relicsCollected: meta.relicsCollected + stats.relicsCollected,
   };
 
   // Check for new achievements

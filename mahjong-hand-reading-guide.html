@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mahjong Hand Reading: A Step-by-Step Guide | Mahjong Quiz</title>
+<meta name="description" content="Learn how to read any mahjong hand with this step-by-step guide. Count blocks, identify yaku, calculate shanten, find waits, and make better discards.">
+<meta name="keywords" content="mahjong hand reading, how to read mahjong hands, mahjong hand analysis, riichi mahjong guide, mahjong quiz">
+<meta property="og:title" content="Mahjong Hand Reading: A Step-by-Step Guide">
+<meta property="og:description" content="Learn how to read any mahjong hand with this step-by-step guide. Count blocks, identify yaku, calculate shanten, find waits, and make better discards.">
+<meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
+<meta property="og:url" content="https://mahjongroguelike.com/mahjong-hand-reading-guide.html">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2026-07-01">
+<meta property="article:author" content="Mahjong Quiz Team">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mahjong Hand Reading: A Step-by-Step Guide">
+<meta name="twitter:description" content="Learn how to read any mahjong hand with this step-by-step guide. Count blocks, identify yaku, calculate shanten, find waits, and make better discards.">
+<meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mahjongroguelike.com/mahjong-hand-reading-guide.html">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2B1810">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Mahjong Quiz Team">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Mahjong Hand Reading: A Step-by-Step Guide",
+  "description": "A beginner-friendly, step-by-step guide to reading riichi mahjong hands, covering block counting, yaku identification, shanten calculation, waits, and opponent reads.",
+  "datePublished": "2026-07-01",
+  "dateModified": "2026-07-01",
+  "author": { "@type": "Organization", "name": "Mahjong Quiz Team" },
+  "publisher": { "@type": "Organization", "name": "Mahjong Quiz" },
+  "mainEntityOfPage": "https://mahjongroguelike.com/mahjong-hand-reading-guide.html"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is hand reading in mahjong?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Hand reading is the process of analyzing a mahjong hand to understand what it needs, what yaku it can achieve, and how close it is to winning. It includes counting blocks, calculating shanten, identifying waits, and reading opponents' discards."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I count blocks in a mahjong hand?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Group your 13 tiles into candidate melds and one pair. Every completed sequence or triplet is one block. Every pair is one block. Every two-tile partial sequence is a partial block. A winning hand needs exactly five blocks: four melds plus one pair."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does shanten mean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Shanten is the number of tiles your hand is away from tenpai. A tenpai hand has 0 shanten. A hand that needs one more useful tile has 1 shanten. Lower shanten means your hand is closer to completion."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I read my opponents' hands too?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, though not perfectly. You can estimate what opponents are building by watching their discards, calls, and honor tile priorities. If a player discards mostly circles, they may be building a characters or bamboo hand. If they call pon on dragons early, they are likely aiming for yakuhai value."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the fastest way to improve hand reading?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The fastest way is deliberate repetition. Use Mahjong Quiz to drill hand-reading questions, practice counting blocks on real starting hands, and review hands after each game. Pattern recognition develops quickly with focused practice."
+      }
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/immersion.css">
+<script defer src="/immersion.js"></script>
+<style>
+  :root {
+    --wood-dark: #2B1810;
+    --wood-mid: #3D2418;
+    --wood-light: #5C3825;
+    --amber: #D4A574;
+    --amber-bright: #E8C088;
+    --vermillion: #C73E3A;
+    --vermillion-dark: #9B2B28;
+    --cream: #F5E6D3;
+    --cream-dim: #C9B89A;
+    --gold: #E5B567;
+    --ink: #1A0E08;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { image-rendering: pixelated; image-rendering: crisp-edges; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--wood-dark);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px),
+      radial-gradient(ellipse at top, var(--wood-mid) 0%, var(--wood-dark) 70%);
+    color: var(--cream);
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--ink);
+    border-bottom: 4px solid var(--vermillion);
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--vermillion-dark);
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .logo-mark {
+    display: inline-block; width: 22px; height: 22px;
+    background: var(--vermillion);
+    border: 2px solid var(--cream);
+    box-shadow: 2px 2px 0 var(--ink);
+    position: relative;
+  }
+  .logo-mark::after {
+    content: "中"; position: absolute; inset: 0;
+    color: var(--cream); font-family: 'Press Start 2P', monospace;
+    font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .nav-links { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .nav-links a {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--cream); text-decoration: none; padding: 8px 12px;
+    border: 2px solid transparent; transition: all 0.15s ease;
+  }
+  .nav-links a:hover { color: var(--amber-bright); border-color: var(--amber); background: var(--wood-mid); }
+
+  .page-hero {
+    position: relative;
+    padding: 80px 24px 60px;
+    text-align: center;
+    background: radial-gradient(ellipse at 50% 40%, rgba(199,62,58,0.18) 0%, transparent 60%);
+    border-bottom: 4px solid var(--ink);
+    overflow: hidden;
+  }
+  .page-hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 4px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0 16px, transparent 16px 32px);
+  }
+  .breadcrumb {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    color: var(--cream-dim); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--amber-bright); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .page-eyebrow {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--vermillion); letter-spacing: 2px; margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(22px, 4.4vw, 38px);
+    color: var(--cream);
+    text-shadow: 4px 4px 0 var(--vermillion-dark), 8px 8px 0 var(--ink);
+    line-height: 1.3;
+    margin-bottom: 18px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .page-title .accent { color: var(--amber-bright); }
+  .page-sub {
+    font-size: 17px; color: var(--cream-dim);
+    max-width: 720px; margin: 0 auto;
+  }
+
+  .article-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+  }
+  .article-wrap p { margin-bottom: 18px; font-size: 16px; color: var(--cream); }
+  .article-wrap p.lead {
+    font-size: 19px; color: var(--cream); font-weight: 500;
+    border-left: 4px solid var(--vermillion);
+    padding-left: 18px; margin-bottom: 32px;
+  }
+  .article-wrap h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px; color: var(--amber-bright);
+    text-shadow: 2px 2px 0 var(--ink);
+    margin: 48px 0 18px;
+    line-height: 1.4;
+  }
+  .article-wrap h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px; color: var(--cream);
+    margin: 28px 0 12px;
+  }
+  .article-wrap ul, .article-wrap ol { margin: 0 0 22px 24px; }
+  .article-wrap li { margin-bottom: 8px; color: var(--cream); }
+  .article-wrap strong { color: var(--amber-bright); }
+  .article-wrap a { color: var(--amber-bright); }
+
+  .game-card {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink), inset 0 0 0 2px var(--amber);
+    padding: 28px 26px;
+    margin: 28px 0;
+    position: relative;
+  }
+  .game-card.featured {
+    border-color: var(--vermillion);
+    box-shadow: 6px 6px 0 var(--ink), 0 0 0 4px var(--vermillion-dark), inset 0 0 0 2px var(--gold);
+    background: linear-gradient(135deg, var(--wood-mid) 0%, rgba(199,62,58,0.15) 100%);
+  }
+  .game-rank {
+    position: absolute;
+    top: -14px; left: 22px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    background: var(--amber);
+    color: var(--ink);
+    padding: 6px 12px;
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--vermillion-dark);
+  }
+  .game-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    color: var(--amber-bright);
+    margin: 12px 0 6px;
+    line-height: 1.3;
+  }
+  .game-meta {
+    font-size: 13px;
+    color: var(--cream-dim);
+    margin-bottom: 14px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .game-meta span { margin-right: 14px; }
+  .game-card p { font-size: 15px; color: var(--cream); margin-bottom: 10px; }
+  .game-card .why {
+    background: rgba(0,0,0,0.25);
+    border-left: 3px solid var(--vermillion);
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .game-card .why strong { color: var(--vermillion); }
+
+  .faq-item {
+    background: var(--wood-mid);
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    padding: 22px 24px;
+    margin: 18px 0;
+  }
+  .faq-item h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--amber-bright);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .faq-item p { font-size: 15px; color: var(--cream); margin: 0; }
+
+  .related-articles {
+    margin: 40px 0;
+    padding: 32px 24px;
+    background: rgba(43, 24, 16, 0.5);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+  }
+  .related-articles h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--amber-bright);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .related-card {
+    padding: 20px;
+    background: var(--ink);
+    border: 2px solid var(--wood-light);
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: block;
+  }
+  .related-card:hover {
+    border-color: var(--amber);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .related-card h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .related-card p {
+    font-size: 14px;
+    color: var(--cream-dim);
+    margin: 0;
+  }
+
+  .cta-box {
+    background: linear-gradient(135deg, var(--vermillion) 0%, var(--vermillion-dark) 100%);
+    border: 4px solid var(--ink);
+    box-shadow: 8px 8px 0 var(--ink);
+    padding: 40px 32px;
+    margin: 56px 0 32px;
+    text-align: center;
+    position: relative;
+  }
+  .cta-box::before {
+    content: ""; position: absolute; inset: 6px;
+    border: 2px dashed rgba(245,230,211,0.3);
+    pointer-events: none;
+  }
+  .cta-box h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    color: var(--cream);
+    text-shadow: 3px 3px 0 var(--ink);
+    margin: 0 0 14px;
+  }
+  .cta-box p {
+    color: var(--cream);
+    font-size: 16px;
+    max-width: 540px;
+    margin: 0 auto 24px;
+  }
+  .cta-btn {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    background: var(--cream);
+    color: var(--ink);
+    padding: 16px 28px;
+    border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+    text-decoration: none;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .cta-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .cta-btn:active {
+    transform: translate(6px, 6px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  footer {
+    background: var(--ink);
+    border-top: 4px solid var(--vermillion);
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--cream-dim);
+    font-size: 13px;
+  }
+  footer a { color: var(--amber-bright); text-decoration: none; margin: 0 8px; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .article-wrap { padding: 36px 18px 60px; }
+    .game-card { padding: 24px 18px; }
+    .cta-box { padding: 32px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="logo">
+    <span class="logo-mark"></span>
+    <span>MJ QUIZ</span>
+  </a>
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="/">Home</a>
+    <a href="/how-to-play.html">How to Play</a>
+    <a href="/yaku-list.html">Yaku List</a>
+    <a href="/blog.html">Blog</a>
+    <a href="/play.html">Play</a>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <p class="breadcrumb"><a href="/">Home</a> &gt; <a href="/blog.html">Blog</a> &gt; Mahjong Hand Reading Guide</p>
+  <p class="page-eyebrow">ANALYSIS SKILLS</p>
+  <h1 class="page-title">Mahjong Hand <span class="accent">Reading</span>: A Step-by-Step Guide</h1>
+  <p class="page-sub">Hand reading is the skill that turns a pile of tiles into a plan. Learn to analyze any hand in five clear steps.</p>
+</section>
+
+<article class="article-wrap">
+
+  <p class="lead">When I first looked at a mahjong hand, I saw 13 separate tiles. After learning hand reading, I saw a pair, two completed sequences, a partial sequence, and a floating tile. Same hand, completely different understanding. Hand reading is the lens that makes everything else in mahjong make sense. This guide will teach you to put that lens on.</p>
+
+  <h2>What Is Hand Reading?</h2>
+
+  <p>Hand reading is the process of analyzing a mahjong hand to understand what it is, what it needs, and where it is going. It covers your own hand and, to some degree, your opponents' hands. Good hand reading lets you choose better discards, pick the right yaku, know when you are close to winning, and defend against players who are.</p>
+
+  <p>This guide breaks hand reading into five steps. Practice them in order until they become automatic. Then start applying them to both offense and defense.</p>
+
+  <h2>Step 1: Count the Blocks</h2>
+
+  <p>Every winning hand has five blocks: four melds plus one pair. When you look at your hand, the first thing to do is group the tiles into candidate blocks. Completed sequences and triplets are full blocks. Pairs are blocks. Two-tile sequences are partial blocks that want to become full blocks.</p>
+
+  <p>Counting blocks tells you the shape of your hand. If you have six blocks, you have redundancy. You can discard from the weakest block. If you have four blocks, your hand is slow and you need to develop more shapes. If you have five, your hand is balanced and you should focus on efficiency.</p>
+
+  <p>This step is the foundation of the <a href="/tile-efficiency-mahjong.html">5-block theory</a>. Do not move to step 2 until you can count blocks quickly and accurately.</p>
+
+  <h2>Step 2: Identify Possible Yaku</h2>
+
+  <p>Once you know the shape, ask what yaku the hand can support. Look at the tile composition. Are most tiles numbered 2 through 8? <strong>Tanyao</strong> is possible. Are there four sequences and no honor tiles? <strong>Pinfu</strong> is possible. Is there a pair of dragons with a third one nearby? <strong>Yakuhai</strong> is possible.</p>
+
+  <p>You do not need to commit to a yaku immediately, but you should know the options. A hand with no viable yaku path is a problem. If you cannot identify at least one reasonable yaku by turn four, consider shifting toward defense or a simple all-simples plan.</p>
+
+  <p>For a complete reference of yaku, see our <a href="/yaku-list.html">yaku list</a>. Knowing the yaku is what turns block counting into real strategy.</p>
+
+  <h2>Step 3: Calculate Shanten</h2>
+
+  <p><strong>Shanten</strong> tells you how many tiles away your hand is from tenpai. A tenpai hand has 0 shanten. A hand that needs one useful tile to reach tenpai has 1 shanten. A hand that needs two useful tiles has 2 shanten.</p>
+
+  <p>Calculating shanten is easier than it sounds. After counting blocks, look at how many of your blocks are incomplete. Each incomplete block usually needs one or two tiles. The total distance is your shanten. With practice, you will estimate shanten in seconds.</p>
+
+  <p>Shanten is important because it tells you how aggressive to be. A 1-shanten hand can push. A 3-shanten hand should play carefully, especially if opponents are showing speed. Do not commit heavily to a hand that is far from completion.</p>
+
+  <h2>Step 4: Find the Best Discard</h2>
+
+  <p>Now that you know your blocks, yaku, and shanten, choose a discard. The best discard is usually the one that improves your hand the most while keeping it safe. This is where <strong>ukeire</strong> comes in. Count how many tiles would improve your hand for each possible discard, and pick the one with the highest number.</p>
+
+  <p>But ukeire is not the only factor. You also need to consider:</p>
+
+  <ul>
+    <li><strong>Yaku fit:</strong> Does the discard preserve your intended yaku?</li>
+    <li><strong>Safety:</strong> Is the discard dangerous given your opponents' discards?</li>
+    <li><strong>Wait quality:</strong> Will the resulting tenpai have a good wait?</li>
+    <li><strong>Dora value:</strong> Are you throwing away a valuable tile?</li>
+  </ul>
+
+  <p>The best discard balances all four. Early in the hand, lean toward ukeire and yaku fit. Late in the hand, lean toward safety.</p>
+
+  <h2>Step 5: Read Your Opponents</h2>
+
+  <p>Hand reading is not just about your own hand. You can also read opponents by watching their discards and calls. This is harder and less certain, but it is crucial for defense.</p>
+
+  <p>Here are the main signals:</p>
+
+  <ul>
+    <li><strong>Suit concentration:</strong> A player discarding mostly one suit is likely building a half-flush or full-flush hand.</li>
+    <li><strong>Honor discards:</strong> Early honor discards often mean a fast, simple hand. Late honor discards can mean the player is close to tenpai and clearing safe tiles.</li>
+    <li><strong>Open calls:</strong> A pon on dragons or a wind tile suggests yakuhai value. A chii early suggests a sequence-based hand.</li>
+    <li><strong>Riichi declaration:</strong> The strongest signal of all. Treat it as a warning that the player is one tile from winning and adjust your discards accordingly.</li>
+  </ul>
+
+  <p>Opponent reading is probabilistic, not certain. You are trying to reduce risk, not predict exact hands. Combine these signals with genbutsu, suji, and kabe defense to stay safe.</p>
+
+  <div class="game-card">
+    <span class="game-rank">HAND READING CHECKLIST</span>
+    <h3>Five Questions Before Every Discard</h3>
+    <p>Use this checklist until it becomes automatic. How many blocks do I have? What yaku am I aiming for? What is my shanten? Which discard has the highest ukeire? Is the discard safe enough for the current board?</p>
+    <div class="why"><strong>Why it works:</strong> These five questions cover offense, defense, and planning. Running through them prevents autopilot mistakes and improves every decision.</div>
+  </div>
+
+  <h2>Applying Hand Reading to Defense</h2>
+
+  <p>The same five steps work in reverse when you defend. Look at an opponent's discards and try to reconstruct their hand. What blocks could they have? What yaku could they be aiming for? What tiles would complete their hand?</p>
+
+  <p>If an opponent declares riichi, ask what waits are likely. Have they discarded mostly low tiles? They might be waiting on a high tile. Have they discarded from one suit heavily? They might be waiting in another suit. Use these guesses to avoid discarding their likely winning tiles.</p>
+
+  <h2>Common Hand Reading Mistakes</h2>
+
+  <p>Even experienced players make these errors. Watch out for them.</p>
+
+  <ul>
+    <li><strong>Forcing a yaku:</strong> Do not commit to half-flush or seven pairs unless the starting hand supports it.</li>
+    <li><strong>Ignoring dora:</strong> The dora tile changes the value of your hand. Read it into your plan.</li>
+    <li><strong>Counting shapes twice:</strong> A 2-3-4-5 shape can be grouped as 2-3-4 and 3-4-5, but it is still one sequence and one partial, not two full sequences.</li>
+    <li><strong>Over-reading opponents:</strong> You cannot know their exact hand. Use probabilities, not assumptions.</li>
+  </ul>
+
+  <h2>Practice Drills</h2>
+
+  <p>Hand reading is a skill you build through repetition. Try these drills.</p>
+
+  <ul>
+    <li><strong>Block count drill:</strong> Deal 13 tiles and count blocks in under 5 seconds.</li>
+    <li><strong>Yaku quiz:</strong> Look at a hand and name every yaku it could aim for.</li>
+    <li><strong>Shanten drill:</strong> Estimate shanten for 10 hands in a row, then verify.</li>
+    <li><strong>Mahjong Quiz:</strong> Use our <a href="/play.html">hand-reading questions</a> to drill real positions with instant feedback.</li>
+  </ul>
+
+  <p>The goal is to make the five steps automatic. When you can read a hand in seconds, you will have more mental energy left for defense and advanced decisions.</p>
+
+  <div class="related-articles">
+    <h2>Related Articles</h2>
+    <div class="related-grid">
+      <a href="/waiting-tiles-explained.html" class="related-card">
+        <h3>Waiting Tiles</h3>
+        <p>Learn to identify what a tenpai hand is waiting on.</p>
+      </a>
+      <a href="/tile-efficiency-mahjong.html" class="related-card">
+        <h3>Tile Efficiency</h3>
+        <p>Understand ukeire and how to choose the best discard.</p>
+      </a>
+      <a href="/riichi-mahjong-strategy.html" class="related-card">
+        <h3>Riichi Strategy</h3>
+        <p>10 strategy tips to apply after you can read hands.</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <h2>Drill Hand Reading Now</h2>
+    <p>Mahjong Quiz has hand-reading questions that train you to analyze real positions quickly. Play free and watch your reading speed improve.</p>
+    <a href="/play.html" class="cta-btn">PRACTICE HAND READING</a>
+  </div>
+
+  <h2>Frequently Asked Questions</h2>
+
+  <div class="faq-item">
+    <h3>What is hand reading in mahjong?</h3>
+    <p>Hand reading is the process of analyzing a mahjong hand to understand what it needs, what yaku it can achieve, and how close it is to winning. It includes counting blocks, calculating shanten, identifying waits, and reading opponents' discards.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>How do I count blocks in a mahjong hand?</h3>
+    <p>Group your 13 tiles into candidate melds and one pair. Every completed sequence or triplet is one block. Every pair is one block. Every two-tile partial sequence is a partial block. A winning hand needs exactly five blocks: four melds plus one pair.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>What does shanten mean?</h3>
+    <p>Shanten is the number of tiles your hand is away from tenpai. A tenpai hand has 0 shanten. A hand that needs one more useful tile has 1 shanten. Lower shanten means your hand is closer to completion.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Can I read my opponents' hands too?</h3>
+    <p>Yes, though not perfectly. You can estimate what opponents are building by watching their discards, calls, and honor tile priorities. If a player discards mostly circles, they may be building a characters or bamboo hand. If they call pon on dragons early, they are likely aiming for yakuhai value.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>What is the fastest way to improve hand reading?</h3>
+    <p>The fastest way is deliberate repetition. Use Mahjong Quiz to drill hand-reading questions, practice counting blocks on real starting hands, and review hands after each game. Pattern recognition develops quickly with focused practice.</p>
+  </div>
+
+  <h2>Final Thoughts</h2>
+
+  <p>Hand reading is the central skill of riichi mahjong. It connects rules to strategy, defense to offense, and luck to decision-making. The five steps in this guide are simple, but mastering them takes time.</p>
+
+  <p>Start by counting blocks on every hand. Add yaku identification next. Then shanten, then discard selection, then opponent reads. Build the skill layer by layer, and soon you will look at any mahjong hand and see a clear plan instead of a random pile of tiles.</p>
+
+  <p style="margin-top: 28px; font-size: 14px; color: var(--cream-dim);">Just learning the rules? Read our <a href="/how-to-play.html">how-to-play guide</a>. Want to practice right now? <a href="/play.html">Play our free mahjong quiz</a>. For every yaku, visit our <a href="/yaku-list.html">complete yaku reference</a>.</p>
+
+</article>
+
+<footer>
+  <p>&copy; 2026 Mahjong Quiz &middot; <a href="/">Home</a> &middot; <a href="/how-to-play.html">How to Play</a> &middot; <a href="/yaku-list.html">Yaku List</a> &middot; <a href="/blog.html">Blog</a> &middot; <a href="/play.html">Play</a></p>
+  <p style="margin-top: 10px;"><a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="/cookies.html">Cookies</a></p>
+</footer>
+
+</body>
+</html>

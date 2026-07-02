@@ -3,37 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>How to Play Riichi Mahjong - Beginner's Guide to Rules, Tiles &amp; Yaku</title>
-<meta name="description" content="Learn how to play riichi mahjong from scratch. A complete beginner's guide covering the 136 tiles, winning hand shapes, yaku patterns, and scoring &mdash; explained step by step for total newcomers.">
-<meta name="keywords" content="how to play riichi mahjong, riichi mahjong rules, mahjong for beginners, japanese mahjong guide, mahjong tiles, mahjong yaku, mahjong scoring, learn mahjong">
-<meta property="og:title" content="How to Play Riichi Mahjong - Beginner's Guide">
-<meta property="og:description" content="Learn riichi mahjong from scratch: tiles, hands, yaku, and scoring explained for beginners.">
+<title>How to Play Mahjong Quiz - Rules, Question Types &amp; Strategy</title>
+<meta name="description" content="Learn how to play our mahjong quiz game. A complete guide to the 4 question types, roguelike chapters, BOSS questions, relics, combo scoring, and beginner strategy.">
+<meta name="keywords" content="how to play mahjong quiz, mahjong quiz game, riichi mahjong quiz, tenpai quiz, yaku quiz, waiting tiles, mahjong discard quiz">
+<meta property="og:title" content="How to Play Mahjong Quiz - Rules, Question Types &amp; Strategy">
+<meta property="og:description" content="A complete guide to the mahjong quiz format: 4 question types, roguelike chapters, BOSS questions, relics, and beginner strategy.">
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/how-to-play.html">
 <meta property="og:type" content="article">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="How to Play Riichi Mahjong - Beginner's Guide">
-<meta name="twitter:description" content="Learn riichi mahjong from scratch: tiles, hands, yaku, and scoring explained for beginners.">
+<meta name="twitter:title" content="How to Play Mahjong Quiz - Rules, Question Types &amp; Strategy">
+<meta name="twitter:description" content="Learn the 4 question types, chapters, BOSS questions, relics, and strategy for our mahjong quiz game.">
 <meta name="twitter:image" content="https://mahjongroguelike.com/og-image.svg">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://mahjongroguelike.com/how-to-play.html">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2B1810">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<meta name="author" content="Mahjong Roguelike Team">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="author" content="Mahjong Quiz Team">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
-  "headline": "How to Play Riichi Mahjong - Beginner's Guide",
-  "description": "A complete beginner's guide to riichi mahjong covering tiles, hands, yaku, and scoring.",
+  "headline": "How to Play Mahjong Quiz - Rules, Question Types & Strategy",
+  "description": "A complete guide to the mahjong quiz format: 4 question types, roguelike chapters, BOSS questions, relics, and beginner strategy.",
   "datePublished": "2026-06-28",
-  "dateModified": "2026-06-28",
-  "author": { "@type": "Organization", "name": "Mahjong Roguelike Team" },
-  "publisher": { "@type": "Organization", "name": "Mahjong Roguelike" },
+  "dateModified": "2026-07-01",
+  "author": { "@type": "Organization", "name": "Mahjong Quiz Team" },
+  "publisher": { "@type": "Organization", "name": "Mahjong Quiz" },
   "mainEntityOfPage": "https://mahjongroguelike.com/how-to-play.html"
 }
 </script>
@@ -41,13 +38,36 @@
 {
   "@context": "https://schema.org",
   "@type": "HowTo",
-  "name": "How to Play Riichi Mahjong",
-  "description": "Learn the rules of Japanese riichi mahjong from scratch, covering tiles, hand formation, yaku patterns, and scoring.",
+  "name": "How to Play Mahjong Quiz",
+  "description": "A complete guide to the mahjong quiz format: read the hand, choose from four tile options, and progress through roguelike chapters.",
+  "image": "https://mahjongroguelike.com/og-image.svg",
+  "totalTime": "PT10M",
+  "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
   "step": [
-    { "@type": "HowToStep", "position": 1, "name": "Learn the tiles", "text": "A riichi mahjong set has 34 unique tile types (3 number suits of 1-9, plus 4 winds and 3 dragons), 4 copies each, 136 total." },
-    { "@type": "HowToStep", "position": 2, "name": "Form a winning hand", "text": "A winning hand is 14 tiles: 4 melds (sequences or triplets) plus one pair. You start with 13 and draw a 14th to win." },
-    { "@type": "HowToStep", "position": 3, "name": "Score a yaku", "text": "Your hand must contain at least one yaku (winning pattern) to win. Easy yaku: Riichi, Tanyao, Pinfu, Yakuhai." },
-    { "@type": "HowToStep", "position": 4, "name": "Calculate your score", "text": "Each yaku adds han to your score. Final points = base fu x 2^(han+2), capped at mangan limits." }
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Read the Hand",
+      "text": "Each question displays a mahjong hand. The prompt tells you what to solve: complete the hand, form a yaku, identify waits, or choose a discard."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Pick the Correct Tile",
+      "text": "Four tile options are shown. Select the one that correctly answers the prompt. A wrong answer ends the run."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Progress Through Chapters",
+      "text": "Every three questions form a chapter. The final question is a BOSS with a red border and bonus points. Clear it to continue."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Draft Relics and Choose Paths",
+      "text": "After each BOSS, pick one of three relics that help future questions. Then choose a safe path or a risky path with a score multiplier."
+    }
   ]
 }
 </script>
@@ -58,23 +78,23 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Is riichi mahjong hard to learn?",
-      "acceptedAnswer": { "@type": "Answer", "text": "The basic rules of riichi mahjong can be learned in 20-30 minutes: form 4 melds plus a pair, declare riichi when ready, and recognize 3-4 easy yaku. Mastery takes longer, but you can play your first competent game within an hour of reading a beginner guide." }
+      "name": "Is the mahjong quiz good for beginners?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. The quiz format teaches riichi mahjong one concept at a time. BEGINNER mode starts with simple tenpai questions and gradually introduces yaku, waits, and discards. You learn by answering, not by memorizing a rulebook." }
     },
     {
       "@type": "Question",
-      "name": "How long does a game of riichi mahjong take?",
-      "acceptedAnswer": { "@type": "Answer", "text": "A full hanchan (East + South rounds) takes 60-90 minutes. A tonpusou (East-only) game takes 30-45 minutes. In our browser roguelike, individual rounds take 10-15 minutes." }
+      "name": "How long does a quiz run take?",
+      "acceptedAnswer": { "@type": "Answer", "text": "BEGINNER runs have 8 questions and take 5-10 minutes. NORMAL runs have 12 questions and take 10-15 minutes. ENDLESS mode continues until you answer one wrong." }
     },
     {
       "@type": "Question",
-      "name": "What is the difference between riichi mahjong and Chinese mahjong?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Riichi mahjong (Japanese) adds the riichi declaration (bet on being one tile from winning), a richer yaku system, dora bonus tiles, and a more restrictive scoring system. Chinese mahjong variants tend to allow more open melds and have simpler scoring." }
+      "name": "What happens if I answer a question wrong?",
+      "acceptedAnswer": { "@type": "Answer", "text": "One wrong answer ends the run. BEGINNER mode gives you 2 lives; NORMAL gives 1 life. This keeps the roguelike tension without punishing exploration." }
     },
     {
       "@type": "Question",
-      "name": "Do I need to memorize all the yaku?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. You can play competently knowing just 4 easy yaku: Riichi, Tanyao, Pinfu, and Yakuhai. The rest come naturally with experience. See our full yaku list for reference." }
+      "name": "Do I need to know mahjong to play?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. The first chapters teach tenpai, tanyao, and pinfu through the questions themselves. Each answer includes an explanation so you learn why a tile is correct." }
     }
   ]
 }
@@ -484,35 +504,35 @@
 {
   "@context": "https://schema.org",
   "@type": "HowTo",
-  "name": "How to Play Riichi Mahjong",
-  "description": "A complete beginner's guide to riichi mahjong rules: tiles, hand formation, yaku patterns, and scoring.",
+  "name": "How to Play Mahjong Quiz",
+  "description": "A complete guide to the mahjong quiz format: read the hand, choose from four tile options, and progress through roguelike chapters.",
   "image": "https://mahjongroguelike.com/og-image.svg",
-  "totalTime": "PT20M",
+  "totalTime": "PT10M",
   "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
   "step": [
     {
       "@type": "HowToStep",
       "position": 1,
-      "name": "Learn the Tiles",
-      "text": "Riichi mahjong uses 136 tiles across 5 categories: Man (characters), Pin (circles), Sou (bamboo), Winds (East/South/West/North), and Dragons (Red/White/Green). Each suited tile (Man/Pin/Sou) has ranks 1-9."
+      "name": "Read the Tiles",
+      "text": "Each question displays a mahjong hand. The prompt tells you what to solve: complete the hand, form a yaku, identify waits, or choose a discard."
     },
     {
       "@type": "HowToStep",
       "position": 2,
-      "name": "Form a Winning Hand",
-      "text": "A standard winning hand consists of 14 tiles: 4 sets (each a sequence or triplet) plus 1 pair. A sequence is 3 consecutive tiles of the same suit; a triplet is 3 identical tiles."
+      "name": "Pick the Correct Tile",
+      "text": "Four tile options are shown. Select the one that correctly answers the prompt. A wrong answer ends the run."
     },
     {
       "@type": "HowToStep",
       "position": 3,
-      "name": "Understand Yaku",
-      "text": "Yaku are winning patterns that give your hand value. Each yaku adds han (points). Common beginner yaku include Riichi (declare readiness), Tanyao (all simples), and Pinfu (all sequences)."
+      "name": "Progress Through Chapters",
+      "text": "Every three questions form a chapter. The final question is a BOSS with a red border and bonus points. Clear it to continue."
     },
     {
       "@type": "HowToStep",
       "position": 4,
-      "name": "Score Your Hand",
-      "text": "Your score is based on total han and fu (base points). More han means exponentially higher scores. At 5+ han you reach mangan (2000 base points)."
+      "name": "Draft Relics and Choose Paths",
+      "text": "After each BOSS, pick one of three relics that help future questions. Then choose a safe path or a risky path with a score multiplier."
     }
   ]
 }
@@ -536,7 +556,7 @@
   <header class="topbar">
     <a href="/" class="logo">
       <span class="logo-mark"></span>
-      <span>MJ ROGUELIKE</span>
+      <span>MJ QUIZ</span>
     </a>
     <nav class="nav-links" aria-label="Main navigation">
       <a href="/">Home</a>
@@ -550,8 +570,8 @@
   <section class="page-hero">
     <p class="breadcrumb"><a href="/">Home</a> &gt; How to Play</p>
     <p class="page-eyebrow">BEGINNER'S GUIDE</p>
-    <h1 class="page-title">How to Play <span class="accent">Riichi Mahjong</span></h1>
-    <p class="page-sub">Everything you need to know to play your first hand of riichi mahjong &mdash; from tiles to scoring, explained for total beginners in under 20 minutes.</p>
+    <h1 class="page-title">How to Play <span class="accent">Mahjong Quiz</span></h1>
+    <p class="page-sub">Everything you need to know to play our mahjong quiz &mdash; four question types, roguelike chapters, relics, and beginner strategy in under 15 minutes.</p>
   </section>
 
   <div class="layout">
@@ -560,238 +580,241 @@
     <aside class="toc" aria-label="Table of contents">
       <h3>CONTENTS</h3>
       <ul>
-        <li><a href="#tile-basics">1. Tile Basics</a></li>
-        <li class="toc-sub"><a href="#suits">Number Suits</a></li>
-        <li class="toc-sub"><a href="#honors">Honor Tiles</a></li>
-        <li><a href="#forming-hand">2. Forming a Hand</a></li>
-        <li class="toc-sub"><a href="#melds">Meld Types</a></li>
-        <li class="toc-sub"><a href="#winning">Winning Shape</a></li>
-        <li><a href="#yaku">3. Winning Patterns</a></li>
-        <li><a href="#scoring">4. Scoring Basics</a></li>
-        <li class="toc-sub"><a href="#han">Han</a></li>
-        <li class="toc-sub"><a href="#fu">Fu</a></li>
+        <li><a href="#quiz-basics">1. Quiz Basics</a></li>
+        <li class="toc-sub"><a href="#difficulty">Difficulty Modes</a></li>
+        <li class="toc-sub"><a href="#lives">Lives &amp; Game Over</a></li>
+        <li><a href="#question-types">2. Question Types</a></li>
+        <li class="toc-sub"><a href="#tenpai-win">Tenpai Win</a></li>
+        <li class="toc-sub"><a href="#yaku-form">Yaku Form</a></li>
+        <li class="toc-sub"><a href="#waiting-tiles">Waiting Tiles</a></li>
+        <li class="toc-sub"><a href="#discard-best">Best Discard</a></li>
+        <li><a href="#chapters">3. Chapters &amp; BOSS Questions</a></li>
+        <li><a href="#relics">4. Relics &amp; Paths</a></li>
+        <li><a href="#scoring">5. Scoring &amp; Combos</a></li>
+        <li><a href="#strategy">6. Beginner Strategy</a></li>
       </ul>
     </aside>
 
     <!-- Main content -->
     <main class="content">
 
-      <!-- Section 1: Tile Basics -->
-      <section id="tile-basics">
+      <!-- Section 1: Quiz Basics -->
+      <section id="quiz-basics">
         <p class="section-num">SECTION 01</p>
-        <h2>Tile Basics</h2>
-        <p>A riichi mahjong set has <strong>34 unique tile types</strong>, with 4 copies of each &mdash; <strong>136 tiles total</strong>. Every tile belongs to one of two big families: the numbered suits and the honors.</p>
+        <h2>Quiz Basics</h2>
+        <p><strong>Mahjong Quiz</strong> is a browser-based learning game. Instead of drawing and discarding tiles against opponents, you answer multiple-choice questions about riichi mahjong hands. Each question shows a hand and four tile options. Pick the right tile to advance.</p>
 
-        <h3 id="suits">The Three Number Suits</h3>
-        <p>Each suit runs from 1 to 9. The 1 and 9 tiles are called <strong>terminals</strong>; the 2-8 tiles are called <strong>simples</strong>.</p>
+        <p>The goal is simple: answer every question correctly and climb as high as you can. One wrong answer ends the run (unless you have a spare life). Questions get harder as you progress, but so do the rewards.</p>
 
-        <div class="tile-row">
-          <span class="tile-row-label">MAN</span>
-          <div class="mini-tile"><span class="num">1</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">4</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">5</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">6</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">7</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">8</span><span class="suit">萬</span></div>
-          <div class="mini-tile"><span class="num">9</span><span class="suit">萬</span></div>
-        </div>
+        <h3 id="difficulty">Difficulty Modes</h3>
+        <p>Pick a mode before each run:</p>
+        <ul>
+          <li><strong>BEGINNER</strong> &mdash; 8 questions, 2 lives. Starts with tenpai questions and gently introduces yaku, waits, and discards.</li>
+          <li><strong>NORMAL</strong> &mdash; 12 questions, 1 life. Harder questions, tighter timer, bigger score potential.</li>
+          <li><strong>ENDLESS</strong> &mdash; unlocked after NORMAL. Questions keep coming with increasing difficulty until you miss one.</li>
+        </ul>
 
-        <div class="tile-row">
-          <span class="tile-row-label">PIN</span>
-          <div class="mini-tile"><span class="num">1</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">2</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">3</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">4</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">7</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">8</span><span class="suit">筒</span></div>
-          <div class="mini-tile"><span class="num">9</span><span class="suit">筒</span></div>
-        </div>
-
-        <div class="tile-row">
-          <span class="tile-row-label">SOU</span>
-          <div class="mini-tile green"><span class="num">1</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">2</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">3</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">4</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">5</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">6</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">7</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">8</span><span class="suit">索</span></div>
-          <div class="mini-tile green"><span class="num">9</span><span class="suit">索</span></div>
-        </div>
-
-        <h3 id="honors">Honor Tiles</h3>
-        <p>Honors never form sequences &mdash; they only form triplets or pairs. They split into winds and dragons.</p>
-
-        <div class="tile-row">
-          <span class="tile-row-label">WINDS</span>
-          <div class="mini-tile honor"><span class="num">東</span></div>
-          <div class="mini-tile honor"><span class="num">南</span></div>
-          <div class="mini-tile honor"><span class="num">西</span></div>
-          <div class="mini-tile honor"><span class="num">北</span></div>
-        </div>
-        <div class="tile-row">
-          <span class="tile-row-label">DRAGONS</span>
-          <div class="mini-tile honor"><span class="num">白</span></div>
-          <div class="mini-tile honor"><span class="num">發</span></div>
-          <div class="mini-tile honor"><span class="num">中</span></div>
-        </div>
+        <h3 id="lives">Lives &amp; Game Over</h3>
+        <p>Wrong answers cost a life. Run out of lives and the run ends. Your score is recorded on the local leaderboard so you can chase your personal best. The "one wrong answer" tension is what gives the quiz its roguelike feel &mdash; every choice matters.</p>
 
         <div class="callout-box">
-          <p><strong>Quick tip:</strong> The 1s, 9s, and all honor tiles are called <strong>jihai</strong> or "terminal and honor tiles." They're worth more in some yaku but harder to use &mdash; beginners often start by avoiding them.</p>
+          <p><strong>Quick tip:</strong> Read the prompt carefully. A question might ask which tile <em>wins</em>, which tile <em>completes a yaku</em>, which tiles you're <em>waiting on</em>, or which tile is the <em>safest discard</em>. The same hand can have different correct answers depending on the prompt.</p>
         </div>
       </section>
 
-      <!-- Section 2: Forming a Hand -->
-      <section id="forming-hand">
+      <!-- Section 2: Question Types -->
+      <section id="question-types">
         <p class="section-num">SECTION 02</p>
-        <h2>Forming a Hand</h2>
-        <p>A complete mahjong hand is <strong>14 tiles</strong> arranged as <strong>4 melds plus 1 pair</strong>. Each player starts with 13 tiles and draws one per turn, then discards one &mdash; you win by drawing (or being dealt) the 14th tile that completes the shape.</p>
+        <h2>The Four Question Types</h2>
+        <p>Every question falls into one of four types. Learning to recognize each one is the fastest way to improve.</p>
 
-        <h3 id="melds">The Three Meld Types</h3>
-        <p>A meld is a group of 3 tiles. There are three kinds:</p>
+        <h3 id="tenpai-win">Tenpai Win</h3>
+        <p>You see a 13-tile hand that is one tile away from winning. The question asks: <strong>which tile completes the hand?</strong> Pick the tile that makes the hand a valid 14-tile win.</p>
 
         <div class="meld-example">
-          <p class="label">SEQUENCE (CHII) &mdash; 3 consecutive tiles, same suit</p>
+          <p class="label">EXAMPLE: WAITING ON 4-MAN</p>
+          <div class="tile-showcase" style="margin: 0;">
+            <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">6</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">7</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">2</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">3</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">4</span><span class="suit">筒</span></div>
+            <div class="mini-tile green"><span class="num">6</span><span class="suit">索</span></div>
+            <div class="mini-tile green"><span class="num">7</span><span class="suit">索</span></div>
+            <div class="mini-tile green"><span class="num">8</span><span class="suit">索</span></div>
+            <div class="mini-tile honor"><span class="num">中</span></div>
+            <div class="mini-tile honor"><span class="num">中</span></div>
+          </div>
+          <p class="desc">The 2-3-? shape in characters needs a 4-man to become a 2-3-4 sequence. The correct answer is <strong>4-man</strong>.</p>
+        </div>
+
+        <h3 id="yaku-form">Yaku Form</h3>
+        <p>The prompt names a yaku &mdash; for example, <strong>Tanyao</strong> or <strong>Pinfu</strong> &mdash; and shows a partial hand. You must pick the tile that helps form that specific yaku. This teaches you to recognize winning patterns, not just complete shapes.</p>
+
+        <div class="meld-example">
+          <p class="label">EXAMPLE: FORM TANYAO</p>
           <div class="tile-showcase" style="margin: 0;">
             <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
             <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
             <div class="mini-tile"><span class="num">4</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">7</span><span class="suit">筒</span></div>
+            <div class="mini-tile green"><span class="num">3</span><span class="suit">索</span></div>
+            <div class="mini-tile green"><span class="num">4</span><span class="suit">索</span></div>
+            <div class="mini-tile green"><span class="num">6</span><span class="suit">索</span></div>
+            <div class="mini-tile green"><span class="num">7</span><span class="suit">索</span></div>
+            <div class="mini-tile"><span class="num">8</span><span class="suit">筒</span></div>
           </div>
-          <p class="desc">Only number suits can form sequences. Honor tiles cannot.</p>
+          <p class="desc">Tanyao requires every tile to be 2-8. The hand already has simples; adding another 2-8 tile keeps it on track. Avoid terminals (1 or 9) and honors.</p>
         </div>
 
-        <div class="meld-example">
-          <p class="label">TRIPLET (PON) &mdash; 3 identical tiles</p>
-          <div class="tile-showcase" style="margin: 0;">
-            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
-            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
-            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
-          </div>
-          <p class="desc">Any tile, including honors, can form a triplet.</p>
-        </div>
+        <h3 id="waiting-tiles">Waiting Tiles</h3>
+        <p>You see a ready hand and must identify <strong>which tiles it is waiting on</strong> to win. A hand can wait on one tile or several. Pick all tiles that complete the hand correctly.</p>
 
         <div class="meld-example">
-          <p class="label">KAN (KAN) &mdash; 4 identical tiles</p>
-          <div class="tile-showcase" style="margin: 0;">
-            <div class="mini-tile"><span class="num">中</span></div>
-            <div class="mini-tile"><span class="num">中</span></div>
-            <div class="mini-tile"><span class="num">中</span></div>
-            <div class="mini-tile"><span class="num">中</span></div>
-          </div>
-          <p class="desc">A kan counts as a triplet but uses 4 tiles &mdash; you draw a replacement tile so your hand still totals 14.</p>
-        </div>
-
-        <h3 id="winning">The Winning Shape</h3>
-        <p>Every standard winning hand looks like this:</p>
-
-        <div class="meld-example">
-          <p class="label">4 MELDS + 1 PAIR = WIN</p>
+          <p class="label">EXAMPLE: RYANMEN WAIT</p>
           <div class="tile-showcase" style="margin: 0;">
             <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
             <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
-            <div class="mini-tile"><span class="num">4</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">7</span><span class="suit">筒</span></div>
             <div class="mini-tile green"><span class="num">3</span><span class="suit">索</span></div>
             <div class="mini-tile green"><span class="num">4</span><span class="suit">索</span></div>
             <div class="mini-tile green"><span class="num">5</span><span class="suit">索</span></div>
-            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
-            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
-            <div class="mini-tile"><span class="num">6</span><span class="suit">筒</span></div>
-            <div class="mini-tile"><span class="num">7</span><span class="suit">筒</span></div>
             <div class="mini-tile"><span class="num">8</span><span class="suit">筒</span></div>
-            <div class="mini-tile"><span class="num">9</span><span class="suit">筒</span></div>
-            <div class="mini-tile honor"><span class="num">白</span></div>
-            <div class="mini-tile honor"><span class="num">白</span></div>
+            <div class="mini-tile"><span class="num">8</span><span class="suit">筒</span></div>
           </div>
+          <p class="desc">The 2-3-man shape waits on 1-man or 4-man. The 3-4-5 sou shape is complete. The correct waits are <strong>1-man and 4-man</strong>.</p>
         </div>
 
-        <p>There's one important exception: the <strong>seven pairs</strong> yaku (chiitoitsu) lets you win with 7 unrelated pairs instead of the standard 4 melds + pair. See the <a href="/yaku-list.html#chiitoitsu">yaku list</a> for details.</p>
+        <h3 id="discard-best">Best Discard</h3>
+        <p>You see a partial hand and must choose <strong>which tile to discard</strong>. This usually means finding the tile that keeps the most paths to a winning hand (highest tile acceptance) or the safest tile against a ready opponent.</p>
 
-        <div class="callout-box">
-          <p><strong>The 14-tile rule:</strong> When you have 13 tiles and are waiting for one more to win, you are in <strong>tenpai</strong> (ready). When you actually have all 14, you have <strong>agari</strong> (a win).</p>
+        <div class="meld-example">
+          <p class="label">EXAMPLE: KEEP THE PAIR</p>
+          <div class="tile-showcase" style="margin: 0;">
+            <div class="mini-tile"><span class="num">2</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">3</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">4</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">6</span><span class="suit">萬</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+            <div class="mini-tile"><span class="num">5</span><span class="suit">筒</span></div>
+          </div>
+          <p class="desc">The 2-3-4-5-6 run is already two complete sequences. The 5-5 pair is a valuable block. Discard from the completed run (2-man or 6-man) instead of breaking the pair.</p>
         </div>
       </section>
 
-      <!-- Section 3: Yaku -->
-      <section id="yaku">
+      <!-- Section 3: Chapters -->
+      <section id="chapters">
         <p class="section-num">SECTION 03</p>
-        <h2>Winning Patterns (Yaku)</h2>
-        <p>In riichi mahjong, you can't just complete any hand &mdash; your winning hand must contain at least one <strong>yaku</strong>: a recognized winning pattern. Each yaku is worth a number of <strong>han</strong>, and you can stack multiple yaku in the same hand for big scores.</p>
+        <h2>Chapters &amp; BOSS Questions</h2>
+        <p>Questions are grouped into <strong>chapters</strong> of three. The third question in each chapter is a <strong>BOSS question</strong>:</p>
+        <ul>
+          <li>Highlighted with a red border.</li>
+          <li>Worth +1,500 bonus points when answered correctly.</li>
+          <li>Often combines two skills, such as forming a yaku while finding the right wait.</li>
+        </ul>
+        <p>Clearing a BOSS question unlocks a relic draft. If you miss a BOSS, you lose a life and the run continues if you have lives left.</p>
 
-        <p>Here are three yaku every beginner should learn first:</p>
+        <div class="callout-box">
+          <p><strong>Chapter flow:</strong> Question 1 &rarr; Question 2 &rarr; BOSS &rarr; Relic draft &rarr; Path choice &rarr; Next chapter. This loop repeats until you finish the mode or run out of lives.</p>
+        </div>
+      </section>
+
+      <!-- Section 4: Relics -->
+      <section id="relics">
+        <p class="section-num">SECTION 04</p>
+        <h2>Relics &amp; Paths</h2>
+        <p>After each BOSS, you choose one of three <strong>relics</strong>. Relics give small advantages for the rest of the run, such as extra time, a hint highlight, or bonus points for speed.</p>
 
         <div class="concept-grid">
           <div class="concept-card">
-            <h4>Riichi &mdash; 1 han</h4>
-            <p>Declare "ready" when one tile away from winning. Your hand locks in, but you earn a guaranteed yaku.</p>
+            <h4>Hint Scroll</h4>
+            <p>Highlights one wrong option per question. Great when you're unsure.</p>
           </div>
           <div class="concept-card">
-            <h4>Tanyao &mdash; 1 han</h4>
-            <p>All your tiles are 2-8. No terminals (1s, 9s) and no honors. The easiest "open" yaku.</p>
+            <h4>Time Charm</h4>
+            <p>Adds extra seconds to the timer for questions that need more thought.</p>
           </div>
           <div class="concept-card">
-            <h4>Pinfu &mdash; 1 han</h4>
-            <p>All four melds are sequences, with a two-sided wait for the winning tile. Pure and clean.</p>
+            <h4>Combo Emblem</h4>
+            <p>Boosts your combo multiplier faster for consecutive correct answers.</p>
+          </div>
+          <div class="concept-card">
+            <h4>Score Lens</h4>
+            <p>Increases base points per correct answer.</p>
           </div>
         </div>
 
-        <p>There are dozens more &mdash; from <strong>Yakuhai</strong> (a triplet of dragons or your seat wind) up to the legendary <strong>Kokushi Musou</strong> (thirteen orphans). Browse the full list with han values and examples on the <a href="/yaku-list.html">yaku encyclopedia</a>.</p>
+        <p>After the relic draft, you choose a <strong>path</strong>:</p>
+        <ul>
+          <li><strong>SAFE PATH</strong> &mdash; easier questions, standard score multiplier.</li>
+          <li><strong>RISKY PATH</strong> &mdash; harder questions, higher score multiplier.</li>
+        </ul>
+        <p>Pick the path that matches your confidence and your remaining lives. Low on lives? Play safe. Chasing a high score? Take risks.</p>
       </section>
 
-      <!-- Section 4: Scoring -->
+      <!-- Section 5: Scoring -->
       <section id="scoring">
-        <p class="section-num">SECTION 04</p>
-        <h2>Scoring Basics</h2>
-        <p>Your final score comes from two numbers: <strong>han</strong> (pattern difficulty) and <strong>fu</strong> (hand structure value). Together they determine your point total.</p>
-
-        <h3 id="han">Han &mdash; Pattern Value</h3>
-        <p>Each yaku is worth 1 to 6 han. Multiple yaku add together. At 5 han you reach <strong>haneman</strong>, and beyond that special tier names kick in.</p>
+        <p class="section-num">SECTION 05</p>
+        <h2>Scoring &amp; Combos</h2>
+        <p>Each correct answer adds points. Several factors multiply your score:</p>
+        <ul>
+          <li><strong>Base points</strong> &mdash; higher in later chapters and on BOSS questions.</li>
+          <li><strong>Combo</strong> &mdash; consecutive correct answers build a combo, up to +100% bonus.</li>
+          <li><strong>Speed bonus</strong> &mdash; answer quickly for extra points.</li>
+          <li><strong>Path multiplier</strong> &mdash; risky paths multiply every question's score.</li>
+          <li><strong>Relics</strong> &mdash; some relics add flat bonuses or improve multipliers.</li>
+        </ul>
 
         <table class="score-table">
           <thead>
-            <tr><th>Han</th><th>Tier Name</th><th>Base Points</th></tr>
+            <tr><th>Factor</th><th>Effect</th></tr>
           </thead>
           <tbody>
-            <tr><td>1-4</td><td>Normal</td><td>Calculated from han &amp; fu</td></tr>
-            <tr><td>5</td><td>Mangan</td><td>2,000</td></tr>
-            <tr><td>6-7</td><td>Haneman</td><td>3,000</td></tr>
-            <tr><td>8-10</td><td>Baiman</td><td>4,000</td></tr>
-            <tr><td>11-12</td><td>Sanbaiman</td><td>6,000</td></tr>
-            <tr><td>13+</td><td>Yakuman</td><td>8,000 (limit)</td></tr>
+            <tr><td>Correct answer</td><td>Base points (grows per chapter)</td></tr>
+            <tr><td>BOSS correct</td><td>+1,500 bonus</td></tr>
+            <tr><td>Max combo</td><td>Up to +100% score</td></tr>
+            <tr><td>Speed bonus</td><td>Extra % based on remaining time</td></tr>
+            <tr><td>RISKY path</td><td>Higher multiplier, harder questions</td></tr>
           </tbody>
         </table>
 
-        <h3 id="fu">Fu &mdash; Structure Value</h3>
-        <p>Fu measures how "complex" your melds are. Triplets are worth more than sequences. Closed triplets are worth more than open ones. Honor triplets are worth the most.</p>
+        <p>The best scores come from chaining correct answers on risky paths with fast answers. One mistake resets your combo, so consistency beats risky guessing.</p>
+      </section>
+
+      <!-- Section 6: Strategy -->
+      <section id="strategy">
+        <p class="section-num">SECTION 06</p>
+        <h2>Beginner Strategy</h2>
+        <p>Here are five habits that will improve your quiz score immediately.</p>
 
         <div class="concept-grid">
           <div class="concept-card">
-            <h4>Base: 20 fu</h4>
-            <p>Every winning hand starts at 20 fu just for winning.</p>
+            <h4>1. Read the Prompt First</h4>
+            <p>Don't scan the hand until you know what the question is asking. The same hand can have different answers for tenpai, yaku, wait, and discard prompts.</p>
           </div>
           <div class="concept-card">
-            <h4>Sequences: 0 fu</h4>
-            <p>Sequences add no fu &mdash; they're the cheapest meld.</p>
+            <h4>2. Count the Blocks</h4>
+            <p>A winning hand needs five blocks: four melds + one pair. Count them mentally. If a hand has only four blocks, it's one tile away from ready.</p>
           </div>
           <div class="concept-card">
-            <h4>Triplets: 4-32 fu</h4>
-            <p>Depends on open/closed and whether it's a simple, terminal, or honor tile.</p>
+            <h4>3. Prioritize Ryanmen Waits</h4>
+            <p>A two-sided wait (like 4-5 waiting on 3 or 6) covers eight tiles. Edge waits and single-tile waits cover far fewer.</p>
           </div>
           <div class="concept-card">
-            <h4>Pair: 0-4 fu</h4>
-            <p>Dragon pairs and seat-wind pairs add 2 fu each.</p>
+            <h4>4. Keep Simples for Tanyao</h4>
+            <p>Tiles 2-8 are "simples." Terminals (1, 9) and honors break Tanyao. When the target yaku is Tanyao, avoid terminals and honors.</p>
           </div>
         </div>
 
-        <div class="callout-box">
-          <p><strong>The shortcut:</strong> Don't worry about calculating fu by hand at first. The game handles scoring for you. What matters is recognizing yaku and stacking them &mdash; the more yaku, the higher your score climbs.</p>
-        </div>
-
-        <p>Ready to put it all together? Jump into a game and start building your first hand.</p>
+        <p>Ready to apply these tips? Start a run and learn by doing. Every answer includes an explanation, so even mistakes teach you something.</p>
 
         <div style="margin-top: 32px; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;">
           <a href="/play.html" class="btn btn-primary">Play Now</a>
@@ -801,41 +824,31 @@
 
       <!-- ===== FAQ ===== -->
       <section class="faq-section" aria-label="Frequently asked questions">
-        <h2>Riichi Mahjong FAQ</h2>
+        <h2>Mahjong Quiz FAQ</h2>
 
         <div class="faq-item">
-          <h3>Is riichi mahjong hard to learn?</h3>
-          <p>The basic rules can be <strong>learned in 20-30 minutes</strong>: form 4 melds plus a pair, declare riichi when ready, and recognize 3-4 easy yaku. Mastery takes longer, but you can play your first competent game within an hour of reading this guide. The yaku system is the main learning curve &mdash; once you know <a href="/yaku-list.html">the 16 common yaku</a>, you're set.</p>
+          <h3>Is the mahjong quiz good for beginners?</h3>
+          <p>Yes. The quiz format teaches riichi mahjong one concept at a time. BEGINNER mode starts with simple tenpai questions and gradually introduces yaku, waits, and discards. You learn by answering, not by memorizing a rulebook.</p>
         </div>
 
         <div class="faq-item">
-          <h3>How long does a game of riichi mahjong take?</h3>
-          <p>A full hanchan (East + South rounds) takes <strong>60-90 minutes</strong> with four players. A tonpusou (East-only) game takes 30-45 minutes. In our <a href="/play.html">browser roguelike</a>, individual rounds take 10-15 minutes &mdash; perfect for a coffee break.</p>
+          <h3>How long does a quiz run take?</h3>
+          <p>BEGINNER runs have 8 questions and take 5-10 minutes. NORMAL runs have 12 questions and take 10-15 minutes. ENDLESS mode continues until you answer one wrong.</p>
         </div>
 
         <div class="faq-item">
-          <h3>What is the difference between riichi mahjong and Chinese mahjong?</h3>
-          <p>Riichi mahjong (Japanese) adds the <strong>riichi declaration</strong> (a 1,000-point bet that you're one tile from winning), a richer yaku system with ~40 patterns, dora bonus tiles, and a more restrictive scoring system that rewards closed hands. Chinese mahjong variants tend to allow more open melds and have simpler scoring with fewer patterns.</p>
+          <h3>What happens if I answer a question wrong?</h3>
+          <p>One wrong answer costs one life. BEGINNER gives you 2 lives; NORMAL gives 1 life. Run out and the run ends. Your score is saved locally.</p>
         </div>
 
         <div class="faq-item">
-          <h3>Do I need to memorize all the yaku?</h3>
-          <p>No. You can play competently knowing just <strong>4 easy yaku</strong>: Riichi, Tanyao, Pinfu, and Yakuhai. The rest come naturally with experience. Bookmark our <a href="/yaku-list.html">complete yaku list</a> and refer to it between rounds &mdash; in our browser game, the score panel shows which yaku your hand scored, so you learn by doing.</p>
+          <h3>Do I need to know mahjong to play?</h3>
+          <p>No. The first chapters teach tenpai, tanyao, and pinfu through the questions themselves. Each answer includes an explanation so you learn why a tile is correct.</p>
         </div>
 
         <div class="faq-item">
-          <h3>What does "riichi" mean?</h3>
-          <p><strong>Riichi</strong> (立直, "ready") is the signature mechanic of Japanese mahjong. When your hand is one tile away from winning (a state called <em>tenpai</em>), you can declare riichi by paying a 1,000-point deposit. Your hand locks in &mdash; you can no longer change it &mdash; but you gain a guaranteed yaku, access to ippatsu (one-draw win bonus), and ura-dora (hidden dora bonuses if you win).</p>
-        </div>
-
-        <div class="faq-item">
-          <h3>Can I play riichi mahjong online for free?</h3>
-          <p>Yes &mdash; <a href="/play.html">Mahjong Roguelike</a> is a free browser game that teaches riichi mahjong through roguelike deckbuilding. No download, no account. For competitive multiplayer against humans, Mahjong Soul and Tenhou are the most popular free options, though both require an account.</p>
-        </div>
-
-        <div class="faq-item">
-          <h3>What is the best way to learn riichi mahjong?</h3>
-          <p>Read this guide once to understand the tiles and rules. Then <strong>play immediately</strong> &mdash; even badly. Theory only sticks once you've held tiles in your hand. Our <a href="/play.html">browser game</a> is designed for exactly this: short rounds, instant feedback on which yaku you scored, and a score breakdown panel that teaches scoring as you play.</p>
+          <h3>What is the difference between this and a real mahjong game?</h3>
+          <p>This is a practice tool, not a full 4-player match. There are no opponents, no wall, and no calls like pon or chi. The focus is on recognizing patterns, waits, and efficient discards.</p>
         </div>
       </section>
 
@@ -843,22 +856,19 @@
   </div>
 
   <section class="bottom-cta">
-    <h2>Ready to Deal In?</h2>
+    <h2>Ready for Your First Quiz Run?</h2>
     <p>Practice what you just learned. No install, no account.</p>
-    <a href="/play.html" class="btn btn-primary">Play Mahjong Roguelike</a>
+    <a href="/play.html" class="btn btn-primary">Play Mahjong Quiz</a>
   </section>
 
   <footer>
-    <p>&copy; 2026 MAHJONG ROGUELIKE</p>
+    <p>&copy; 2026 MAHJONG QUIZ</p>
     <p style="margin-top:10px;">
       <a href="/">Home</a> &middot;
       <a href="/how-to-play.html">How to Play</a> &middot;
       <a href="/yaku-list.html">Yaku List</a> &middot;
       <a href="/blog.html">Blog</a> &middot;
-      <a href="/play.html">Play</a> &middot;
-      <a href="/privacy.html">Privacy</a> &middot;
-      <a href="/terms.html">Terms</a> &middot;
-      <a href="/cookies.html">Cookies</a>
+      <a href="/play.html">Play</a>
     </p>
   </footer>
 

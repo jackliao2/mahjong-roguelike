@@ -1,5 +1,5 @@
 /* ============================================
-   Mahjong Roguelike — Shared Immersion Layer
+   Mahjong Quiz — Shared Immersion Layer
    Auto-injects ambient layers + scroll reveal
    No configuration needed — just link it.
    ============================================ */

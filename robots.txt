@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /play.html
+
+Sitemap: https://mahjongroguelike.com/sitemap.xml

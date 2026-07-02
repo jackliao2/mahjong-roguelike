@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer-core';
 
 const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const URL = 'http://localhost:5176/play.html';
+const URL = 'http://localhost:5173/play.html';
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 

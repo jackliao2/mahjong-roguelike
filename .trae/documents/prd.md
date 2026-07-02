@@ -1,6 +1,6 @@
 ## 1. Product Overview
 
-A browser-based Mahjong Roguelike in 16-bit pixel-art style that teaches Riichi mahjong rules organically through roguelike progression. Targeting Western players who are curious about mahjong but find it intimidating, or mahjong addicts who need a digital fix. Players "accidentally learn" mahjong the way Balatro players learn poker hands.
+A browser-based Mahjong Quiz in 16-bit pixel-art style that teaches Riichi mahjong rules organically through multiple-choice quiz progression. Targeting Western players who are curious about mahjong but find it intimidating, or mahjong addicts who need a digital fix. Players "accidentally learn" mahjong by answering 4-option questions on tenpai, yaku, waiting tiles, and discards.
 
 ## 2. Core Features
 

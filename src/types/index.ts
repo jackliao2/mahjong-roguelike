@@ -1,4 +1,4 @@
-// Core type definitions for Mahjong Roguelike
+// Core type definitions for Mahjong Quiz
 
 export type Suit = 'man' | 'pin' | 'sou' | 'wind' | 'dragon';
 
@@ -51,6 +51,14 @@ export interface MetaProgression {
   totalWins: number;
   unlockedDecks: string[];
   achievements: string[];
+  // Extended stats for achievements
+  beginnerCompleted: number;
+  normalCompleted: number;
+  endlessBestRound: number;
+  bestCombo: number;
+  perfectRuns: number;
+  bossKills: number;
+  relicsCollected: number;
 }
 
 /** A single challenge goal for a round. */

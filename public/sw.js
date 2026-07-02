@@ -1,8 +1,8 @@
-// Mahjong Roguelike — Service Worker
+// Mahjong Quiz — Service Worker
 // Strategy: cache-first for same-origin assets, network-first for HTML navigations
 // with cache fallback. This enables offline play after the first visit.
 
-const CACHE_NAME = 'mahjong-roguelike-v6';
+const CACHE_NAME = 'mahjong-quiz-v6';
 const PRECACHE_URLS = [
   '/',
   '/index.html',

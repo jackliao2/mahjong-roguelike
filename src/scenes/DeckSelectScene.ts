@@ -156,11 +156,23 @@ export class DeckSelectScene extends Phaser.Scene {
     startHit.on('pointerdown', () => {
       this.soundManager.playClick();
       const isEndless = this.difficulty === 'endless';
-      this.scene.start('GameScene', {
-        action: 'new_run',
-        difficulty: isEndless ? 'normal' : this.difficulty,
-        endless: isEndless,
-      });
+      const isBeginner = this.difficulty === 'beginner';
+      const isFirstTime = localStorage.getItem(GameConfig.beginner.tutorialSeenKey) !== '1';
+
+      if (isBeginner && isFirstTime) {
+        localStorage.setItem(GameConfig.beginner.tutorialSeenKey, '1');
+        this.scene.start('GameScene', {
+          action: 'new_run',
+          difficulty: 'beginner',
+          tutorial: true,
+        });
+      } else {
+        this.scene.start('GameScene', {
+          action: 'new_run',
+          difficulty: isEndless ? 'normal' : this.difficulty,
+          endless: isEndless,
+        });
+      }
     });
 
     // HOME (left)

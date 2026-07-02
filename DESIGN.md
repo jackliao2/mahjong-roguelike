@@ -1,4 +1,4 @@
-# DESIGN - Mahjong Roguelike
+# DESIGN - Mahjong Quiz
 
 ## Core Design Philosophy
 

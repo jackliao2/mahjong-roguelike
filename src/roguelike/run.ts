@@ -1,7 +1,7 @@
 import { RunState, MetaProgression } from '@/types';
 import { calculateTargetScore } from '@/game/scoring';
 import { loadRun, saveRun, clearRun, loadMeta } from '@/data/storage';
-import { recordRunResult, getNewAchievements, Achievement, loadMetaProgression } from './meta';
+import { recordRunResult, getNewAchievements, Achievement, loadMetaProgression, RunStats } from './meta';
 
 export function createNewRun(maxRounds: number = 5): RunState {
   return {
@@ -36,9 +36,19 @@ export interface EndRunResult {
   newAchievements: Achievement[];
 }
 
-export function endRun(run: RunState, won: boolean): EndRunResult {
+export function endRun(run: RunState, won: boolean, stats?: Partial<RunStats>): EndRunResult {
   const oldMeta = loadMetaProgression();
-  const newMeta = recordRunResult(oldMeta, run.score, won);
+  const fullStats: RunStats = {
+    score: stats?.score ?? run.score,
+    won: stats?.won ?? won,
+    difficulty: stats?.difficulty ?? 'beginner',
+    maxRound: stats?.maxRound ?? run.round,
+    bestCombo: stats?.bestCombo ?? 0,
+    perfectRun: stats?.perfectRun ?? false,
+    bossKills: stats?.bossKills ?? 0,
+    relicsCollected: stats?.relicsCollected ?? 0,
+  };
+  const newMeta = recordRunResult(oldMeta, fullStats);
   const newAchievements = getNewAchievements(oldMeta, newMeta);
   clearRun();
   return { meta: newMeta, newAchievements };

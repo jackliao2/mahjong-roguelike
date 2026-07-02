@@ -1,7 +1,7 @@
 {
-  "name": "Mahjong Roguelike",
-  "short_name": "Mahjong RL",
-  "description": "Learn riichi mahjong through roguelike deckbuilding gameplay in your browser.",
+  "name": "Mahjong Quiz",
+  "short_name": "Mahjong Quiz",
+  "description": "Learn riichi mahjong through 4-option multiple-choice quiz questions with roguelike chapters, BOSS questions, and relics in your browser.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#2B1810",
