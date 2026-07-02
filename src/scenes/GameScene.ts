@@ -123,50 +123,93 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Background =====
   private createBackground(): void {
-    this.add.rectangle(0, 0, 1024, 720, 0x2b1810).setOrigin(0);
-    for (let y = 0; y < 720; y += 4) {
-      const alpha = 0.04 + Math.random() * 0.04;
-      this.add.rectangle(0, y, 1024, 2, 0x5c3825, alpha).setOrigin(0);
+    this.add.rectangle(0, 0, 1024, 720, 0x180e08).setOrigin(0);
+    const gradientSteps = 12;
+    for (let i = 0; i < gradientSteps; i++) {
+      const y = (i / gradientSteps) * 720;
+      const alpha = 0.02 + (1 - i / gradientSteps) * 0.04;
+      this.add.rectangle(0, y, 1024, 720 / gradientSteps + 1, 0x2a1810, alpha).setOrigin(0);
     }
+    const vignette = this.add.graphics();
+    vignette.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.5, 0.5);
+    vignette.fillEllipse(512, 360, 1400, 1000);
+    vignette.setAlpha(0.25);
   }
 
   // ===== Top bar: round, score, lives, combo, timer, quit =====
   private createTopBar(): void {
-    const y = 30;
-    // Round (compact, left-aligned)
-    this.add.text(20, y, '', {
-      fontSize: '13px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setName('roundLabel');
-    // Lives
-    this.add.text(210, y, '', {
-      fontSize: '15px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setName('livesLabel');
-    // Combo
-    this.add.text(330, y, '', {
+    const y = 36;
+    const barH = 48;
+
+    const barBg = this.add.rectangle(512, y, 960, barH, 0x0d0805, 0.5)
+      .setStrokeStyle(1, 0x3a2818, 0.6);
+
+    const sepPositions = [140, 260, 400, 620, 780];
+    sepPositions.forEach(sx => {
+      this.add.rectangle(sx, y, 1, 24, 0x3a2818, 0.4);
+    });
+
+    this.add.text(32, y, 'ROUND', {
+      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
+    }).setOrigin(0, 1);
+    this.add.text(32, y, '', {
+      fontSize: '15px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0).setName('roundLabel');
+
+    this.add.text(170, y, 'LIVES', {
+      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
+    }).setOrigin(0, 1);
+    this.add.text(170, y, '', {
+      fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0).setName('livesLabel');
+
+    this.add.text(290, y, 'COMBO', {
+      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
+    }).setOrigin(0, 1);
+    this.add.text(290, y, '', {
       fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setName('comboLabel');
-    // Score
+    }).setOrigin(0, 0).setName('comboLabel');
+
+    this.add.text(512, y, 'SCORE', {
+      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
+    }).setOrigin(0.5, 1);
     this.add.text(512, y, '', {
-      fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setName('scoreLabel');
-    // Timer
-    this.add.text(670, y, '', {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5).setName('timerLabel');
-    // Relic icons (right side, compact)
-    this.add.text(820, y, '', {
-      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setName('relicLabel');
-    // Quit button
-    const quitBg = this.add.rectangle(980, y, 60, 28, 0x5c3825)
-      .setStrokeStyle(2, 0x8b6f47);
-    const quitText = this.add.text(980, y, 'QUIT', {
-      fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5, 0).setName('scoreLabel');
+
+    this.add.text(640, y, 'TIME', {
+      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
+    }).setOrigin(0, 1);
+    this.add.text(640, y, '', {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0).setName('timerLabel');
+
+    this.add.text(800, y, 'RELICS', {
+      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
+    }).setOrigin(0, 1);
+    this.add.text(800, y, '', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0, 0).setName('relicLabel');
+
+    const quitW = 56;
+    const quitX = 980;
+    const quitBg = this.add.rectangle(quitX, y, quitW, 28, 0x1a1008)
+      .setStrokeStyle(1, 0x4a3828);
+    const quitText = this.add.text(quitX, y, 'QUIT', {
+      fontSize: '11px', color: '#7a6855', fontFamily: 'monospace',
     }).setOrigin(0.5);
-    const quitHit = this.add.rectangle(980, y, 60, 28, 0xffffff, 0)
+    const quitHit = this.add.rectangle(quitX, y, quitW, 28, 0xffffff, 0)
       .setInteractive({ useHandCursor: true });
-    quitHit.on('pointerover', () => quitBg.setFillStyle(0x8b6f47));
-    quitHit.on('pointerout', () => quitBg.setFillStyle(0x5c3825));
+    quitHit.on('pointerover', () => {
+      quitBg.setFillStyle(0x2a1a10);
+      quitBg.setStrokeStyle(1, 0x6a5845);
+      quitText.setColor('#c9b89a');
+    });
+    quitHit.on('pointerout', () => {
+      quitBg.setFillStyle(0x1a1008);
+      quitBg.setStrokeStyle(1, 0x4a3828);
+      quitText.setColor('#7a6855');
+    });
     quitHit.on('pointerdown', () => {
       this.soundManager.playClick();
       this.stopTimer();
@@ -437,34 +480,45 @@ export class GameScene extends Phaser.Scene {
     } else {
       const ch = getChapterForRound(this.round);
       const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
-      const chapterLabel = this.add.text(512, 80, chapterText, {
-        fontSize: '14px', color: ch.isBoss ? '#c73e3a' : '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+      const chapterColor = ch.isBoss ? '#c73e3a' : '#5c4835';
+      const chapterLabel = this.add.text(512, 82, chapterText, {
+        fontSize: '12px', color: chapterColor, fontFamily: 'monospace', fontStyle: 'bold',
+        letterSpacing: 4,
       }).setOrigin(0.5);
       this.questionContainer.add(chapterLabel);
 
-      const promptY = 110;
+      const promptY = 120;
       const prompt = this.add.text(512, promptY, q.prompt, {
-        fontSize: '22px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '20px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 900 },
       }).setOrigin(0.5);
       this.questionContainer.add(prompt);
 
-      const handLabel = this.add.text(512, 135, 'YOUR HAND:', {
-        fontSize: '14px', color: '#8b6f47', fontFamily: 'monospace', fontStyle: 'bold',
+      const handPanelW = 640;
+      const handPanelH = 110;
+      const handPanelY = 250;
+      const handPanelBg = this.add.rectangle(512, handPanelY, handPanelW, handPanelH, 0x0a0604, 0.4)
+        .setStrokeStyle(1, 0x3a2818, 0.5);
+      this.questionContainer.add(handPanelBg);
+
+      const handLabel = this.add.text(512, handPanelY - handPanelH / 2 + 14, 'HAND', {
+        fontSize: '10px', color: '#5c4835', fontFamily: 'monospace', fontStyle: 'bold',
+        letterSpacing: 4,
       }).setOrigin(0.5);
       this.questionContainer.add(handLabel);
 
       const sortedHand = sortHand([...q.hand]);
-      this.renderHandTiles(sortedHand, 512, 250);
+      this.renderHandTiles(sortedHand, 512, handPanelY + 8);
 
-      const chooseText = q.isBoss ? 'BOSS · CHOOSE ONE:' : 'CHOOSE ONE:';
-      const chooseColor = q.isBoss ? '#c73e3a' : '#e5b567';
-      const chooseLabel = this.add.text(512, 360, chooseText, {
-        fontSize: '16px', color: chooseColor, fontFamily: 'monospace', fontStyle: 'bold',
+      const chooseText = q.isBoss ? 'CHOOSE YOUR ANSWER' : 'CHOOSE YOUR ANSWER';
+      const chooseColor = q.isBoss ? '#c73e3a' : '#5c4835';
+      const chooseLabel = this.add.text(512, 378, chooseText, {
+        fontSize: '10px', color: chooseColor, fontFamily: 'monospace', fontStyle: 'bold',
+        letterSpacing: 4,
       }).setOrigin(0.5);
       this.questionContainer.add(chooseLabel);
 
-      this.renderOptions(q.options, 512, 480);
+      this.renderOptions(q.options, 512, 490);
     }
   }
 
@@ -730,9 +784,9 @@ export class GameScene extends Phaser.Scene {
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
     const panelW = 600;
     const panelH = 320;
-    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
-      .setStrokeStyle(3, 0x4a9e4a).setDepth(depth);
-    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0x4a9e4a).setDepth(depth);
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x120a06)
+      .setStrokeStyle(2, 0x4a9e4a, 0.8).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0x4a9e4a, 0.8).setDepth(depth);
 
     const title = this.add.text(512, 300, 'CORRECT!', {
       fontSize: '32px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
@@ -769,12 +823,16 @@ export class GameScene extends Phaser.Scene {
 
     this.feedbackContainer.add(elements);
 
-    // Entrance animation
-    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    elements.forEach(el => {
+      (el as any).setAlpha?.(0);
+      if ((el as any).setScale) (el as any).setScale(0.92);
+    });
     this.tweens.add({
       targets: elements,
       alpha: 1,
-      duration: 300,
+      scale: 1,
+      duration: 350,
+      ease: 'Back.easeOut',
     });
   }
 
@@ -980,9 +1038,9 @@ export class GameScene extends Phaser.Scene {
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7).setDepth(depth);
     const panelW = 480;
     const panelH = 200;
-    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
-      .setStrokeStyle(3, 0xc73e3a).setDepth(depth);
-    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0xc73e3a).setDepth(depth);
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x120a06)
+      .setStrokeStyle(2, 0xc73e3a, 0.8).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0xc73e3a, 0.8).setDepth(depth);
 
     const title = this.add.text(512, 320, 'WRONG!', {
       fontSize: '28px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
@@ -1027,9 +1085,9 @@ export class GameScene extends Phaser.Scene {
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(depth);
     const panelW = 600;
     const panelH = 360;
-    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
-      .setStrokeStyle(3, 0xc73e3a).setDepth(depth);
-    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0xc73e3a).setDepth(depth);
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x120a06)
+      .setStrokeStyle(2, 0xc73e3a, 0.8).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0xc73e3a, 0.8).setDepth(depth);
 
     const title = this.add.text(512, 280, 'GAME OVER', {
       fontSize: '32px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
