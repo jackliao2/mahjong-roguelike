@@ -414,6 +414,7 @@ export class GameScene extends Phaser.Scene {
   // ===== Round flow =====
   private startRound(): void {
     this.answered = false;
+    this.hideTooltip();
     this.feedbackContainer.removeAll(true);
     this.questionContainer.removeAll(true);
     this.updateTopBar();
@@ -712,23 +713,20 @@ export class GameScene extends Phaser.Scene {
         if (!this.answered) {
           container.setScale(1.08);
           frame.setStrokeStyle(5, hoverColor);
+          this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
         }
       });
       container.on('pointerout', () => {
         if (!this.answered) {
           container.setScale(1);
           frame.setStrokeStyle(isBoss ? 4 : 3, frameColor);
+          this.hideTooltip();
         }
       });
       container.on('pointerdown', () => {
         if (!this.answered) {
           this.handleAnswer(index);
         }
-      });
-
-      // Hover tooltip
-      container.on('pointerover', () => {
-        this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
       });
     }
 
@@ -740,6 +738,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.currentQuestion || this.answered) return;
     this.answered = true;
     this.stopTimer();
+    this.hideTooltip();
     const q = this.currentQuestion;
     const isCorrect = q.correctIndices.includes(optionIndex);
 
