@@ -139,77 +139,49 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Top bar: round, score, lives, combo, timer, quit =====
   private createTopBar(): void {
-    const y = 36;
-    const barH = 48;
+    const y = 32;
 
-    const barBg = this.add.rectangle(512, y, 960, barH, 0x0d0805, 0.5)
-      .setStrokeStyle(1, 0x3a2818, 0.6);
+    this.add.text(40, y, '', {
+      fontSize: '14px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setName('roundLabel');
 
-    const sepPositions = [140, 260, 400, 620, 780];
-    sepPositions.forEach(sx => {
-      this.add.rectangle(sx, y, 1, 24, 0x3a2818, 0.4);
-    });
-
-    this.add.text(32, y, 'ROUND', {
-      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
-    }).setOrigin(0, 1);
-    this.add.text(32, y, '', {
-      fontSize: '15px', color: '#d4a574', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0).setName('roundLabel');
-
-    this.add.text(170, y, 'LIVES', {
-      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
-    }).setOrigin(0, 1);
-    this.add.text(170, y, '', {
+    this.add.text(160, y, '', {
       fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0).setName('livesLabel');
+    }).setOrigin(0, 0.5).setName('livesLabel');
 
-    this.add.text(290, y, 'COMBO', {
-      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
-    }).setOrigin(0, 1);
-    this.add.text(290, y, '', {
-      fontSize: '15px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0).setName('comboLabel');
+    this.add.text(260, y, '', {
+      fontSize: '14px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setName('comboLabel');
 
-    this.add.text(512, y, 'SCORE', {
-      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
-    }).setOrigin(0.5, 1);
     this.add.text(512, y, '', {
-      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5, 0).setName('scoreLabel');
+      fontSize: '20px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0.5, 0.5).setName('scoreLabel');
 
-    this.add.text(640, y, 'TIME', {
-      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
-    }).setOrigin(0, 1);
-    this.add.text(640, y, '', {
+    this.add.text(720, y, '', {
       fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0).setName('timerLabel');
+    }).setOrigin(0, 0.5).setName('timerLabel');
 
-    this.add.text(800, y, 'RELICS', {
-      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
-    }).setOrigin(0, 1);
-    this.add.text(800, y, '', {
+    this.add.text(820, y, '', {
       fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
-    }).setOrigin(0, 0).setName('relicLabel');
+    }).setOrigin(0, 0.5).setName('relicLabel');
 
-    const quitW = 56;
+    const quitW = 52;
     const quitX = 980;
-    const quitBg = this.add.rectangle(quitX, y, quitW, 28, 0x1a1008)
-      .setStrokeStyle(1, 0x4a3828);
+    const quitBg = this.add.rectangle(quitX, y, quitW, 26, 0x000000, 0);
     const quitText = this.add.text(quitX, y, 'QUIT', {
-      fontSize: '11px', color: '#7a6855', fontFamily: 'monospace',
+      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
     }).setOrigin(0.5);
-    const quitHit = this.add.rectangle(quitX, y, quitW, 28, 0xffffff, 0)
+    const quitHit = this.add.rectangle(quitX, y, quitW, 26, 0xffffff, 0)
       .setInteractive({ useHandCursor: true });
     quitHit.on('pointerover', () => {
-      quitBg.setFillStyle(0x2a1a10);
-      quitBg.setStrokeStyle(1, 0x6a5845);
+      quitBg.setFillStyle(0x1a1008);
+      quitBg.setStrokeStyle(1, 0x4a3828);
       quitText.setColor('#c9b89a');
     });
     quitHit.on('pointerout', () => {
-      quitBg.setFillStyle(0x1a1008);
-      quitBg.setStrokeStyle(1, 0x4a3828);
-      quitText.setColor('#7a6855');
+      quitBg.setFillStyle(0x000000, 0);
+      quitBg.setStrokeStyle(0, 0x000000);
+      quitText.setColor('#5c4835');
     });
     quitHit.on('pointerdown', () => {
       this.soundManager.playClick();
@@ -502,22 +474,8 @@ export class GameScene extends Phaser.Scene {
         .setStrokeStyle(1, 0x3a2818, 0.5);
       this.questionContainer.add(handPanelBg);
 
-      const handLabel = this.add.text(512, handPanelY - handPanelH / 2 + 14, 'HAND', {
-        fontSize: '10px', color: '#5c4835', fontFamily: 'monospace', fontStyle: 'bold',
-        letterSpacing: 4,
-      }).setOrigin(0.5);
-      this.questionContainer.add(handLabel);
-
       const sortedHand = sortHand([...q.hand]);
       this.renderHandTiles(sortedHand, 512, handPanelY + 8);
-
-      const chooseText = q.isBoss ? 'CHOOSE YOUR ANSWER' : 'CHOOSE YOUR ANSWER';
-      const chooseColor = q.isBoss ? '#c73e3a' : '#5c4835';
-      const chooseLabel = this.add.text(512, 378, chooseText, {
-        fontSize: '10px', color: chooseColor, fontFamily: 'monospace', fontStyle: 'bold',
-        letterSpacing: 4,
-      }).setOrigin(0.5);
-      this.questionContainer.add(chooseLabel);
 
       this.renderOptions(q.options, 512, 490);
     }
@@ -540,23 +498,14 @@ export class GameScene extends Phaser.Scene {
   private createHandTileSprite(tile: Tile, x: number, y: number): Phaser.GameObjects.Container {
     const textureKey = `tile-${tileKey(tile)}`;
     const sprite = this.add.image(0, 0, textureKey);
-    const shadow = this.add.rectangle(2, 4, HAND_TILE_W, HAND_TILE_H, 0x000000, 0.3);
+    const shadow = this.add.rectangle(2, 3, HAND_TILE_W, HAND_TILE_H, 0x000000, 0.25);
     const container = this.add.container(x, y, [shadow, sprite]);
     container.setSize(HAND_TILE_W, HAND_TILE_H);
 
-    // Tile label for readability
-    const label = this.getTileLabel(tile);
-    const labelBg = this.add.rectangle(0, HAND_TILE_H / 2 - 8, 36, 16, 0x000000, 0.8);
-    const labelText = this.add.text(0, HAND_TILE_H / 2 - 8, label, {
-      fontSize: '12px', color: '#ffffff', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    container.add([labelBg, labelText]);
-
-    // Hover tooltip
     container.setInteractive({ useHandCursor: true });
     container.on('pointerover', () => {
-      container.setY(y - 6);
-      this.showTileTooltip(tile, x, y - HAND_TILE_H - 10);
+      container.setY(y - 4);
+      this.showTileTooltip(tile, x, y - HAND_TILE_H - 8);
     });
     container.on('pointerout', () => {
       container.setY(y);
@@ -606,65 +555,42 @@ export class GameScene extends Phaser.Scene {
 
     const textureKey = `tile-${tileKey(tile)}`;
     const sprite = this.add.image(0, 0, textureKey);
-    const shadow = this.add.rectangle(3, 5, OPTION_TILE_W, OPTION_TILE_H, 0x000000, 0.4);
-    // Button background frame
-    const frame = this.add.rectangle(0, 0, OPTION_TILE_W + 8, OPTION_TILE_H + 8, 0x1a0f08)
-      .setStrokeStyle(isBoss ? 4 : 3, frameColor);
+    const shadow = this.add.rectangle(2, 3, OPTION_TILE_W, OPTION_TILE_H, 0x000000, 0.3);
+    const frame = this.add.rectangle(0, 0, OPTION_TILE_W + 6, OPTION_TILE_H + 6, 0x000000, 0)
+      .setStrokeStyle(isBoss ? 2 : 1, frameColor, 0.6);
     const container = this.add.container(x, y, [frame, shadow, sprite]);
-    container.setSize(OPTION_TILE_W + 8, OPTION_TILE_H + 8);
+    container.setSize(OPTION_TILE_W + 6, OPTION_TILE_H + 6);
 
-    // Perspective glass: correct answer glows faintly
-    let glow: Phaser.GameObjects.Rectangle | null = null;
     if (glowCorrect) {
-      glow = this.add.rectangle(0, 0, OPTION_TILE_W + 12, OPTION_TILE_H + 12, 0xe5b567, 0.15)
-        .setStrokeStyle(2, 0xe5b567, 0.4);
+      const glow = this.add.rectangle(0, 0, OPTION_TILE_W + 10, OPTION_TILE_H + 10, 0xe5b567, 0.1)
+        .setStrokeStyle(1, 0xe5b567, 0.3);
       container.addAt(glow, 0);
-      // subtle pulse
       this.tweens.add({
         targets: glow,
-        alpha: { from: 0.3, to: 0.6 },
-        duration: 1200,
+        alpha: { from: 0.2, to: 0.4 },
+        duration: 1000,
         yoyo: true,
         repeat: -1,
       });
     }
 
-    // Disabled (hint-scroll removed): gray out
     if (disabled) {
-      sprite.setAlpha(0.25);
-      frame.setFillStyle(0x000000);
-      frame.setStrokeStyle(2, 0x444444);
+      sprite.setAlpha(0.2);
+      frame.setStrokeStyle(1, 0x444444);
     }
 
-    // Option label (A/B/C/D)
-    const letter = String.fromCharCode(65 + index); // A, B, C, D
-    const letterBg = this.add.rectangle(-OPTION_TILE_W / 2 + 2, -OPTION_TILE_H / 2 - 2, 22, 22, disabled ? 0x666666 : 0xc73e3a);
-    const letterText = this.add.text(-OPTION_TILE_W / 2 + 2, -OPTION_TILE_H / 2 - 2, letter, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    container.add([letterBg, letterText]);
-
-    // Tile name label
-    const label = this.getTileLabel(tile);
-    const labelBg = this.add.rectangle(0, OPTION_TILE_H / 2 - 8, 44, 18, 0x000000, 0.85);
-    const labelText = this.add.text(0, OPTION_TILE_H / 2 - 8, label, {
-      fontSize: '13px', color: '#ffffff', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    container.add([labelBg, labelText]);
-
-    // Interactivity
     if (!disabled) {
       container.setInteractive({ useHandCursor: true });
       container.on('pointerover', () => {
         if (!this.answered) {
-          container.setScale(1.08);
-          frame.setStrokeStyle(5, hoverColor);
+          container.setScale(1.06);
+          frame.setStrokeStyle(isBoss ? 3 : 2, hoverColor);
         }
       });
       container.on('pointerout', () => {
         if (!this.answered) {
           container.setScale(1);
-          frame.setStrokeStyle(isBoss ? 4 : 3, frameColor);
+          frame.setStrokeStyle(isBoss ? 2 : 1, frameColor, 0.6);
         }
       });
       container.on('pointerdown', () => {
