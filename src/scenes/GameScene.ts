@@ -112,8 +112,6 @@ export class GameScene extends Phaser.Scene {
 
     // Top bar
     this.createTopBar();
-    this.createScorePanel();
-    this.createRelicPanel();
     this.updateTopBar();
 
     // Containers for question + feedback (rebuilt each round)
@@ -139,14 +137,15 @@ export class GameScene extends Phaser.Scene {
     vignette.setAlpha(0.25);
   }
 
-  // ===== Top bar: round, lives, combo, timer, quit =====
+  // ===== Top bar: round, lives, combo, score, timer, relics, quit =====
   private createTopBar(): void {
     const y = 32;
 
     // Top bar background strip
     this.add.rectangle(512, y, 1024, 44, 0x0a0604, 0.85).setDepth(10).setName('topBarBg');
-    this.add.rectangle(512, y + 22, 1024, 1, 0x4a3828, 0.3).setDepth(10).setName('topBarLine');
+    this.add.rectangle(512, y + 22, 1024, 1, 0x4a3828, 0.3).setDepth(10);
 
+    // Left: round + lives + combo
     this.add.text(20, y, '', {
       fontSize: '12px', color: '#8a7560', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('roundLabel');
@@ -159,9 +158,23 @@ export class GameScene extends Phaser.Scene {
       fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('comboLabel');
 
+    // Center: score (prominent)
+    this.add.text(420, y, 'SCORE', {
+      fontSize: '10px', color: '#8a7560', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(11);
+    this.add.text(480, y, '0', {
+      fontSize: '22px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(11).setName('scoreValue');
+
+    // Right: timer
     this.add.text(720, y, '', {
       fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('timerLabel');
+
+    // Far right: relics
+    this.add.text(820, y, '', {
+      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+    }).setOrigin(0, 0.5).setDepth(11).setName('relicLabel');
 
     const quitW = 52;
     const quitX = 980;
@@ -192,15 +205,17 @@ export class GameScene extends Phaser.Scene {
     const roundLabel = this.children.getByName('roundLabel') as Phaser.GameObjects.Text;
     const livesLabel = this.children.getByName('livesLabel') as Phaser.GameObjects.Text;
     const comboLabel = this.children.getByName('comboLabel') as Phaser.GameObjects.Text;
+    const scoreValue = this.children.getByName('scoreValue') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
+    const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
 
     if (this.teachingMode) {
       if (roundLabel) roundLabel.setText(`TEACHING · ${this.round}/${this.maxRounds}`);
       if (livesLabel) livesLabel.setText('');
       if (comboLabel) comboLabel.setText('');
+      if (scoreValue) scoreValue.setText('');
       if (timerLabel) timerLabel.setText('');
-      this.updateScorePanel();
-      this.updateRelicPanel();
+      if (relicLabel) relicLabel.setText('');
       return;
     }
 
@@ -217,35 +232,12 @@ export class GameScene extends Phaser.Scene {
     if (comboLabel) {
       comboLabel.setText(this.combo >= 2 ? `COMBO x${this.combo}` : '');
     }
-    if (timerLabel) {
-      timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
-    }
-    this.updateScorePanel();
-    this.updateRelicPanel();
-  }
-
-  // ===== Score panel (prominent, always visible) =====
-  private createScorePanel(): void {
-    // Score panel background
-    const panelX = 512, panelY = 76;
-    this.add.rectangle(panelX, panelY, 240, 34, 0x0a0604, 0.9)
-      .setStrokeStyle(1, 0x4a3828, 0.5).setDepth(10).setName('scorePanelBg');
-    this.add.text(panelX - 100, panelY, 'SCORE', {
-      fontSize: '11px', color: '#8a7560', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('scorePanelLabel');
-    this.add.text(panelX + 30, panelY, '0', {
-      fontSize: '22px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('scorePanelValue');
-  }
-
-  private updateScorePanel(): void {
-    const value = this.children.getByName('scorePanelValue') as Phaser.GameObjects.Text;
-    if (value) {
-      const prevScore = parseInt(value.text) || 0;
-      value.setText(`${this.score}`);
+    if (scoreValue) {
+      const prevScore = parseInt(scoreValue.text) || 0;
+      scoreValue.setText(`${this.score}`);
       if (this.score > prevScore && prevScore > 0) {
         this.tweens.add({
-          targets: value,
+          targets: scoreValue,
           scaleX: 1.3, scaleY: 1.3,
           duration: 100,
           yoyo: true,
@@ -253,40 +245,20 @@ export class GameScene extends Phaser.Scene {
         });
       }
     }
-  }
-
-  // ===== Relic panel (shows equipped relics with names) =====
-  private createRelicPanel(): void {
-    const panelX = 512, panelY = 118;
-    this.add.rectangle(panelX, panelY, 600, 30, 0x0a0604, 0.85)
-      .setStrokeStyle(1, 0x3a2a18, 0.4).setDepth(10).setName('relicPanelBg');
-    this.add.text(panelX, panelY, '', {
-      fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace',
-    }).setOrigin(0.5, 0.5).setDepth(11).setName('relicPanelText');
-  }
-
-  private updateRelicPanel(): void {
-    const text = this.children.getByName('relicPanelText') as Phaser.GameObjects.Text;
-    if (!text) return;
-    if (this.relics.length === 0) {
-      text.setText('No relics yet — earn them by defeating BOSS rounds');
-      text.setColor('#5c4835');
-      text.setFontSize(11);
-    } else {
-      const icons: Record<string, string> = {
-        'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
-        'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
-        'lucky-coin': '🪙', 'shield-tile': '🛡',
-      };
-      const names: Record<string, string> = {
-        'hint-scroll': 'Hint', 'time-charm': '+2♥', 'double-talisman': 'x2',
-        'perspective-glass': 'Glow', 'combo-feather': 'Combo', 'hourglass': '+10s',
-        'lucky-coin': '+30%', 'shield-tile': 'Shield',
-      };
-      const parts = this.relics.map(r => `${icons[r] || '?'} ${names[r] || r}`);
-      text.setText('RELIC: ' + parts.join('  |  '));
-      text.setColor('#c9b89a');
-      text.setFontSize(12);
+    if (timerLabel) {
+      timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
+    }
+    if (relicLabel) {
+      if (this.relics.length === 0) {
+        relicLabel.setText('');
+      } else {
+        const icons: Record<string, string> = {
+          'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
+          'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
+          'lucky-coin': '🪙', 'shield-tile': '🛡',
+        };
+        relicLabel.setText(this.relics.map(r => icons[r] || '?').join(' '));
+      }
     }
   }
 
@@ -659,9 +631,12 @@ export class GameScene extends Phaser.Scene {
         }
       });
 
-      // Hover tooltip
+      // Hover tooltip (only shows while hovering, hides on mouseout)
       container.on('pointerover', () => {
-        this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
+        if (!this.answered) this.showTileTooltip(tile, x, y - OPTION_TILE_H - 10);
+      });
+      container.on('pointerout', () => {
+        this.hideTooltip();
       });
     }
 
