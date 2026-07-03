@@ -849,6 +849,72 @@
   @media (max-width: 640px) {
     .disambig-text { font-size: 13px; }
   }
+
+  /* ===== Scroll Nav Dots ===== */
+  .scroll-nav {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .scroll-nav li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .scroll-nav .nav-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--cream-dim);
+    opacity: 0;
+    transform: translateX(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .scroll-nav li:hover .nav-label,
+  .scroll-nav li.active .nav-label {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  .scroll-nav li.active .nav-label {
+    color: var(--amber-bright);
+  }
+  .scroll-nav .nav-dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--cream-dim);
+    background: transparent;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  .scroll-nav li:hover .nav-dot {
+    border-color: var(--amber);
+    background: var(--wood-mid);
+  }
+  .scroll-nav li.active .nav-dot {
+    border-color: var(--amber-bright);
+    background: var(--amber-bright);
+    box-shadow: 0 0 8px rgba(229,181,103,0.6);
+    transform: scale(1.2);
+  }
+  @media (max-width: 768px) {
+    .scroll-nav { right: 10px; gap: 14px; }
+    .scroll-nav .nav-dot { width: 10px; height: 10px; }
+    .scroll-nav .nav-label { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-nav .nav-dot,
+    .scroll-nav .nav-label { transition: none; }
+  }
 </style>
 <!-- Structured Data: VideoGame -->
 <script type="application/ld+json">
@@ -958,8 +1024,34 @@
     </nav>
   </header>
 
+  <!-- ===== Scroll Nav Dots ===== -->
+  <nav class="scroll-nav" aria-label="Section navigation">
+    <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:18px;">
+      <li data-target="hero">
+        <span class="nav-dot"></span>
+        <span class="nav-label">TOP</span>
+      </li>
+      <li data-target="how-it-works">
+        <span class="nav-dot"></span>
+        <span class="nav-label">HOW</span>
+      </li>
+      <li data-target="yaku-preview">
+        <span class="nav-dot"></span>
+        <span class="nav-label">YAKU</span>
+      </li>
+      <li data-target="vibe">
+        <span class="nav-dot"></span>
+        <span class="nav-label">VIBE</span>
+      </li>
+      <li data-target="play">
+        <span class="nav-dot"></span>
+        <span class="nav-label">PLAY</span>
+      </li>
+    </ul>
+  </nav>
+
   <!-- ===== HERO ===== -->
-  <section class="hero" aria-label="Hero">
+  <section class="hero" id="hero" aria-label="Hero">
     <div class="lantern l1" aria-hidden="true"></div>
     <div class="lantern l2" aria-hidden="true"></div>
     <div class="lantern l3" aria-hidden="true"></div>
@@ -1148,7 +1240,7 @@
   </section>
 
   <!-- ===== Final CTA ===== -->
-  <section class="final-cta" aria-labelledby="final-title">
+  <section class="final-cta" id="play" aria-labelledby="final-title">
     <h2 class="final-cta-title" id="final-title">Your First Quiz Run Awaits</h2>
     <p class="final-cta-sub">No install. No account. Just press play.</p>
     <a href="/play.html" class="btn btn-primary">Play Now</a>
@@ -1203,6 +1295,53 @@
         navigator.serviceWorker.register('/sw.js').catch(() => {});
       });
     }
+  </script>
+
+  <!-- Scroll Nav Dots interaction -->
+  <script>
+  (function() {
+    var navItems = document.querySelectorAll('.scroll-nav li');
+    if (navItems.length === 0) return;
+
+    var sections = [];
+    navItems.forEach(function(item) {
+      var id = item.getAttribute('data-target');
+      var el = document.getElementById(id);
+      if (el) sections.push({ id: id, el: el, item: item });
+    });
+
+    // Click to scroll
+    navItems.forEach(function(item) {
+      item.addEventListener('click', function() {
+        var id = item.getAttribute('data-target');
+        var el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Highlight active section on scroll
+    function updateActive() {
+      var scrollY = window.scrollY + window.innerHeight / 3;
+      var activeId = sections[0].id;
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].el.offsetTop <= scrollY) {
+          activeId = sections[i].id;
+        }
+      }
+      navItems.forEach(function(item) {
+        if (item.getAttribute('data-target') === activeId) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+  })();
   </script>
 
   <!-- Continue Run: show button if saved run exists -->
