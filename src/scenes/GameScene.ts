@@ -309,31 +309,27 @@ export class GameScene extends Phaser.Scene {
     const level = levels[this.currentTrainingLevel];
     const accentColor = 0x4a9e4a;
 
-    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.8).setDepth(500);
-    const panel = this.add.rectangle(512, 360, 620, 300, 0x1a0f08)
-      .setStrokeStyle(2, accentColor).setDepth(501);
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(500);
+    const panel = this.add.rectangle(512, 360, 560, 200, 0x120a06)
+      .setStrokeStyle(1, accentColor, 0.6).setDepth(501);
 
-    const titleText = this.add.text(512, 260, level.title, {
-      fontSize: '24px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+    const titleText = this.add.text(512, 300, level.title, {
+      fontSize: '22px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
 
-    const subtitleText = this.add.text(512, 300, level.subtitle, {
-      fontSize: '15px', color: '#c9b89a', fontFamily: 'monospace',
+    const descText = this.add.text(512, 365, level.description, {
+      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      align: 'center', wordWrap: { width: 500 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(502);
 
-    const descText = this.add.text(512, 360, level.description, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
-      align: 'center', wordWrap: { width: 560 }, lineSpacing: 8,
-    }).setOrigin(0.5).setDepth(502);
-
-    const btnW = 180;
-    const btnH = 44;
-    const btnBg = this.add.rectangle(512, 450, btnW, btnH, 0x4a9e4a)
-      .setStrokeStyle(2, 0x2b1810).setDepth(501);
-    const btnText = this.add.text(512, 450, 'START LESSON', {
+    const btnW = 160;
+    const btnH = 40;
+    const btnBg = this.add.rectangle(512, 430, btnW, btnH, 0x4a9e4a, 0.9)
+      .setStrokeStyle(1, 0x2b1810).setDepth(501);
+    const btnText = this.add.text(512, 430, 'START', {
       fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
-    const btnHit = this.add.rectangle(512, 450, btnW, btnH, 0xffffff, 0)
+    const btnHit = this.add.rectangle(512, 430, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(503);
     btnHit.on('pointerover', () => btnBg.setFillStyle(0x5abf5a));
     btnHit.on('pointerout', () => btnBg.setFillStyle(0x4a9e4a));
@@ -343,12 +339,12 @@ export class GameScene extends Phaser.Scene {
       onComplete();
     });
 
-    const elements = [overlay, panel, titleText, subtitleText, descText, btnBg, btnText, btnHit];
+    const elements = [overlay, panel, titleText, descText, btnBg, btnText, btnHit];
     elements.forEach(el => el.setAlpha(0));
     this.tweens.add({
       targets: elements,
       alpha: 1,
-      duration: 300,
+      duration: 250,
     });
   }
 
@@ -424,30 +420,20 @@ export class GameScene extends Phaser.Scene {
 
     if (this.teachingMode) {
       const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
-      const progressLabel = this.add.text(512, 60, `LESSON ${this.round} OF ${this.maxRounds}`, {
-        fontSize: '13px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      const progressLabel = this.add.text(512, 60, `LESSON ${this.round} / ${this.maxRounds}`, {
+        fontSize: '12px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
       }).setOrigin(0.5);
       this.questionContainer.add(progressLabel);
 
-      const promptY = 95;
-      const prompt = this.add.text(512, promptY, level?.subtitle || q.prompt, {
-        fontSize: '20px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
-        align: 'center', wordWrap: { width: 900 },
+      const promptY = 100;
+      const prompt = this.add.text(512, promptY, q.prompt, {
+        fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: 800 },
       }).setOrigin(0.5);
       this.questionContainer.add(prompt);
 
-      const handLabel = this.add.text(512, 135, '↓  THESE ARE YOUR TILES  ↓', {
-        fontSize: '13px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.questionContainer.add(handLabel);
-
       const sortedHand = sortHand([...q.hand]);
       this.renderHandTiles(sortedHand, 512, 245);
-
-      const chooseLabel = this.add.text(512, 355, '↓  PICK ONE ANSWER  ↓', {
-        fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.questionContainer.add(chooseLabel);
 
       this.renderOptions(q.options, 512, 470);
     } else {
