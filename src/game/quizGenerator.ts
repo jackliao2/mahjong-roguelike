@@ -72,31 +72,52 @@ function buildWinningHand(opts?: { tanyao?: boolean; pinfu?: boolean }): Tile[] 
   const tanyao = opts?.tanyao ?? false;
   const pinfu = opts?.pinfu ?? false;
 
-  const melds: Tile[][] = [];
-  // Sequence start range: tanyao/pinfu → 2-7 (so sequences are 234..678), normal → 1-7
-  const seqStartMin = tanyao || pinfu ? 2 : 1;
-  const seqStartMax = tanyao || pinfu ? 7 : 7;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const melds: Tile[][] = [];
+    const seqStartMin = tanyao || pinfu ? 2 : 1;
+    const seqStartMax = tanyao || pinfu ? 7 : 7;
 
-  for (let i = 0; i < 4; i++) {
-    const suit = rand(SUITS);
-    // Pinfu: always sequences. Tanyao: mostly sequences. Normal: mix.
-    const useSequence = pinfu || tanyao || Math.random() < 0.7;
-    if (useSequence) {
-      melds.push(buildSequence(suit, seqStartMin + Math.floor(Math.random() * (seqStartMax - seqStartMin + 1))));
-    } else {
-      const rankMin = tanyao ? 2 : 1;
-      const rankMax = tanyao ? 8 : 9;
-      melds.push(buildTriplet(suit, rankMin + Math.floor(Math.random() * (rankMax - rankMin + 1))));
+    for (let i = 0; i < 4; i++) {
+      const suit = rand(SUITS);
+      const useSequence = pinfu || tanyao || Math.random() < 0.7;
+      if (useSequence) {
+        melds.push(buildSequence(suit, seqStartMin + Math.floor(Math.random() * (seqStartMax - seqStartMin + 1))));
+      } else {
+        const rankMin = tanyao ? 2 : 1;
+        const rankMax = tanyao ? 8 : 9;
+        melds.push(buildTriplet(suit, rankMin + Math.floor(Math.random() * (rankMax - rankMin + 1))));
+      }
     }
+
+    const pairSuit = rand(SUITS);
+    const pairRankMin = tanyao || pinfu ? 2 : 1;
+    const pairRankMax = tanyao || pinfu ? 8 : 9;
+    melds.push(buildPair(pairSuit, pairRankMin + Math.floor(Math.random() * (pairRankMax - pairRankMin + 1))));
+
+    const hand = melds.flat();
+    if (isValidTileCount(hand)) return hand;
   }
+  return buildFallbackHand();
+}
 
-  // Pair: tanyao/pinfu → simple suited tile (2-8), normal → any
-  const pairSuit = rand(SUITS);
-  const pairRankMin = tanyao || pinfu ? 2 : 1;
-  const pairRankMax = tanyao || pinfu ? 8 : 9;
-  melds.push(buildPair(pairSuit, pairRankMin + Math.floor(Math.random() * (pairRankMax - pairRankMin + 1))));
+function isValidTileCount(hand: Tile[]): boolean {
+  const counts: Record<string, number> = {};
+  for (const t of hand) {
+    const key = tileKey(t);
+    counts[key] = (counts[key] || 0) + 1;
+    if (counts[key] > 4) return false;
+  }
+  return true;
+}
 
-  return melds.flat();
+function buildFallbackHand(): Tile[] {
+  return [
+    ...buildSequence('man', 1),
+    ...buildSequence('pin', 4),
+    ...buildSequence('sou', 7),
+    ...buildTriplet('man', 8),
+    ...buildPair('pin', 2),
+  ];
 }
 
 /** Random tile of any type (for wrong options) */
