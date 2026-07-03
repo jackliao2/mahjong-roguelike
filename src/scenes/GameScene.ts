@@ -112,6 +112,7 @@ export class GameScene extends Phaser.Scene {
 
     // Top bar
     this.createTopBar();
+    this.updateTopBar();
 
     // Containers for question + feedback (rebuilt each round)
     this.questionContainer = this.add.container(0, 0);
