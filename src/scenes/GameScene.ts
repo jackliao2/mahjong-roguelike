@@ -686,6 +686,7 @@ export class GameScene extends Phaser.Scene {
     if (!this.currentQuestion || this.answered) return;
     this.answered = true;
     this.stopTimer();
+    this.hideTooltip();
     const q = this.currentQuestion;
     const isCorrect = q.correctIndices.includes(optionIndex);
 
@@ -1419,17 +1420,18 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showTileTooltip(tile: Tile, x: number, y: number): void {
+    if (this.answered) return;
     this.hideTooltip();
     const display = getTileDisplay(tile);
     const lines = [display.englishName, `(${display.romaji})`, display.westernHint];
 
-    const bg = this.add.rectangle(x, y, 200, 64, 0x1a0f08, 0.95)
-      .setStrokeStyle(2, 0xd4a574)
-      .setDepth(1000)
+    const bg = this.add.rectangle(x, y, 180, 56, 0x120a06, 0.92)
+      .setStrokeStyle(1, 0x8b6f47, 0.8)
+      .setDepth(500)
       .setName('tooltipBg');
     const text = this.add.text(x, y, lines.join('\n'), {
-      fontSize: '13px', color: '#f5e6d3', fontFamily: 'monospace', align: 'center',
-    }).setOrigin(0.5).setDepth(1001).setName('tooltipText');
+      fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace', align: 'center',
+    }).setOrigin(0.5).setDepth(501).setName('tooltipText');
   }
 
   private hideTooltip(): void {
