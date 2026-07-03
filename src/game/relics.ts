@@ -32,7 +32,7 @@ export const RELICS: Record<RelicId, Relic> = {
   'time-charm': {
     id: 'time-charm',
     name: 'Time Charm',
-    description: '+2 extra lives and pause timer for 3s on each question start',
+    description: '+2 extra lives',
     rarity: 'rare',
   },
   'double-talisman': {

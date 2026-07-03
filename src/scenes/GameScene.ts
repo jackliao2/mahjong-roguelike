@@ -270,8 +270,14 @@ export class GameScene extends Phaser.Scene {
   private handleTimeout(): void {
     if (this.answered || !this.currentQuestion) return;
     this.answered = true;
+
+    if (this.teachingMode) {
+      this.showTeachingRetry(this.currentQuestion, -1);
+      return;
+    }
+
     this.lives -= 1;
-    this.combo = 0;
+    if (!this.relics.includes('combo-feather')) this.combo = 0;
     this.updateTopBar();
     if (this.lives > 0) {
       this.showTimeoutRetry();
@@ -309,28 +315,41 @@ export class GameScene extends Phaser.Scene {
     const level = levels[this.currentTrainingLevel];
     const accentColor = 0x4a9e4a;
 
+    const elements: Phaser.GameObjects.GameObject[] = [];
+
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(500);
+    elements.push(overlay);
+
     const panel = this.add.rectangle(512, 360, 560, 200, 0x120a06)
       .setStrokeStyle(1, accentColor, 0.6).setDepth(501);
+    elements.push(panel);
 
     const titleText = this.add.text(512, 300, level.title, {
       fontSize: '22px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
+    elements.push(titleText);
 
     const descText = this.add.text(512, 365, level.description, {
       fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
       align: 'center', wordWrap: { width: 500 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(502);
+    elements.push(descText);
 
     const btnW = 160;
     const btnH = 40;
     const btnBg = this.add.rectangle(512, 430, btnW, btnH, 0x4a9e4a, 0.9)
       .setStrokeStyle(1, 0x2b1810).setDepth(501);
+    elements.push(btnBg);
+
     const btnText = this.add.text(512, 430, 'START', {
       fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
+    elements.push(btnText);
+
     const btnHit = this.add.rectangle(512, 430, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(503);
+    elements.push(btnHit);
+
     btnHit.on('pointerover', () => btnBg.setFillStyle(0x5abf5a));
     btnHit.on('pointerout', () => btnBg.setFillStyle(0x4a9e4a));
     btnHit.on('pointerdown', () => {
@@ -339,8 +358,7 @@ export class GameScene extends Phaser.Scene {
       onComplete();
     });
 
-    const elements = [overlay, panel, titleText, descText, btnBg, btnText, btnHit];
-    elements.forEach(el => el.setAlpha(0));
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
     this.tweens.add({
       targets: elements,
       alpha: 1,
@@ -508,15 +526,16 @@ export class GameScene extends Phaser.Scene {
     const q = this.currentQuestion;
     if (!q) return;
 
-    // Hint-scroll: hide 1 wrong option (gray it out + disabled)
-    let hiddenWrongIndex = -1;
+    // Hint-scroll: hide 2 wrong options (gray them out + disabled)
+    const hiddenWrongIndices: Set<number> = new Set();
     if (hasHint) {
       const wrongIndices: number[] = [];
       tiles.forEach((_, i) => {
         if (!q.correctIndices.includes(i)) wrongIndices.push(i);
       });
-      if (wrongIndices.length > 0) {
-        hiddenWrongIndex = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+      const shuffled = this.shuffle(wrongIndices);
+      for (let j = 0; j < Math.min(2, shuffled.length); j++) {
+        hiddenWrongIndices.add(shuffled[j]);
       }
     }
 
@@ -526,7 +545,7 @@ export class GameScene extends Phaser.Scene {
 
     tiles.forEach((tile, i) => {
       const x = startX + i * (OPTION_TILE_W + gap);
-      const isHidden = i === hiddenWrongIndex;
+      const isHidden = hiddenWrongIndices.has(i);
       const isCorrectAnswer = q.correctIndices.includes(i);
       const option = this.createOptionButton(tile, x, y, i, isHidden, hasGlass && isCorrectAnswer);
       this.questionContainer.add(option);
@@ -620,7 +639,7 @@ export class GameScene extends Phaser.Scene {
 
       let baseScore = q.isBoss ? 1500 : 1000;
       baseScore *= this.pathMultiplier;
-      if (this.relics.includes('lucky-coin')) baseScore *= 1.1;
+      if (this.relics.includes('lucky-coin')) baseScore *= 1.3;
       if (this.combo >= 2) {
         const comboBonusBase = Math.min(1, (this.combo - 1) * 0.1);
         const featherBoost = this.relics.includes('combo-feather') ? 1.5 : 1;
@@ -635,20 +654,21 @@ export class GameScene extends Phaser.Scene {
         this.doubleTalismanUses -= 1;
       }
 
-      this.score += Math.round(baseScore);
-      trackWin([q.targetYaku || q.type], 1, 1000, false);
+      const finalScore = Math.round(baseScore);
+      this.score += finalScore;
+      trackWin([q.targetYaku || q.type], 1, finalScore, false);
       this.updateTopBar();
       this.showCorrectFeedback(q);
     } else {
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
         this.shieldUsedThisChapter = true;
-        this.combo = 0;
+        if (!this.relics.includes('combo-feather')) this.combo = 0;
         this.showShieldBlockFeedback(optionIndex);
         this.updateTopBar();
         return;
       }
       this.lives -= 1;
-      this.combo = 0;
+      if (!this.relics.includes('combo-feather')) this.combo = 0;
       this.updateTopBar();
       if (this.lives > 0) {
         this.soundManager.playClick();
@@ -1052,7 +1072,7 @@ export class GameScene extends Phaser.Scene {
     menuHit.on('pointerout', () => menuBg.setFillStyle(0x5c3825));
     menuHit.on('pointerdown', () => {
       this.soundManager.playClick();
-      window.location.href = '/play';
+      window.location.href = '/play.html';
     });
     elements.push(menuBg, menuText, menuHit);
 
@@ -1352,5 +1372,14 @@ export class GameScene extends Phaser.Scene {
     const text = this.children.getByName('tooltipText');
     if (bg) bg.destroy();
     if (text) text.destroy();
+  }
+
+  private shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
   }
 }

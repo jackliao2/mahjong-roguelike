@@ -292,28 +292,26 @@ export function generateYakuForm(targetYaku: string): QuizQuestion {
 function generateYakuhaiForm(): QuizQuestion {
   for (let attempt = 0; attempt < 80; attempt++) {
     const melds: Tile[][] = [];
-    // 3 sequences
     for (let i = 0; i < 3; i++) {
       const suit = rand(SUITS);
       const start = 1 + Math.floor(Math.random() * 7);
       melds.push(buildSequence(suit, start));
     }
-    // 1 dragon triplet (yakuhai)
-    const dragonRank = 1 + Math.floor(Math.random() * 3); // 1=Red, 2=White, 3=Green
+    const dragonRank = 1 + Math.floor(Math.random() * 3);
     melds.push(buildTriplet('dragon', dragonRank));
-    // Pair
     const pairSuit = rand(SUITS);
     const pairRank = 1 + Math.floor(Math.random() * 9);
     melds.push(buildPair(pairSuit, pairRank));
 
     const winning = melds.flat();
+    if (!isValidTileCount(winning)) continue;
+    
     const win = detectWin(winning);
     if (!win) continue;
 
     const yakuList = checkAllYaku(win, winning, true);
     if (!yakuList.some(y => y.yaku.id === 'yakuhai')) continue;
 
-    // Remove one tile from the dragon triplet
     const dragonIdx = winning.findIndex(t => t.suit === 'dragon' && t.rank === dragonRank);
     if (dragonIdx === -1) continue;
     const removed = winning.splice(dragonIdx, 1)[0];
@@ -323,14 +321,12 @@ function generateYakuhaiForm(): QuizQuestion {
     if (waiting.length === 0) continue;
     if (!waiting.includes(tileKey(removed))) continue;
 
-    // Wrong options
     const waitingSet = new Set(waiting);
     const wrongTiles: Tile[] = [];
     for (let i = 0; i < 30 && wrongTiles.length < 3; i++) {
       const t = randomTile(waitingSet);
       if (!t) continue;
       if (wrongTiles.some(w => tileKey(w) === tileKey(t))) continue;
-      // Don't use a tile that also completes with yakuhai
       const testWin = detectWin([...hand13, t]);
       if (testWin) {
         const testYaku = checkAllYaku(testWin, [...hand13, t], true);
@@ -414,7 +410,6 @@ export function generateWaitingTiles(): QuizQuestion {
  */
 export function generateDiscardBest(): QuizQuestion {
   for (let attempt = 0; attempt < 80; attempt++) {
-    // Build a hand with an obvious bad tile (isolated honor or terminal)
     const melds: Tile[][] = [];
     const suits = SUITS;
     for (let i = 0; i < 3; i++) {
@@ -422,12 +417,11 @@ export function generateDiscardBest(): QuizQuestion {
       const start = 1 + Math.floor(Math.random() * 7);
       melds.push(buildSequence(suit, start));
     }
-    // Add a pair
+
     const pairSuit = rand(suits);
     const pairRank = 2 + Math.floor(Math.random() * 7);
     melds.push(buildPair(pairSuit, pairRank));
 
-    // Add an isolated honor tile (the "bad" tile to discard)
     const honorSuit = rand(['wind', 'dragon'] as Suit[]);
     const honorRank = honorSuit === 'wind' ? 1 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 3);
     const badTile = createTile(honorSuit, honorRank);
@@ -435,11 +429,9 @@ export function generateDiscardBest(): QuizQuestion {
 
     const hand14 = melds.flat();
     if (hand14.length !== 14) continue;
-    // Should not be a winning hand
+    if (!isValidTileCount(hand14)) continue;
     if (detectWin(hand14)) continue;
 
-    // The best discard is the isolated honor tile
-    // Wrong options: 3 other tiles from the hand (from sequences/pair)
     const otherTiles = hand14.filter(t => t.id !== badTile.id);
     const wrongTiles = shuffle(otherTiles).slice(0, 3);
     if (wrongTiles.length < 3) continue;
@@ -502,11 +494,41 @@ export function generateYakuCombo(): QuizQuestion {
     if (yakuList.length === 0) continue;
     const correctYakuId = yakuList[0].yaku.id;
     const correctYakuName = correctYakuId.toUpperCase();
-    const allYakuOptions = ['TANYAO', 'PINFU', 'YAKUHAI', 'RIICHI', 'IPPATSU', 'MENZEN'];
+    const allYakuOptions = ['TANYAO', 'PINFU', 'YAKUHAI', 'RIICHI'];
     const wrongOptions = allYakuOptions.filter(y => y !== correctYakuName).slice(0, 3);
-    const options = shuffle([correctYakuName, ...wrongOptions.slice(0, 3)]);
-    const correctIndex = options.indexOf(correctYakuName);
-    return { type: 'yaku-combo', hand: winning, prompt: 'This hand wins! Which YAKU does it have?', options: options.map(name => ({ id: name, suit: 'dragon' as Suit, rank: 1 })), correctIndices: [correctIndex], explanation: 'This hand has ' + correctYakuName + '.', targetYaku: correctYakuId };
+    if (wrongOptions.length < 3) continue;
+
+    const optionTiles: Tile[] = [];
+    const yakuTileMap: Record<string, { suit: Suit; rank: number }> = {
+      'TANYAO': { suit: 'man', rank: 5 },
+      'PINFU': { suit: 'pin', rank: 5 },
+      'YAKUHAI': { suit: 'dragon', rank: 1 },
+      'RIICHI': { suit: 'wind', rank: 1 },
+    };
+
+    [correctYakuName, ...wrongOptions].forEach(name => {
+      const tileDef = yakuTileMap[name];
+      if (tileDef) {
+        optionTiles.push(createTile(tileDef.suit, tileDef.rank));
+      }
+    });
+
+    const options = shuffle(optionTiles);
+    const correctIndex = options.findIndex(t => {
+      const name = t.suit === 'man' ? 'TANYAO' : t.suit === 'pin' ? 'PINFU' : t.suit === 'dragon' ? 'YAKUHAI' : 'RIICHI';
+      return name === correctYakuName;
+    });
+    if (correctIndex === -1) continue;
+
+    return {
+      type: 'yaku-combo',
+      hand: winning,
+      prompt: 'This hand wins! Which YAKU does it have?',
+      options,
+      correctIndices: [correctIndex],
+      explanation: 'This hand has ' + correctYakuName + '.',
+      targetYaku: correctYakuId,
+    };
   }
   return generateFallback();
 }
@@ -514,19 +536,40 @@ export function generateYakuCombo(): QuizQuestion {
 export function generateSafeDiscard(): QuizQuestion {
   for (let attempt = 0; attempt < 80; attempt++) {
     const melds: Tile[][] = [];
-    for (let i = 0; i < 3; i++) { melds.push(buildSequence(rand(SUITS), 2 + Math.floor(Math.random() * 6))); }
+    for (let i = 0; i < 3; i++) { 
+      melds.push(buildSequence(rand(SUITS), 2 + Math.floor(Math.random() * 6))); 
+    }
     melds.push(buildPair(rand(SUITS), 2 + Math.floor(Math.random() * 7)));
+    
     const useTerminal = Math.random() < 0.5;
     let safeTile: Tile;
-    if (useTerminal) { safeTile = createTile(rand(SUITS), Math.random() < 0.5 ? 1 : 9); }
-    else { const hs = rand(['wind','dragon'] as Suit[]); safeTile = createTile(hs, hs === 'wind' ? 1 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 3)); }
+    if (useTerminal) { 
+      safeTile = createTile(rand(SUITS), Math.random() < 0.5 ? 1 : 9); 
+    } else { 
+      const hs = rand(['wind','dragon'] as Suit[]); 
+      safeTile = createTile(hs, hs === 'wind' ? 1 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 3)); 
+    }
     melds.push([safeTile]);
+    
     const hand14 = melds.flat();
-    if (hand14.length !== 14 || detectWin(hand14)) continue;
+    if (hand14.length !== 14) continue;
+    if (!isValidTileCount(hand14)) continue;
+    if (detectWin(hand14)) continue;
+    
     const wrongTiles = shuffle(hand14.filter(t => t.id !== safeTile.id)).slice(0, 3);
     if (wrongTiles.length < 3) continue;
+    
     const options = shuffle([safeTile, ...wrongTiles]);
-    return { type: 'safe-discard', hand: hand14, prompt: 'Someone declared RIICHI! Which tile is SAFEST to discard?', options, correctIndices: [options.findIndex(t => t.id === safeTile.id)], explanation: tileKey(safeTile).toUpperCase() + ' is safest!' };
+    const correctIndex = options.findIndex(t => t.id === safeTile.id);
+    
+    return { 
+      type: 'safe-discard', 
+      hand: hand14, 
+      prompt: 'Someone declared RIICHI! Which tile is SAFEST to discard?', 
+      options, 
+      correctIndices: [correctIndex], 
+      explanation: tileKey(safeTile).toUpperCase() + ' is safest!' 
+    };
   }
   return generateFallback();
 }
