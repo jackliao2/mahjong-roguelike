@@ -27,10 +27,10 @@ export class DeckSelectScene extends Phaser.Scene {
 
     // Title
     this.add.text(512, 80, 'MAHJONG QUIZ', {
-      fontSize: '28px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '28px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.add.text(512, 118, 'Test your tile reading skills', {
-      fontSize: '14px', color: '#8b7a67', fontFamily: 'monospace',
+      fontSize: '14px', color: '#8b7a67', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
 
     // Difficulty cards
@@ -76,7 +76,7 @@ export class DeckSelectScene extends Phaser.Scene {
 
     if (opt.recommended) {
       const badge = this.add.text(0, -h / 2 + 28, '★', {
-        fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace',
+        fontSize: '16px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif',
       }).setOrigin(0.5);
       elements.push(badge);
     }
@@ -84,20 +84,20 @@ export class DeckSelectScene extends Phaser.Scene {
     const nameColor = opt.locked ? '#3a2f26' : '#f5e6d3';
     const nameY = opt.recommended ? -h / 2 + 56 : -h / 2 + 44;
     const name = this.add.text(0, nameY, opt.label, {
-      fontSize: '22px', color: nameColor, fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '22px', color: nameColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
     elements.push(name);
 
     if (opt.locked) {
       const lockIcon = this.add.text(0, nameY + 36, 'LOCKED', {
-        fontSize: '12px', color: '#3a2f26', fontFamily: 'monospace',
+        fontSize: '12px', color: '#3a2f26', fontFamily: '"Nunito", sans-serif',
       }).setOrigin(0.5);
       elements.push(lockIcon);
     }
 
     const descColor = opt.locked ? '#3a2f26' : '#7a6855';
     const desc = this.add.text(0, 36, opt.desc, {
-      fontSize: '12px', color: descColor, fontFamily: 'monospace',
+      fontSize: '12px', color: descColor, fontFamily: '"Nunito", sans-serif',
       align: 'center', lineSpacing: 6,
     }).setOrigin(0.5);
     elements.push(desc);
@@ -106,7 +106,7 @@ export class DeckSelectScene extends Phaser.Scene {
     if (statusText) {
       const status = this.add.text(0, h / 2 - 24, statusText, {
         fontSize: '12px', color: '#c73e3a',
-        fontFamily: 'monospace',
+        fontFamily: '"Nunito", sans-serif',
       }).setOrigin(0.5);
       elements.push(status);
     }
@@ -135,7 +135,7 @@ export class DeckSelectScene extends Phaser.Scene {
     const startX = 760;
     const startBg = this.add.rectangle(startX, y, startW, startH, 0xc73e3a).setStrokeStyle(1, 0x8b2b28);
     const startText = this.add.text(startX, y, 'START QUIZ', {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
     const startHit = this.add.rectangle(startX, y, startW, startH, 0xffffff, 0).setInteractive({ useHandCursor: true });
     startHit.on('pointerover', () => { startBg.setFillStyle(0xd44a46); });
@@ -168,7 +168,7 @@ export class DeckSelectScene extends Phaser.Scene {
     const teachX = 512;
     const teachBg = this.add.rectangle(teachX, y, teachW, teachH, 0x281a10).setStrokeStyle(1, 0x4a9e4a);
     const teachText = this.add.text(teachX, y, 'TEACHING MODE', {
-      fontSize: '13px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '13px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
     const teachHit = this.add.rectangle(teachX, y, teachW, teachH, 0xffffff, 0).setInteractive({ useHandCursor: true });
     teachHit.on('pointerover', () => { teachBg.setFillStyle(0x2f2214); });
@@ -188,7 +188,7 @@ export class DeckSelectScene extends Phaser.Scene {
     const homeX = 140;
     const homeBg = this.add.rectangle(homeX, y, homeW, homeH, 0x281a10).setStrokeStyle(1, 0x6a5845);
     const homeText = this.add.text(homeX, y, 'HOME', {
-      fontSize: '12px', color: '#8b7a67', fontFamily: 'monospace',
+      fontSize: '12px', color: '#8b7a67', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
     const homeHit = this.add.rectangle(homeX, y, homeW, homeH, 0xffffff, 0).setInteractive({ useHandCursor: true });
     homeHit.on('pointerover', () => { homeBg.setFillStyle(0x2f2214); });

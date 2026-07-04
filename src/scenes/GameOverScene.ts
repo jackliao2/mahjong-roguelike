@@ -33,13 +33,13 @@ export class GameOverScene extends Phaser.Scene {
     this.add.text(508, 96, title, {
       fontSize: '44px',
       color: '#1a0e08',
-      fontFamily: 'monospace',
+      fontFamily: '"Nunito", sans-serif',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     const titleText = this.add.text(512, 92, title, {
       fontSize: '44px',
       color: this.titleColorHex,
-      fontFamily: 'monospace',
+      fontFamily: '"Nunito", sans-serif',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     // Subtitle
@@ -49,7 +49,7 @@ export class GameOverScene extends Phaser.Scene {
     this.add.text(512, 132, subtitle, {
       fontSize: '16px',
       color: '#c9b89a',
-      fontFamily: 'monospace',
+      fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
 
     // Bounce-in animation for title
@@ -122,7 +122,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // Section header: THIS RUN
     this.add.text(cx, cy - panelH / 2 + 22, 'THIS RUN', {
-      fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
+      fontSize: '13px', color: '#8b6f47', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
 
     // Run stats - 2-column layout
@@ -137,7 +137,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // Section header: META
     this.add.text(cx, cy + 28, 'META PROGRESSION', {
-      fontSize: '13px', color: '#8b6f47', fontFamily: 'monospace',
+      fontSize: '13px', color: '#8b6f47', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
 
     // Meta stats - 2-column layout
@@ -153,10 +153,10 @@ export class GameOverScene extends Phaser.Scene {
   // ===== Single labeled stat row =====
   private createStatRow(x: number, y: number, label: string, value: string, valueColor: string): void {
     this.add.text(x - 70, y, label, {
-      fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
+      fontSize: '12px', color: '#8b6f47', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0, 0.5);
     this.add.text(x + 70, y, value, {
-      fontSize: '17px', color: valueColor, fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '17px', color: valueColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(1, 0.5);
   }
 
@@ -170,10 +170,10 @@ export class GameOverScene extends Phaser.Scene {
 
     // Single centered stat column: Yaku unlocked
     this.add.text(cx, y - 12, 'YAKU UNLOCKED', {
-      fontSize: '12px', color: '#8b6f47', fontFamily: 'monospace',
+      fontSize: '12px', color: '#8b6f47', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
     this.add.text(cx, y + 8, `${yakuCount}`, {
-      fontSize: '24px', color: '#2d6a4f', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '24px', color: '#2d6a4f', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
   }
 
@@ -186,12 +186,12 @@ export class GameOverScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xe5b567);
     // Trophy icon (pixel star)
     this.add.text(cx - bannerW / 2 + 18, y, '*', {
-      fontSize: '20px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '20px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
     // Achievement text
     const names = achievements.map(a => a.name).join('  +  ');
     const text = this.add.text(cx, y, `ACHIEVEMENT UNLOCKED: ${names}`, {
-      fontSize: '11px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
       align: 'center', wordWrap: { width: bannerW - 80 },
     }).setOrigin(0.5);
 
@@ -218,7 +218,7 @@ export class GameOverScene extends Phaser.Scene {
     const highlightStrip = this.add.rectangle(0, -height / 2 + 3, width - 6, 2, 0xffffff, 0.4);
     const text = this.add.text(0, 0, label, {
       fontSize: '16px', color: '#f5e6d3',
-      fontFamily: 'monospace', fontStyle: 'bold',
+      fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const container = this.add.container(x, y, [shadow, bg, highlightStrip, text])

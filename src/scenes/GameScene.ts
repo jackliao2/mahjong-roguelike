@@ -147,40 +147,40 @@ export class GameScene extends Phaser.Scene {
 
     // Left: round + lives + combo
     this.add.text(20, y, '', {
-      fontSize: '12px', color: '#8a7560', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '12px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('roundLabel');
 
     this.add.text(120, y, '', {
-      fontSize: '16px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '16px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('livesLabel');
 
     this.add.text(200, y, '', {
-      fontSize: '13px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '13px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('comboLabel');
 
     // Center: score (prominent)
     this.add.text(420, y, 'SCORE', {
-      fontSize: '10px', color: '#8a7560', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '10px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
     this.add.text(480, y, '0', {
-      fontSize: '22px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '22px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('scoreValue');
 
     // Right: timer
     this.add.text(720, y, '', {
-      fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('timerLabel');
 
     // Far right: relics
     this.add.text(820, y, '', {
-      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0, 0.5).setDepth(11).setName('relicLabel');
 
     const quitW = 52;
     const quitX = 980;
     const quitBg = this.add.rectangle(quitX, y, quitW, 26, 0x000000, 0).setDepth(11);
     const quitText = this.add.text(quitX, y, 'QUIT', {
-      fontSize: '10px', color: '#5c4835', fontFamily: 'monospace',
+      fontSize: '10px', color: '#5c4835', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(11);
     const quitHit = this.add.rectangle(quitX, y, quitW, 26, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(11);
@@ -352,12 +352,12 @@ export class GameScene extends Phaser.Scene {
     elements.push(panel);
 
     const titleText = this.add.text(512, 300, level.title, {
-      fontSize: '22px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '22px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
     elements.push(titleText);
 
     const descText = this.add.text(512, 365, level.description, {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: 500 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(502);
     elements.push(descText);
@@ -369,7 +369,7 @@ export class GameScene extends Phaser.Scene {
     elements.push(btnBg);
 
     const btnText = this.add.text(512, 430, 'START', {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
     elements.push(btnText);
 
@@ -408,10 +408,10 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(3, accentColor).setDepth(501);
     const accent = this.add.rectangle(512, 320 - 80 + 4, 590, 4, accentColor).setDepth(501);
     const titleText = this.add.text(512, 300, title, {
-      fontSize: '28px', color: titleColor, fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '28px', color: titleColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
     const subtitleText = this.add.text(512, 340, subtitle, {
-      fontSize: '16px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '16px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(502);
 
     const elements = [overlay, panel, accent, titleText, subtitleText];
@@ -466,13 +466,13 @@ export class GameScene extends Phaser.Scene {
     if (this.teachingMode) {
       const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
       const progressLabel = this.add.text(512, 60, `LESSON ${this.round} / ${this.maxRounds}`, {
-        fontSize: '12px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '12px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
       }).setOrigin(0.5);
       this.questionContainer.add(progressLabel);
 
       const promptY = 100;
       const prompt = this.add.text(512, promptY, q.prompt, {
-        fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 800 },
       }).setOrigin(0.5);
       this.questionContainer.add(prompt);
@@ -486,14 +486,14 @@ export class GameScene extends Phaser.Scene {
       const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
       const chapterColor = ch.isBoss ? '#c73e3a' : '#5c4835';
       const chapterLabel = this.add.text(512, 82, chapterText, {
-        fontSize: '12px', color: chapterColor, fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '12px', color: chapterColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         letterSpacing: 4,
       }).setOrigin(0.5);
       this.questionContainer.add(chapterLabel);
 
       const promptY = 120;
       const prompt = this.add.text(512, promptY, q.prompt, {
-        fontSize: '20px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 900 },
       }).setOrigin(0.5);
       this.questionContainer.add(prompt);
@@ -753,11 +753,11 @@ export class GameScene extends Phaser.Scene {
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0x4a9e4a, 0.8).setDepth(depth);
 
     const title = this.add.text(512, 300, 'CORRECT!', {
-      fontSize: '32px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '32px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const expText = this.add.text(512, 360, q.explanation, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -772,7 +772,7 @@ export class GameScene extends Phaser.Scene {
     const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
       .setStrokeStyle(3, 0x2b1810).setDepth(depth);
     const btnText = this.add.text(512, btnY, btnLabel, {
-      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '16px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -809,17 +809,17 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x4a9e4a).setDepth(depth);
 
     const title = this.add.text(512, 290, 'CORRECT!', {
-      fontSize: '28px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '28px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
     const lessonName = level?.title.split(':')[1]?.trim() || 'Lesson';
     const subText = this.add.text(512, 330, `You mastered: ${lessonName}`, {
-      fontSize: '16px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '16px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const expText = this.add.text(512, 385, q.explanation, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -833,7 +833,7 @@ export class GameScene extends Phaser.Scene {
     const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0x4a9e4a)
       .setStrokeStyle(2, 0x2b1810).setDepth(depth);
     const btnText = this.add.text(512, btnY, btnLabel, {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -868,15 +868,15 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xc73e3a).setDepth(depth);
 
     const title = this.add.text(512, 290, 'NOT QUITE!', {
-      fontSize: '26px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '26px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const subText = this.add.text(512, 330, 'Let\'s understand why — try again!', {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace',
+      fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const expText = this.add.text(512, 380, q.explanation, {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -886,7 +886,7 @@ export class GameScene extends Phaser.Scene {
     const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
       .setStrokeStyle(2, 0x2b1810).setDepth(depth);
     const btnText = this.add.text(512, btnY, 'TRY AGAIN', {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -921,11 +921,11 @@ export class GameScene extends Phaser.Scene {
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0x4a6fa5).setDepth(depth);
 
     const title = this.add.text(512, 330, 'SHIELD TILE!', {
-      fontSize: '24px', color: '#4a9ebf', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '24px', color: '#4a9ebf', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const sub = this.add.text(512, 370, 'Mistake absorbed. Try again!', {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace',
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub];
@@ -964,11 +964,11 @@ export class GameScene extends Phaser.Scene {
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 4, panelW - 10, 4, 0xe5b567).setDepth(depth);
 
     const title = this.add.text(512, 330, "TIME'S UP!", {
-      fontSize: '28px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '28px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const sub = this.add.text(512, 370, `${this.lives} ${this.lives === 1 ? 'LIFE' : 'LIVES'} LEFT`, {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: 'monospace',
+      fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub];
@@ -1007,15 +1007,15 @@ export class GameScene extends Phaser.Scene {
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0xc73e3a, 0.8).setDepth(depth);
 
     const title = this.add.text(512, 320, 'WRONG!', {
-      fontSize: '28px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '28px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const sub = this.add.text(512, 360, `${this.lives} ${this.lives === 1 ? 'LIFE' : 'LIVES'} LEFT — TRY AGAIN`, {
-      fontSize: '16px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '16px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const hint = this.add.text(512, 392, '(pick another option)', {
-      fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub, hint];
@@ -1054,18 +1054,18 @@ export class GameScene extends Phaser.Scene {
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0xc73e3a, 0.8).setDepth(depth);
 
     const title = this.add.text(512, 280, 'GAME OVER', {
-      fontSize: '32px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '32px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const correctText = q.correctIndices.length === 1
       ? `Correct answer: ${String.fromCharCode(65 + q.correctIndices[0])}`
       : `Correct: ${q.correctIndices.map(i => String.fromCharCode(65 + i)).join(', ')}`;
     const correctLabel = this.add.text(512, 330, correctText, {
-      fontSize: '16px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '16px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const expText = this.add.text(512, 380, q.explanation, {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -1078,7 +1078,7 @@ export class GameScene extends Phaser.Scene {
     const btnBg = this.add.rectangle(430, btnY, btnW, btnH, 0xc73e3a)
       .setStrokeStyle(3, 0x2b1810).setDepth(depth);
     const btnText = this.add.text(430, btnY, 'TRY AGAIN', {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const btnHit = this.add.rectangle(430, btnY, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -1094,7 +1094,7 @@ export class GameScene extends Phaser.Scene {
     const menuBg = this.add.rectangle(620, btnY, btnW, btnH, 0x5c3825)
       .setStrokeStyle(2, 0x8b6f47).setDepth(depth);
     const menuText = this.add.text(620, btnY, 'MAIN MENU', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const menuHit = this.add.rectangle(620, btnY, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -1191,10 +1191,10 @@ export class GameScene extends Phaser.Scene {
 
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.8).setDepth(depth);
     const title = this.add.text(512, 140, 'CHOOSE A RELIC', {
-      fontSize: '28px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '28px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const subtitle = this.add.text(512, 175, 'Pick one power-up for the next chapter', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
@@ -1217,7 +1217,7 @@ export class GameScene extends Phaser.Scene {
       const cardBg = this.add.rectangle(x, y, cardW, cardH, 0x1a0f08)
         .setStrokeStyle(3, colors.border).setDepth(depth);
       const rarityTag = this.add.text(x, y - cardH / 2 + 20, relic.rarity.toUpperCase(), {
-        fontSize: '11px', color: colors.title, fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '11px', color: colors.title, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(depth + 1);
 
       const iconMap: Record<string, string> = {
@@ -1230,11 +1230,11 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(depth + 1);
 
       const nameText = this.add.text(x, y + 40, relic.name, {
-        fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+        fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(depth + 1);
 
       const descText = this.add.text(x, y + 75, relic.description, {
-        fontSize: '13px', color: '#c9b89a', fontFamily: 'monospace',
+        fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
         align: 'center', wordWrap: { width: cardW - 30 }, lineSpacing: 4,
       }).setOrigin(0.5, 0).setDepth(depth + 1);
 
@@ -1256,7 +1256,7 @@ export class GameScene extends Phaser.Scene {
     const skipBg = this.add.rectangle(512, 590, 140, 36, 0x5c3825)
       .setStrokeStyle(2, 0x8b6f47).setDepth(depth);
     const skipText = this.add.text(512, 590, 'SKIP', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const skipHit = this.add.rectangle(512, 590, 140, 36, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -1296,10 +1296,10 @@ export class GameScene extends Phaser.Scene {
 
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.75).setDepth(depth);
     const title = this.add.text(512, 160, `CHOOSE YOUR PATH`, {
-      fontSize: '26px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '26px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const subtitle = this.add.text(512, 195, `${nextCh.chapter}: ${nextCh.title}`, {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
@@ -1316,14 +1316,14 @@ export class GameScene extends Phaser.Scene {
     const safeBg = this.add.rectangle(safeX, y, cardW, cardH, 0x1a0f08)
       .setStrokeStyle(3, 0x4a9e4a).setDepth(depth);
     const safeTitle = this.add.text(safeX, y - 110, 'SAFE PATH', {
-      fontSize: '20px', color: '#4a9e4a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '20px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const safeDesc = this.add.text(safeX, y - 50, 'Normal questions\nNo extra risk\nStandard score', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
       align: 'center', lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
     const safeMul = this.add.text(safeX, y + 20, 'x1.0 SCORE', {
-      fontSize: '18px', color: '#f5e6d3', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const safeHit = this.add.rectangle(safeX, y, cardW, cardH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -1342,14 +1342,14 @@ export class GameScene extends Phaser.Scene {
     const riskyBg = this.add.rectangle(riskyX, y, cardW, cardH, 0x1a0f08)
       .setStrokeStyle(3, 0xc73e3a).setDepth(depth);
     const riskyTitle = this.add.text(riskyX, y - 110, 'RISKY PATH', {
-      fontSize: '20px', color: '#c73e3a', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '20px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const riskyDesc = this.add.text(riskyX, y - 50, 'All questions are BOSS\nHarder hand patterns\nHigher rewards', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: 'monospace',
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
       align: 'center', lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
     const riskyMul = this.add.text(riskyX, y + 20, 'x1.5 SCORE', {
-      fontSize: '18px', color: '#e5b567', fontFamily: 'monospace', fontStyle: 'bold',
+      fontSize: '18px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const riskyHit = this.add.rectangle(riskyX, y, cardW, cardH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
@@ -1393,7 +1393,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(500)
       .setName('tooltipBg');
     const text = this.add.text(x, y, lines.join('\n'), {
-      fontSize: '12px', color: '#c9b89a', fontFamily: 'monospace', align: 'center',
+      fontSize: '12px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif', align: 'center',
     }).setOrigin(0.5).setDepth(501).setName('tooltipText');
   }
 
