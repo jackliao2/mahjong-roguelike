@@ -205,9 +205,10 @@ function drawDots(g: Gfx, count: number, cx: number, cy: number, color: number):
     return;
   }
 
-  // 2-9 pin: use smaller dots for 8 to prevent overlap in 4-4 layout
+  // 2-9 pin: radius depends on count to prevent overlap
   const positions = getDotPositions(count);
-  const radius = count >= 8 ? 6 : 8;
+  // Use smaller dots when more dots need to fit
+  const radius = count <= 5 ? 7 : count === 9 ? 5 : 6;
   for (const [dx, dy] of positions) {
     const px = cx + dx;
     const py = cy + dy;
@@ -230,26 +231,40 @@ function drawPixelCircle(g: Gfx, cx: number, cy: number, radius: number, color: 
 }
 
 function getDotPositions(count: number): [number, number][] {
-  const s = 14; // spacing
+  // Tile inner area: ~52 wide × ~68 tall. Center at (0,0).
+  // Layouts follow traditional mahjong tile designs.
   switch (count) {
     case 1: return [[0, 0]];
-    case 2: return [[0, -s * 0.55], [0, s * 0.55]];
-    case 3: return [[-s * 0.55, -s * 0.55], [0, 0], [s * 0.55, s * 0.55]];
-    case 4: return [[-s * 0.5, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [s * 0.5, s * 0.5]];
-    case 5: return [[-s * 0.55, -s * 0.55], [s * 0.55, -s * 0.55], [0, 0], [-s * 0.55, s * 0.55], [s * 0.55, s * 0.55]];
-    case 6: return [[-s * 0.5, -s * 0.5], [0, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [0, s * 0.5], [s * 0.5, s * 0.5]];
-    // 7: 3-1-3 layout (3 top, 1 center, 3 bottom) — traditional 七筒
+    // 2: vertical pair
+    case 2: return [[0, -10], [0, 10]];
+    // 3: diagonal line (top-left, center, bottom-right)
+    case 3: return [[-9, -10], [0, 0], [9, 10]];
+    // 4: 2x2 grid
+    case 4: return [[-9, -10], [9, -10], [-9, 10], [9, 10]];
+    // 5: 4 corners + center
+    case 5: return [[-9, -10], [9, -10], [0, 0], [-9, 10], [9, 10]];
+    // 6: 3-3 (3 top, 3 bottom) — traditional 六筒
+    case 6: return [
+      [-11, -10], [0, -10], [11, -10],
+      [-11, 10], [0, 10], [11, 10],
+    ];
+    // 7: 3-1-3 (3 top, 1 center, 3 bottom) — traditional 七筒
     case 7: return [
-      [-s * 0.55, -s * 0.55], [0, -s * 0.55], [s * 0.55, -s * 0.55],
+      [-11, -13], [0, -13], [11, -13],
       [0, 0],
-      [-s * 0.55, s * 0.55], [0, s * 0.55], [s * 0.55, s * 0.55],
+      [-11, 13], [0, 13], [11, 13],
     ];
-    // 8: 4-4 layout (4 top, 4 bottom) — traditional mahjong 八筒
+    // 8: 4-4 (4 top, 4 bottom) — traditional 八筒
     case 8: return [
-      [-s * 1.2, -s * 0.45], [-s * 0.4, -s * 0.45], [s * 0.4, -s * 0.45], [s * 1.2, -s * 0.45],
-      [-s * 1.2, s * 0.45], [-s * 0.4, s * 0.45], [s * 0.4, s * 0.45], [s * 1.2, s * 0.45],
+      [-18, -10], [-6, -10], [6, -10], [18, -10],
+      [-18, 10], [-6, 10], [6, 10], [18, 10],
     ];
-    case 9: return [[-s * 0.55, -s * 0.55], [0, -s * 0.55], [s * 0.55, -s * 0.55], [-s * 0.55, 0], [0, 0], [s * 0.55, 0], [-s * 0.55, s * 0.55], [0, s * 0.55], [s * 0.55, s * 0.55]];
+    // 9: 3-3-3 (3 rows of 3) — traditional 九筒
+    case 9: return [
+      [-11, -13], [0, -13], [11, -13],
+      [-11, 0], [0, 0], [11, 0],
+      [-11, 13], [0, 13], [11, 13],
+    ];
     default: return [[0, 0]];
   }
 }

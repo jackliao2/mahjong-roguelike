@@ -142,61 +142,61 @@ export class GameScene extends Phaser.Scene {
     const y = 30;
 
     // Top bar background strip (taller for better visibility)
-    this.add.rectangle(512, y, 1024, 50, 0x0a0604, 0.9).setDepth(10).setName('topBarBg');
-    this.add.rectangle(512, y + 25, 1024, 1, 0x4a3828, 0.4).setDepth(10);
+    this.add.rectangle(512, y, 1024, 50, 0x0a0604, 0.9).setDepth(10000).setName('topBarBg');
+    this.add.rectangle(512, y + 25, 1024, 1, 0x4a3828, 0.4).setDepth(10000);
 
     // === Left: round + lives ===
     this.add.text(20, y - 8, '', {
       fontSize: '11px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('roundLabel');
+    }).setOrigin(0, 0.5).setDepth(10001).setName('roundLabel');
 
     this.add.text(20, y + 10, '', {
       fontSize: '18px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('livesLabel');
+    }).setOrigin(0, 0.5).setDepth(10001).setName('livesLabel');
 
     // === Center-left: combo ===
     this.add.text(130, y, '', {
       fontSize: '14px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('comboLabel');
+    }).setOrigin(0, 0.5).setDepth(10001).setName('comboLabel');
 
     // === Center: SCORE (big, prominent, with background box) ===
     const scoreBoxX = 420;
     const scoreBoxW = 180;
     const scoreBox = this.add.rectangle(scoreBoxX, y, scoreBoxW, 38, 0x1a1008, 0.8)
-      .setStrokeStyle(1, 0x4a3828, 0.6).setDepth(10).setName('scoreBox');
+      .setStrokeStyle(1, 0x4a3828, 0.6).setDepth(10000).setName('scoreBox');
     this.add.text(scoreBoxX - scoreBoxW / 2 + 10, y - 8, 'SCORE', {
       fontSize: '9px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11);
+    }).setOrigin(0, 0.5).setDepth(10001);
     this.add.text(scoreBoxX - scoreBoxW / 2 + 10, y + 8, '0', {
       fontSize: '24px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('scoreValue');
+    }).setOrigin(0, 0.5).setDepth(10001).setName('scoreValue');
 
     // === Right-center: RELICS (with background box, always visible) ===
     const relicBoxX = 640;
     const relicBoxW = 200;
     this.add.rectangle(relicBoxX, y, relicBoxW, 38, 0x1a1008, 0.8)
-      .setStrokeStyle(1, 0x4a3828, 0.6).setDepth(10).setName('relicBox');
+      .setStrokeStyle(1, 0x4a3828, 0.6).setDepth(10000).setName('relicBox');
     this.add.text(relicBoxX - relicBoxW / 2 + 10, y - 8, 'RELICS', {
       fontSize: '9px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11);
+    }).setOrigin(0, 0.5).setDepth(10001);
     this.add.text(relicBoxX - relicBoxW / 2 + 10, y + 8, 'None', {
       fontSize: '14px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('relicLabel');
+    }).setOrigin(0, 0.5).setDepth(10001).setName('relicLabel');
 
     // === Right: timer ===
     this.add.text(870, y, '', {
       fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('timerLabel');
+    }).setOrigin(0, 0.5).setDepth(10001).setName('timerLabel');
 
     // === Far right: quit ===
     const quitW = 52;
     const quitX = 980;
-    const quitBg = this.add.rectangle(quitX, y, quitW, 26, 0x000000, 0).setDepth(11);
+    const quitBg = this.add.rectangle(quitX, y, quitW, 26, 0x000000, 0).setDepth(10001);
     const quitText = this.add.text(quitX, y, 'QUIT', {
       fontSize: '10px', color: '#5c4835', fontFamily: '"Nunito", sans-serif',
-    }).setOrigin(0.5).setDepth(11);
+    }).setOrigin(0.5).setDepth(10001);
     const quitHit = this.add.rectangle(quitX, y, quitW, 26, 0xffffff, 0)
-      .setInteractive({ useHandCursor: true }).setDepth(11);
+      .setInteractive({ useHandCursor: true }).setDepth(10001);
     quitHit.on('pointerover', () => {
       quitBg.setFillStyle(0x1a1008);
       quitBg.setStrokeStyle(1, 0x4a3828);
