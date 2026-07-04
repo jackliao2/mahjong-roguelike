@@ -180,7 +180,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: '9px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
     this.add.text(relicBoxX - relicBoxW / 2 + 10, y + 8, 'None', {
-      fontSize: '13px', color: '#5c4835', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      fontSize: '14px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('relicLabel');
 
     // === Right: timer ===
@@ -272,7 +272,7 @@ export class GameScene extends Phaser.Scene {
     if (relicLabel) {
       if (this.relics.length === 0) {
         relicLabel.setText('None');
-        relicLabel.setColor('#5c4835');
+        relicLabel.setColor('#8a7560');
       } else {
         const icons: Record<string, string> = {
           'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',

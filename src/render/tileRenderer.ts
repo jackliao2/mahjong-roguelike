@@ -238,11 +238,11 @@ function getDotPositions(count: number): [number, number][] {
     case 4: return [[-s * 0.5, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [s * 0.5, s * 0.5]];
     case 5: return [[-s * 0.55, -s * 0.55], [s * 0.55, -s * 0.55], [0, 0], [-s * 0.55, s * 0.55], [s * 0.55, s * 0.55]];
     case 6: return [[-s * 0.5, -s * 0.5], [0, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [0, s * 0.5], [s * 0.5, s * 0.5]];
-    // 7: top row 1, middle row 3, bottom row 3 (single on top like traditional mahjong)
+    // 7: 3-1-3 layout (3 top, 1 center, 3 bottom) — traditional 七筒
     case 7: return [
-      [0, -s],
-      [-s * 0.5, 0], [0, 0], [s * 0.5, 0],
-      [-s * 0.5, s], [0, s], [s * 0.5, s],
+      [-s * 0.55, -s * 0.55], [0, -s * 0.55], [s * 0.55, -s * 0.55],
+      [0, 0],
+      [-s * 0.55, s * 0.55], [0, s * 0.55], [s * 0.55, s * 0.55],
     ];
     // 8: 4-4 layout (4 top, 4 bottom) — traditional mahjong 八筒
     case 8: return [
