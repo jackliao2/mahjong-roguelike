@@ -2,7 +2,7 @@
 // Strategy: cache-first for same-origin assets, network-first for HTML navigations
 // with cache fallback. This enables offline play after the first visit.
 
-const CACHE_NAME = 'mahjong-quiz-v7';
+const CACHE_NAME = 'mahjong-quiz-v8';
 const PRECACHE_URLS = [
   '/',
   '/index.html',

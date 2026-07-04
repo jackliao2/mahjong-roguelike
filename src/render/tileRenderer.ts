@@ -14,33 +14,69 @@ const COLORS = {
   tileBgHover: 0xfff4e0,  // lighter cream
   tileBorder: 0x2b1810,   // dark wood
   tileShadow: 0x8b6f47,   // warm brown shadow
-  man: 0x1a1a2e,          // dark ink for characters
+  man: 0x1a1a2e,          // dark ink for numbers
   pin: 0x2c5f8a,          // blue for circles
   sou: 0x2d6a4f,          // green for bamboo
   wind: 0x5c4033,         // brown for winds
   dragon: 0xc73e3a,       // red for dragons
   accent: GameConfig.colors.amber,  // amber accent
+  wanRed: 0xc73e3a,       // red for 萬 character (traditional mahjong)
 };
 
+// ===== Canvas-based graphics wrapper (mimics Phaser.Graphics API) =====
+interface Gfx {
+  fillStyle(color: number, alpha: number): void;
+  fillRect(x: number, y: number, w: number, h: number): void;
+  lineStyle(width: number, color: number, alpha: number): void;
+  strokeRect(x: number, y: number, w: number, h: number): void;
+}
+
+function hexToRgba(color: number, alpha: number): string {
+  const r = (color >> 16) & 0xff;
+  const g = (color >> 8) & 0xff;
+  const b = color & 0xff;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function createCanvasGfx(ctx: CanvasRenderingContext2D): Gfx {
+  return {
+    fillStyle(color: number, alpha: number): void {
+      ctx.fillStyle = hexToRgba(color, alpha);
+    },
+    fillRect(x: number, y: number, w: number, h: number): void {
+      ctx.fillRect(x, y, w, h);
+    },
+    lineStyle(width: number, color: number, alpha: number): void {
+      ctx.lineWidth = width;
+      ctx.strokeStyle = hexToRgba(color, alpha);
+    },
+    strokeRect(x: number, y: number, w: number, h: number): void {
+      ctx.strokeRect(x, y, w, h);
+    },
+  };
+}
+
 /**
- * Generate a pixel-art mahjong tile texture in Phaser.
- * Each tile is rendered as a small canvas with the tile symbol.
- * Red five tiles get a special red-tinted background.
- * Custom tiles get a golden border.
+ * Generate a pixel-art mahjong tile texture using HTML5 canvas.
+ * Canvas allows mixing pixel-art (fillRect) with text (fillText) for 萬 characters.
  */
 export function generateTileTexture(scene: Phaser.Scene, tile: Tile): string {
   const key = `tile-${tileKey(tile)}`;
   if (scene.textures.exists(key)) return key;
 
   const display = getTileDisplay(tile);
-  const g = scene.make.graphics({ x: 0, y: 0 }, false);
-
-  // Detect red five (custom tile with id starting 'red-five-')
   const isRedFive = tile.id.startsWith('red-five-');
-  // Detect golden/custom tile (any non-red custom tile)
   const isCustomTile = tile.id.startsWith('golden-') || tile.id.startsWith('lucky-');
 
-  // Tile background — red fives get a pinkish tint, custom tiles get a golden tint
+  // Create canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = TILE_WIDTH;
+  canvas.height = TILE_HEIGHT;
+  const ctx = canvas.getContext('2d')!;
+  ctx.imageSmoothingEnabled = false;
+  const g = createCanvasGfx(ctx);
+
+  // Tile background
   const bgColor = isRedFive ? 0xf5d5d0 : isCustomTile ? 0xfff4d0 : COLORS.tileBg;
   g.fillStyle(bgColor, 1);
   g.fillRect(2, 2, TILE_WIDTH - 4, TILE_HEIGHT - 4);
@@ -55,7 +91,7 @@ export function generateTileTexture(scene: Phaser.Scene, tile: Tile): string {
   g.fillRect(2, TILE_HEIGHT - 4, TILE_WIDTH - 4, 2);
   g.fillRect(TILE_WIDTH - 4, 2, 2, TILE_HEIGHT - 4);
 
-  // Border — red fives get red border, custom tiles get gold border
+  // Border
   if (isRedFive) {
     g.lineStyle(2, COLORS.dragon, 1);
   } else if (isCustomTile) {
@@ -66,16 +102,14 @@ export function generateTileTexture(scene: Phaser.Scene, tile: Tile): string {
   g.strokeRect(1, 1, TILE_WIDTH - 2, TILE_HEIGHT - 2);
 
   // Draw suit-specific symbol
-  // Red fives: always render the 5 in red regardless of suit
   const colorCode = isRedFive ? COLORS.dragon : getColorForSuit(display.suit);
-  drawTileSymbol(g, tile, colorCode);
+  drawTileSymbol(g, ctx, tile, colorCode);
 
-  // Red five: add a small "DORA" indicator dot in the corner
+  // Red five: DORA indicator dot in corner
   if (isRedFive) {
-    g.fillStyle(COLORS.dragon, 1);
-    g.fillCircle(TILE_WIDTH - 7, 7, 2);
+    drawPixelCircle(g, TILE_WIDTH - 7, 7, 2, COLORS.dragon);
   }
-  // Custom tiles: add a small star sparkle in the corner
+  // Custom tiles: star sparkle in corner
   if (isCustomTile) {
     g.fillStyle(0xe5b567, 1);
     g.fillRect(TILE_WIDTH - 8, 5, 2, 2);
@@ -83,9 +117,8 @@ export function generateTileTexture(scene: Phaser.Scene, tile: Tile): string {
     g.fillRect(TILE_WIDTH - 8, 9, 2, 2);
   }
 
-  g.generateTexture(key, TILE_WIDTH, TILE_HEIGHT);
-  g.destroy();
-
+  // Register canvas as Phaser texture
+  scene.textures.addCanvas(key, canvas);
   return key;
 }
 
@@ -100,19 +133,22 @@ function getColorForSuit(suit: string): number {
   }
 }
 
-function drawTileSymbol(g: Phaser.GameObjects.Graphics, tile: Tile, color: number): void {
+function drawTileSymbol(g: Gfx, ctx: CanvasRenderingContext2D, tile: Tile, color: number): void {
   const cx = TILE_WIDTH / 2;
   const cy = TILE_HEIGHT / 2;
 
   if (tile.suit === 'man') {
-    // Draw number + "Char" text representation using rectangles
-    drawNumber(g, tile.rank, cx, cy - 8, color);
-    drawSmallText(g, 'CHAR', cx, cy + 16, color);
+    // Draw Arabic number at top (in suit color)
+    drawNumber(g, tile.rank, cx, cy - 20, color);
+    // Draw traditional Chinese 萬 character in red below (like real mahjong tiles)
+    ctx.fillStyle = hexToRgba(COLORS.wanRed, 1);
+    ctx.font = 'bold 18px "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "SimHei", "Noto Sans CJK SC", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('萬', cx, cy + 14);
   } else if (tile.suit === 'pin') {
-    // Draw dots (circles) arranged in traditional pattern
     drawDots(g, tile.rank, cx, cy, color);
   } else if (tile.suit === 'sou') {
-    // Draw bamboo sticks
     drawBamboo(g, tile.rank, cx, cy, color);
   } else if (tile.suit === 'wind') {
     drawWindSymbol(g, tile.rank, cx, cy, color);
@@ -121,9 +157,8 @@ function drawTileSymbol(g: Phaser.GameObjects.Graphics, tile: Tile, color: numbe
   }
 }
 
-function drawNumber(g: Phaser.GameObjects.Graphics, num: number, cx: number, cy: number, color: number): void {
+function drawNumber(g: Gfx, num: number, cx: number, cy: number, color: number): void {
   g.fillStyle(color, 1);
-  // Draw the number using simple pixel blocks
   const str = num.toString();
   const charWidth = 9;
   const startX = cx - (str.length * charWidth) / 2;
@@ -132,7 +167,7 @@ function drawNumber(g: Phaser.GameObjects.Graphics, num: number, cx: number, cy:
   }
 }
 
-function drawPixelDigit(g: Phaser.GameObjects.Graphics, digit: number, x: number, y: number, color: number): void {
+function drawPixelDigit(g: Gfx, digit: number, x: number, y: number, color: number): void {
   // Simple 3x5 pixel font for digits 1-9
   const fonts: Record<number, number[][]> = {
     1: [[0,1,0],[1,1,0],[0,1,0],[0,1,0],[1,1,1]],
@@ -158,17 +193,8 @@ function drawPixelDigit(g: Phaser.GameObjects.Graphics, digit: number, x: number
   }
 }
 
-function drawSmallText(g: Phaser.GameObjects.Graphics, text: string, cx: number, cy: number, color: number): void {
-  // Draw small label text using simple rectangles (very basic)
-  g.fillStyle(color, 0.7);
-  const charWidth = 5;
-  const startX = cx - (text.length * charWidth) / 2;
-  for (let i = 0; i < text.length; i++) {
-    g.fillRect(startX + i * charWidth, cy, 3, 3);
-  }
-}
-
-function drawDots(g: Phaser.GameObjects.Graphics, count: number, cx: number, cy: number, color: number): void {
+// ===== Pin (筒/circles) =====
+function drawDots(g: Gfx, count: number, cx: number, cy: number, color: number): void {
   // 1-pin: traditional large single circle with bold ring + center dot
   if (count === 1) {
     drawPixelCircle(g, cx, cy, 15, color);
@@ -179,13 +205,14 @@ function drawDots(g: Phaser.GameObjects.Graphics, count: number, cx: number, cy:
     return;
   }
 
-  // 2-9 pin: larger, clearer dots with a subtle inner highlight
+  // 2-9 pin: use smaller dots for 8 to prevent overlap in 4-4 layout
   const positions = getDotPositions(count);
+  const radius = count >= 8 ? 6 : 8;
   for (const [dx, dy] of positions) {
     const px = cx + dx;
     const py = cy + dy;
-    drawPixelCircle(g, px, py, 8, color);
-    // Small cream center makes dots look rounded and readable
+    drawPixelCircle(g, px, py, radius, color);
+    // Small cream highlight makes dots look rounded and readable
     g.fillStyle(0xffffff, 0.35);
     drawPixelCircle(g, px - 2, py - 2, 2, 0xffffff);
     g.fillStyle(color, 1);
@@ -193,7 +220,7 @@ function drawDots(g: Phaser.GameObjects.Graphics, count: number, cx: number, cy:
 }
 
 // Pixel-art style circle using filled rectangles (sharp, no anti-aliasing blur)
-function drawPixelCircle(g: Phaser.GameObjects.Graphics, cx: number, cy: number, radius: number, color: number): void {
+function drawPixelCircle(g: Gfx, cx: number, cy: number, radius: number, color: number): void {
   g.fillStyle(color, 1);
   const r = radius;
   for (let dy = -r; dy <= r; dy++) {
@@ -203,24 +230,32 @@ function drawPixelCircle(g: Phaser.GameObjects.Graphics, cx: number, cy: number,
 }
 
 function getDotPositions(count: number): [number, number][] {
-  const s = 14; // slightly wider spacing for bigger dots
+  const s = 14; // spacing
   switch (count) {
     case 1: return [[0, 0]];
     case 2: return [[0, -s * 0.55], [0, s * 0.55]];
     case 3: return [[-s * 0.55, -s * 0.55], [0, 0], [s * 0.55, s * 0.55]];
     case 4: return [[-s * 0.5, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [s * 0.5, s * 0.5]];
     case 5: return [[-s * 0.55, -s * 0.55], [s * 0.55, -s * 0.55], [0, 0], [-s * 0.55, s * 0.55], [s * 0.55, s * 0.55]];
-    case 6: return [[-s * 0.45, -s], [s * 0.45, -s], [-s * 0.45, 0], [s * 0.45, 0], [-s * 0.45, s], [s * 0.45, s]];
-    // 7: top row 3, middle row 3, bottom 1 centered
-    case 7: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [0, s]];
-    // 8: compact 2-4-2 layout
-    case 8: return [[-s * 0.4, -s], [s * 0.4, -s], [-s * 1.25, 0], [-s * 0.4, 0], [s * 0.4, 0], [s * 1.25, 0], [-s * 0.4, s], [s * 0.4, s]];
-    case 9: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [-s, s], [0, s], [s, s]];
+    case 6: return [[-s * 0.5, -s * 0.5], [0, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [0, s * 0.5], [s * 0.5, s * 0.5]];
+    // 7: top row 1, middle row 3, bottom row 3 (single on top like traditional mahjong)
+    case 7: return [
+      [0, -s],
+      [-s * 0.5, 0], [0, 0], [s * 0.5, 0],
+      [-s * 0.5, s], [0, s], [s * 0.5, s],
+    ];
+    // 8: 4-4 layout (4 top, 4 bottom) — traditional mahjong 八筒
+    case 8: return [
+      [-s * 1.2, -s * 0.45], [-s * 0.4, -s * 0.45], [s * 0.4, -s * 0.45], [s * 1.2, -s * 0.45],
+      [-s * 1.2, s * 0.45], [-s * 0.4, s * 0.45], [s * 0.4, s * 0.45], [s * 1.2, s * 0.45],
+    ];
+    case 9: return [[-s * 0.55, -s * 0.55], [0, -s * 0.55], [s * 0.55, -s * 0.55], [-s * 0.55, 0], [0, 0], [s * 0.55, 0], [-s * 0.55, s * 0.55], [0, s * 0.55], [s * 0.55, s * 0.55]];
     default: return [[0, 0]];
   }
 }
 
-function drawBamboo(g: Phaser.GameObjects.Graphics, count: number, cx: number, cy: number, color: number): void {
+// ===== Sou (索/bamboo) =====
+function drawBamboo(g: Gfx, count: number, cx: number, cy: number, color: number): void {
   g.fillStyle(color, 1);
   const positions = getBambooPositions(count);
   for (const [dx, dy] of positions) {
@@ -228,7 +263,7 @@ function drawBamboo(g: Phaser.GameObjects.Graphics, count: number, cx: number, c
   }
 }
 
-function drawBambooStick(g: Phaser.GameObjects.Graphics, x: number, y: number, color: number): void {
+function drawBambooStick(g: Gfx, x: number, y: number, color: number): void {
   g.fillStyle(color, 1);
   // Main stalk (thicker, rounded)
   g.fillRect(x - 2, y - 8, 4, 16);
@@ -250,35 +285,54 @@ function getBambooPositions(count: number): [number, number][] {
     case 3: return [[-s * 0.55, -s * 0.55], [0, 0], [s * 0.55, s * 0.55]];
     case 4: return [[-s * 0.5, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [s * 0.5, s * 0.5]];
     case 5: return [[-s * 0.55, -s * 0.55], [s * 0.55, -s * 0.55], [0, 0], [-s * 0.55, s * 0.55], [s * 0.55, s * 0.55]];
-    case 6: return [[-s * 0.45, -s], [s * 0.45, -s], [-s * 0.45, 0], [s * 0.45, 0], [-s * 0.45, s], [s * 0.45, s]];
-    case 7: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [0, s]];
-    case 8: return [[-s * 0.4, -s], [s * 0.4, -s], [-s * 1.25, 0], [-s * 0.4, 0], [s * 0.4, 0], [s * 1.25, 0], [-s * 0.4, s], [s * 0.4, s]];
-    case 9: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [-s, s], [0, s], [s, s]];
+    // 6索: 3 columns × 2 rows (3 top, 3 bottom) — traditional 六索
+    case 6: return [
+      [-s, -s * 0.7], [0, -s * 0.7], [s, -s * 0.7],
+      [-s, s * 0.7], [0, s * 0.7], [s, s * 0.7],
+    ];
+    // 7索: single stick on top + 3+3 below — user requested "那单独条是在上面的"
+    case 7: return [
+      [0, -s * 1.3],
+      [-s, 0], [0, 0], [s, 0],
+      [-s, s * 1.3], [0, s * 1.3], [s, s * 1.3],
+    ];
+    // 8索: 3-2-3 layout (3 top, 2 middle, 3 bottom) — traditional 八索
+    case 8: return [
+      [-s, -s], [0, -s], [s, -s],
+      [-s * 0.5, 0], [s * 0.5, 0],
+      [-s, s], [0, s], [s, s],
+    ];
+    case 9: return [
+      [-s, -s], [0, -s], [s, -s],
+      [-s, 0], [0, 0], [s, 0],
+      [-s, s], [0, s], [s, s],
+    ];
     default: return [[0, 0]];
   }
 }
 
-function drawWindSymbol(g: Phaser.GameObjects.Graphics, rank: number, cx: number, cy: number, color: number): void {
+// ===== Winds =====
+function drawWindSymbol(g: Gfx, rank: number, cx: number, cy: number, color: number): void {
   g.fillStyle(color, 1);
-  // Draw large letter for wind direction
   const letters = ['E', 'S', 'W', 'N'];
   const letter = letters[rank - 1] || '?';
   drawPixelLetter(g, letter, cx - 8, cy - 10, color);
 }
 
-function drawDragonSymbol(g: Phaser.GameObjects.Graphics, rank: number, cx: number, cy: number, color: number): void {
+// ===== Dragons =====
+function drawDragonSymbol(g: Gfx, rank: number, cx: number, cy: number, color: number): void {
   g.fillStyle(color, 1);
   if (rank === 1) {
-    // Red dragon - draw a red rectangle (simplified 中)
+    // Red dragon - simplified 中
     g.fillRect(cx - 11, cy - 14, 22, 28);
     g.fillStyle(COLORS.tileBg, 1);
     g.fillRect(cx - 6, cy - 8, 12, 16);
   } else if (rank === 2) {
-    // White dragon - draw a border rectangle (simplified 白)
+    // White dragon - simplified 白
     g.lineStyle(3, color, 1);
     g.strokeRect(cx - 11, cy - 14, 22, 28);
   } else if (rank === 3) {
-    // Green dragon - draw green rectangle (simplified 發)
+    // Green dragon - simplified 發
     g.fillRect(cx - 10, cy - 14, 20, 28);
     g.fillStyle(COLORS.tileBg, 1);
     g.fillRect(cx - 5, cy - 8, 10, 6);
@@ -286,7 +340,7 @@ function drawDragonSymbol(g: Phaser.GameObjects.Graphics, rank: number, cx: numb
   }
 }
 
-function drawPixelLetter(g: Phaser.GameObjects.Graphics, letter: string, x: number, y: number, color: number): void {
+function drawPixelLetter(g: Gfx, letter: string, x: number, y: number, color: number): void {
   // Simple 5x7 pixel font for E, S, W, N
   const fonts: Record<string, number[][]> = {
     E: [[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,0,0]],
