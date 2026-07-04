@@ -169,22 +169,26 @@ function drawSmallText(g: Phaser.GameObjects.Graphics, text: string, cx: number,
 }
 
 function drawDots(g: Phaser.GameObjects.Graphics, count: number, cx: number, cy: number, color: number): void {
-  g.fillStyle(color, 1);
-  // 1-pin: traditional large single circle (like a real mahjong tile)
+  // 1-pin: traditional large single circle with bold ring + center dot
   if (count === 1) {
-    drawPixelCircle(g, cx, cy, 13, color);
-    // Inner highlight ring (traditional 1-pin has a ring shape)
+    drawPixelCircle(g, cx, cy, 15, color);
     g.fillStyle(0xf5e6d3, 1);
-    drawPixelCircle(g, cx, cy, 6, 0xf5e6d3);
+    drawPixelCircle(g, cx, cy, 8, 0xf5e6d3);
     g.fillStyle(color, 1);
-    drawPixelCircle(g, cx, cy, 3, color);
+    drawPixelCircle(g, cx, cy, 4, color);
     return;
   }
-  // 2-9 pin: standard dot arrangements
-  const spacing = 14;
+
+  // 2-9 pin: larger, clearer dots with a subtle inner highlight
   const positions = getDotPositions(count);
   for (const [dx, dy] of positions) {
-    drawPixelCircle(g, cx + dx, cy + dy, 7, color);
+    const px = cx + dx;
+    const py = cy + dy;
+    drawPixelCircle(g, px, py, 8, color);
+    // Small cream center makes dots look rounded and readable
+    g.fillStyle(0xffffff, 0.35);
+    drawPixelCircle(g, px - 2, py - 2, 2, 0xffffff);
+    g.fillStyle(color, 1);
   }
 }
 
@@ -192,7 +196,6 @@ function drawDots(g: Phaser.GameObjects.Graphics, count: number, cx: number, cy:
 function drawPixelCircle(g: Phaser.GameObjects.Graphics, cx: number, cy: number, radius: number, color: number): void {
   g.fillStyle(color, 1);
   const r = radius;
-  // Draw horizontal scanlines to form a circle
   for (let dy = -r; dy <= r; dy++) {
     const chord = Math.floor(Math.sqrt(r * r - dy * dy));
     g.fillRect(cx - chord, cy + dy, chord * 2 + 1, 1);
@@ -200,18 +203,18 @@ function drawPixelCircle(g: Phaser.GameObjects.Graphics, cx: number, cy: number,
 }
 
 function getDotPositions(count: number): [number, number][] {
-  const s = 13; // spacing
+  const s = 14; // slightly wider spacing for bigger dots
   switch (count) {
     case 1: return [[0, 0]];
-    case 2: return [[-s/2, -s/2], [s/2, s/2]];
-    case 3: return [[-s, -s], [0, 0], [s, s]];
-    case 4: return [[-s/2, -s/2], [s/2, -s/2], [-s/2, s/2], [s/2, s/2]];
-    case 5: return [[-s, -s], [s, -s], [0, 0], [-s, s], [s, s]];
-    case 6: return [[-s/2, -s], [s/2, -s], [-s/2, 0], [s/2, 0], [-s/2, s], [s/2, s]];
-    // 7筒：传统布局 — 上排3个 + 中排3个 + 下排1个居中（对称）
+    case 2: return [[0, -s * 0.55], [0, s * 0.55]];
+    case 3: return [[-s * 0.55, -s * 0.55], [0, 0], [s * 0.55, s * 0.55]];
+    case 4: return [[-s * 0.5, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [s * 0.5, s * 0.5]];
+    case 5: return [[-s * 0.55, -s * 0.55], [s * 0.55, -s * 0.55], [0, 0], [-s * 0.55, s * 0.55], [s * 0.55, s * 0.55]];
+    case 6: return [[-s * 0.45, -s], [s * 0.45, -s], [-s * 0.45, 0], [s * 0.45, 0], [-s * 0.45, s], [s * 0.45, s]];
+    // 7: top row 3, middle row 3, bottom 1 centered
     case 7: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [0, s]];
-    // 8筒：传统布局 — 上排2个 + 中排4个 + 下排2个（对称）
-    case 8: return [[-s/2, -s], [s/2, -s], [-s*1.2, 0], [-s*0.4, 0], [s*0.4, 0], [s*1.2, 0], [-s/2, s], [s/2, s]];
+    // 8: compact 2-4-2 layout
+    case 8: return [[-s * 0.4, -s], [s * 0.4, -s], [-s * 1.25, 0], [-s * 0.4, 0], [s * 0.4, 0], [s * 1.25, 0], [-s * 0.4, s], [s * 0.4, s]];
     case 9: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [-s, s], [0, s], [s, s]];
     default: return [[0, 0]];
   }
@@ -219,12 +222,39 @@ function getDotPositions(count: number): [number, number][] {
 
 function drawBamboo(g: Phaser.GameObjects.Graphics, count: number, cx: number, cy: number, color: number): void {
   g.fillStyle(color, 1);
-  const positions = getDotPositions(count);
+  const positions = getBambooPositions(count);
   for (const [dx, dy] of positions) {
-    // Draw a small vertical bamboo stick
-    g.fillRect(cx + dx - 1, cy + dy - 4, 2, 8);
-    // Small node line
-    g.fillRect(cx + dx - 2, cy + dy - 1, 4, 1);
+    drawBambooStick(g, cx + dx, cy + dy, color);
+  }
+}
+
+function drawBambooStick(g: Phaser.GameObjects.Graphics, x: number, y: number, color: number): void {
+  g.fillStyle(color, 1);
+  // Main stalk (thicker, rounded)
+  g.fillRect(x - 2, y - 8, 4, 16);
+  g.fillRect(x - 3, y - 6, 6, 12);
+  // Bamboo nodes (two horizontal bands)
+  g.fillRect(x - 4, y - 3, 8, 2);
+  g.fillRect(x - 4, y + 3, 8, 2);
+  // Subtle highlight on left edge
+  g.fillStyle(0xffffff, 0.25);
+  g.fillRect(x - 1, y - 7, 1, 14);
+  g.fillStyle(color, 1);
+}
+
+function getBambooPositions(count: number): [number, number][] {
+  const s = 14;
+  switch (count) {
+    case 1: return [[0, 0]];
+    case 2: return [[0, -s * 0.55], [0, s * 0.55]];
+    case 3: return [[-s * 0.55, -s * 0.55], [0, 0], [s * 0.55, s * 0.55]];
+    case 4: return [[-s * 0.5, -s * 0.5], [s * 0.5, -s * 0.5], [-s * 0.5, s * 0.5], [s * 0.5, s * 0.5]];
+    case 5: return [[-s * 0.55, -s * 0.55], [s * 0.55, -s * 0.55], [0, 0], [-s * 0.55, s * 0.55], [s * 0.55, s * 0.55]];
+    case 6: return [[-s * 0.45, -s], [s * 0.45, -s], [-s * 0.45, 0], [s * 0.45, 0], [-s * 0.45, s], [s * 0.45, s]];
+    case 7: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [0, s]];
+    case 8: return [[-s * 0.4, -s], [s * 0.4, -s], [-s * 1.25, 0], [-s * 0.4, 0], [s * 0.4, 0], [s * 1.25, 0], [-s * 0.4, s], [s * 0.4, s]];
+    case 9: return [[-s, -s], [0, -s], [s, -s], [-s, 0], [0, 0], [s, 0], [-s, s], [0, s], [s, s]];
+    default: return [[0, 0]];
   }
 }
 
