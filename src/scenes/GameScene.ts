@@ -139,43 +139,56 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Top bar: round, lives, combo, score, timer, relics, quit =====
   private createTopBar(): void {
-    const y = 32;
+    const y = 30;
 
-    // Top bar background strip
-    this.add.rectangle(512, y, 1024, 44, 0x0a0604, 0.85).setDepth(10).setName('topBarBg');
-    this.add.rectangle(512, y + 22, 1024, 1, 0x4a3828, 0.3).setDepth(10);
+    // Top bar background strip (taller for better visibility)
+    this.add.rectangle(512, y, 1024, 50, 0x0a0604, 0.9).setDepth(10).setName('topBarBg');
+    this.add.rectangle(512, y + 25, 1024, 1, 0x4a3828, 0.4).setDepth(10);
 
-    // Left: round + lives + combo
-    this.add.text(20, y, '', {
-      fontSize: '12px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    // === Left: round + lives ===
+    this.add.text(20, y - 8, '', {
+      fontSize: '11px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('roundLabel');
 
-    this.add.text(120, y, '', {
-      fontSize: '16px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    this.add.text(20, y + 10, '', {
+      fontSize: '18px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('livesLabel');
 
-    this.add.text(200, y, '', {
-      fontSize: '13px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    // === Center-left: combo ===
+    this.add.text(130, y, '', {
+      fontSize: '14px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('comboLabel');
 
-    // Center: score (prominent)
-    this.add.text(420, y, 'SCORE', {
-      fontSize: '10px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    // === Center: SCORE (big, prominent, with background box) ===
+    const scoreBoxX = 420;
+    const scoreBoxW = 180;
+    const scoreBox = this.add.rectangle(scoreBoxX, y, scoreBoxW, 38, 0x1a1008, 0.8)
+      .setStrokeStyle(1, 0x4a3828, 0.6).setDepth(10).setName('scoreBox');
+    this.add.text(scoreBoxX - scoreBoxW / 2 + 10, y - 8, 'SCORE', {
+      fontSize: '9px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
-    this.add.text(480, y, '0', {
-      fontSize: '22px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    this.add.text(scoreBoxX - scoreBoxW / 2 + 10, y + 8, '0', {
+      fontSize: '24px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('scoreValue');
 
-    // Right: timer
-    this.add.text(720, y, '', {
-      fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11).setName('timerLabel');
-
-    // Far right: relics
-    this.add.text(820, y, '', {
-      fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+    // === Right-center: RELICS (with background box, always visible) ===
+    const relicBoxX = 640;
+    const relicBoxW = 200;
+    this.add.rectangle(relicBoxX, y, relicBoxW, 38, 0x1a1008, 0.8)
+      .setStrokeStyle(1, 0x4a3828, 0.6).setDepth(10).setName('relicBox');
+    this.add.text(relicBoxX - relicBoxW / 2 + 10, y - 8, 'RELICS', {
+      fontSize: '9px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(11);
+    this.add.text(relicBoxX - relicBoxW / 2 + 10, y + 8, 'None', {
+      fontSize: '13px', color: '#5c4835', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11).setName('relicLabel');
 
+    // === Right: timer ===
+    this.add.text(870, y, '', {
+      fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(11).setName('timerLabel');
+
+    // === Far right: quit ===
     const quitW = 52;
     const quitX = 980;
     const quitBg = this.add.rectangle(quitX, y, quitW, 26, 0x000000, 0).setDepth(11);
@@ -208,6 +221,8 @@ export class GameScene extends Phaser.Scene {
     const scoreValue = this.children.getByName('scoreValue') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
+    const scoreBox = this.children.getByName('scoreBox') as Phaser.GameObjects.Rectangle;
+    const relicBox = this.children.getByName('relicBox') as Phaser.GameObjects.Rectangle;
 
     if (this.teachingMode) {
       if (roundLabel) roundLabel.setText(`TEACHING · ${this.round}/${this.maxRounds}`);
@@ -216,8 +231,14 @@ export class GameScene extends Phaser.Scene {
       if (scoreValue) scoreValue.setText('');
       if (timerLabel) timerLabel.setText('');
       if (relicLabel) relicLabel.setText('');
+      if (scoreBox) scoreBox.setVisible(false);
+      if (relicBox) relicBox.setVisible(false);
       return;
     }
+
+    // Show score/relic boxes in normal mode
+    if (scoreBox) scoreBox.setVisible(true);
+    if (relicBox) relicBox.setVisible(true);
 
     const ch = getChapterForRound(this.round);
     if (roundLabel) {
@@ -250,13 +271,15 @@ export class GameScene extends Phaser.Scene {
     }
     if (relicLabel) {
       if (this.relics.length === 0) {
-        relicLabel.setText('');
+        relicLabel.setText('None');
+        relicLabel.setColor('#5c4835');
       } else {
         const icons: Record<string, string> = {
           'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
           'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
           'lucky-coin': '🪙', 'shield-tile': '🛡',
         };
+        relicLabel.setColor('#c9b89a');
         relicLabel.setText(this.relics.map(r => icons[r] || '?').join(' '));
       }
     }
@@ -485,13 +508,13 @@ export class GameScene extends Phaser.Scene {
       const ch = getChapterForRound(this.round);
       const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
       const chapterColor = ch.isBoss ? '#c73e3a' : '#5c4835';
-      const chapterLabel = this.add.text(512, 82, chapterText, {
+      const chapterLabel = this.add.text(512, 78, chapterText, {
         fontSize: '12px', color: chapterColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         letterSpacing: 4,
       }).setOrigin(0.5);
       this.questionContainer.add(chapterLabel);
 
-      const promptY = 120;
+      const promptY = 115;
       const prompt = this.add.text(512, promptY, q.prompt, {
         fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 900 },
