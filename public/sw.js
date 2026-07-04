@@ -2,7 +2,7 @@
 // Strategy: cache-first for same-origin assets, network-first for HTML navigations
 // with cache fallback. This enables offline play after the first visit.
 
-const CACHE_NAME = 'mahjong-quiz-v6';
+const CACHE_NAME = 'mahjong-quiz-v7';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -76,7 +76,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first, fall back to network
+  // Static assets: network-first for JS/CSS (so updates show immediately),
+  // cache-first for everything else
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (!res || res.status !== 200) return caches.match(req).then((c) => c || res);
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || new Response('', { status: 504 })))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
