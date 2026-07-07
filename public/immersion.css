@@ -258,6 +258,9 @@ html {
   position: relative;
   overflow: hidden;
 }
+.mri-ad-slot:empty {
+  display: none;
+}
 .mri-ad-slot::before {
   content: "";
   display: block;

@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cookie Policy - Mahjong Quiz</title>
-<meta name="description" content="Mahjong Quiz does not use cookies. This Cookie Policy explains our cookie-free approach, localStorage usage, and third-party services like Google Fonts and Umami analytics.">
+<meta name="description" content="Cookie Policy for Mahjong Quiz. Learn how the game uses localStorage, service worker cache, analytics if enabled, and advertising cookies if ads are enabled.">
 <meta name="keywords" content="cookie policy, no cookies, GDPR cookies, mahjong quiz cookies, browser game cookies">
 <meta property="og:title" content="Cookie Policy - Mahjong Quiz">
-<meta property="og:description" content="We do not use cookies. Learn about our privacy-friendly localStorage and analytics approach.">
+<meta property="og:description" content="Learn how Mahjong Quiz uses localStorage and how third-party cookies may apply if ads are enabled.">
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/cookies.html">
 <meta property="og:type" content="article">
@@ -103,13 +103,11 @@
   "@context": "https://schema.org",
   "@type": "WebPage",
   "name": "Cookie Policy - Mahjong Quiz",
-  "description": "Mahjong Quiz does not use cookies. This policy explains our cookie-free approach, localStorage usage, and privacy-friendly analytics.",
+  "description": "Cookie Policy for Mahjong Quiz. This policy explains localStorage, service worker cache, optional analytics, and advertising cookies if ads are enabled.",
   "url": "https://mahjongroguelike.com/cookies.html",
   "publisher": { "@type": "Organization", "name": "Mahjong Quiz" }
 }
 </script>
-<!-- Analytics: Umami -->
-<script async src="https://analytics.umami.is/script.js" data-website-id="YOUR_UMAMI_ID"></script>
 </head>
 <body>
 
@@ -122,27 +120,26 @@
 
 <div class="container">
   <h1>Cookie Policy</h1>
-  <p class="last-updated">Last updated: June 27, 2026</p>
+  <p class="last-updated">Last updated: July 7, 2026</p>
 
   <div class="callout">
-    <strong>The short version:</strong> We do not use cookies. No tracking cookies, no advertising cookies, no session cookies. You will never see a cookie consent banner on our site because we don't need one. We use browser localStorage for game progress (which is not a cookie) and Umami for cookie-free analytics.
+    <strong>The short version:</strong> The Game uses localStorage to save progress. We do not set our own account or session cookies. If advertising is enabled on content pages, Google or another advertising provider may use cookies or similar technologies as described below.
   </div>
 
-  <h2>1. Our Cookie-Free Approach</h2>
-  <p>Unlike most websites, Mahjong Quiz does not use any cookies. We have designed the Game from the ground up to respect your privacy and comply with cookie regulations without requiring intrusive consent banners.</p>
-  <p>Under the EU ePrivacy Directive (the "Cookie Law"), websites must obtain user consent before placing non-essential cookies. Because we do not use any cookies, this requirement does not apply to our site.</p>
-
+  <h2>1. Our Storage Approach</h2>
+  <p>Mahjong Quiz is designed to work without accounts. The Game saves progress in browser localStorage, not in an account database. We do not set our own login, account, or session cookies.</p>
+  <p>Some third-party services may use cookies or similar technologies, especially if display advertising is enabled on article, guide, or blog pages. Where required by law, non-essential cookies are controlled through a consent flow.</p>
   <h2>2. What Are Cookies?</h2>
   <p>Cookies are small text files stored on your device by websites you visit. They are widely used to track users across sessions and sites, enable advertising networks, and store authentication state. Common types include:</p>
   <ul>
-    <li><strong>Tracking cookies</strong> — Follow your activity across websites (we don't use these).</li>
-    <li><strong>Advertising cookies</strong> — Enable targeted ads (we don't use these).</li>
+    <li><strong>Tracking cookies</strong> - Follow activity across websites.</li>
+    <li><strong>Advertising cookies</strong> - Enable ad serving, measurement, fraud prevention, frequency capping, and sometimes personalization.</li>
     <li><strong>Session cookies</strong> — Maintain login state (we don't use these; no accounts).</li>
     <li><strong>Preference cookies</strong> — Remember settings (we use localStorage instead).</li>
   </ul>
 
-  <h2>3. Technologies We Use Instead</h2>
-  <p>We use the following technologies, none of which are cookies:</p>
+  <h2>3. Technologies We Use</h2>
+  <p>We use or may use the following technologies:</p>
 
   <table>
     <thead>
@@ -158,35 +155,41 @@
       </tr>
       <tr>
         <td><strong>sessionStorage</strong></td>
-        <td>Temporary in-game UI state (e.g., active tooltip, scene transition)</td>
+        <td>Temporary in-game UI state</td>
         <td>Your browser only (cleared when tab closes)</td>
         <td>No</td>
         <td>No</td>
       </tr>
       <tr>
         <td><strong>Service Worker cache</strong></td>
-        <td>PWA offline assets (cached game files for offline play)</td>
+        <td>PWA offline assets</td>
         <td>Your browser only</td>
         <td>No</td>
         <td>No</td>
       </tr>
       <tr>
         <td><strong>Umami Analytics</strong></td>
-        <td>Aggregate, anonymous page view statistics</td>
-        <td>Umami server (no user ID)</td>
+        <td>Aggregate, anonymous page view statistics, if enabled</td>
+        <td>Umami server</td>
         <td>Yes (anonymous)</td>
         <td>No</td>
       </tr>
       <tr>
+        <td><strong>Google advertising services</strong></td>
+        <td>Ad serving, measurement, fraud prevention, and personalization where permitted</td>
+        <td>Google / advertising partner systems</td>
+        <td>Yes</td>
+        <td>May use cookies or similar technologies</td>
+      </tr>
+      <tr>
         <td><strong>Google Fonts</strong></td>
-        <td>Loading web fonts (Press Start 2P, Inter)</td>
+        <td>Loading web fonts</td>
         <td>Google CDN cache</td>
         <td>Font request only</td>
         <td>No</td>
       </tr>
     </tbody>
   </table>
-
   <h2>4. LocalStorage Details</h2>
   <p>The Game uses the browser's <strong>localStorage</strong> API to save your progress. localStorage is fundamentally different from cookies:</p>
   <ul>
@@ -222,13 +225,13 @@
   </table>
 
   <h2>6. Third-Party Cookies</h2>
-  <p>While we do not set any cookies ourselves, some third-party services may set cookies when you visit our site:</p>
+  <p>While we do not set our own account or session cookies, some third-party services may set cookies or use similar technologies when you visit our site:</p>
   <ul>
-    <li><strong>Google Fonts</strong> — Google's font CDN may set cookies. These are controlled by Google, not us. See <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener">Google's cookie policy</a>. You can block these with browser extensions without affecting gameplay.</li>
-    <li><strong>Hosting provider</strong> — Our hosting platform (Vercel or Cloudflare) may set essential operational cookies for security (e.g., DDoS protection). These are typically "__cf_" prefix cookies and are necessary for the site to function.</li>
+    <li><strong>Google Fonts</strong> - Google's font CDN may set cookies. These are controlled by Google, not us. See <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener">Google's cookie policy</a>. You can block these with browser extensions without affecting gameplay.</li>
+    <li><strong>Google AdSense / Google advertising services</strong> - If enabled, Google may use cookies or similar technologies to serve and measure ads, prevent fraud and abuse, limit ad frequency, and personalize ads where legally permitted. See <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google's advertising technologies policy</a>.</li>
+    <li><strong>Hosting provider</strong> - Our hosting platform may set essential operational cookies for security and abuse prevention.</li>
   </ul>
   <p>We do not control and are not responsible for third-party cookies. To block all third-party cookies, enable "Block third-party cookies" in your browser settings.</p>
-
   <h2>7. Server Logs (Hosting Provider)</h2>
   <p>While we do not set cookies, our hosting provider (Vercel or Cloudflare Pages) automatically records standard server request logs when you load the Game. These logs typically include:</p>
   <ul>
@@ -243,7 +246,7 @@
   <p>For details on how your hosting provider handles logs, see <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's Privacy Policy</a> or <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a>.</p>
 
   <h2>8. How to Manage Your Data</h2>
-  <p>Since we don't use cookies, managing your data is straightforward. Here are browser-specific guides for clearing site data (which includes localStorage, sessionStorage, service worker cache, and any third-party cookies):</p>
+  <p>You can manage site data through your browser. This includes localStorage, sessionStorage, service worker cache, and any third-party cookies:</p>
 
   <h3>8.1 Browser-Specific Instructions</h3>
   <ul>
@@ -264,27 +267,24 @@
   </ul>
 
   <h2>9. Regulatory Compliance</h2>
-  <p>Our cookie-free approach ensures compliance with:</p>
+  <p>Our storage and cookie practices are designed to support compliance with:</p>
   <ul>
-    <li><strong>EU ePrivacy Directive</strong> — No non-essential cookies means no consent banner is required.</li>
-    <li><strong>GDPR</strong> — No personal data is processed through cookies. See our <a href="/privacy.html">Privacy Policy</a>.</li>
-    <li><strong>CCPA</strong> — No cookies are used to sell or share personal data.</li>
-    <li><strong>UK PECR</strong> — Compliant with UK Privacy and Electronic Communications Regulations.</li>
-    <li><strong>COPPA</strong> — No tracking of children through cookies.</li>
+    <li><strong>EU ePrivacy Directive</strong> - Non-essential cookies require consent where applicable.</li>
+    <li><strong>GDPR</strong> - See our <a href="/privacy.html">Privacy Policy</a> for data processing details.</li>
+    <li><strong>CCPA</strong> - We do not sell personal information; advertising providers may provide their own privacy controls.</li>
+    <li><strong>UK PECR</strong> - Non-essential cookies require consent where applicable.</li>
+    <li><strong>COPPA</strong> - The Game does not require accounts or collect children's contact information.</li>
   </ul>
 
-  <h2>9. Changes to This Policy</h2>
-  <p>If we ever introduce cookies (for example, for a future premium feature), we will:</p>
+  <h2>10. Changes to This Policy</h2>
+  <p>If we materially change how cookies or similar technologies are used, we will:</p>
   <ul>
     <li>Update this Cookie Policy with details of each cookie used.</li>
-    <li>Implement a consent management platform (CMP) in compliance with GDPR.</li>
-    <li>Provide granular opt-in/opt-out controls.</li>
-    <li>Only set non-essential cookies after obtaining explicit consent.</li>
+    <li>Implement a consent management platform where legally required.</li>
+    <li>Provide granular opt-in/opt-out controls where applicable.</li>
   </ul>
-  <p>Until then, you can enjoy the Game knowing no cookies are tracking you.</p>
-
   <h2>11. Contact Us</h2>
-  <p>Questions about our cookie-free approach? Contact us:</p>
+  <p>Questions about our storage and cookie practices? Contact us:</p>
   <ul>
     <li><strong>Email:</strong> <a href="mailto:privacy@mahjongroguelike.com">privacy@mahjongroguelike.com</a></li>
     <li><strong>GitHub:</strong> <a href="https://github.com/jackliao2/mahjong-roguelike" target="_blank" rel="noopener">github.com/jackliao2/mahjong-roguelike</a></li>

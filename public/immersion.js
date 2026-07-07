@@ -94,7 +94,7 @@
     });
   }
 
-  // ===== 4. Cookie Consent Banner (GDPR/CCPA) =====
+  // ===== 4. Privacy Notice Banner =====
   // Shows on first visit only. Dismissed flag stored in localStorage.
   // Skip on the game page so the banner never covers the hand tray/buttons.
   var isPlayPage = location.pathname === '/play.html' || location.pathname === '/play';
@@ -102,10 +102,10 @@
     var banner = document.createElement('div');
     banner.className = 'mri-cookie-banner';
     banner.setAttribute('role', 'dialog');
-    banner.setAttribute('aria-label', 'Cookie consent');
+    banner.setAttribute('aria-label', 'Privacy notice');
 
     var text = document.createElement('p');
-    text.innerHTML = 'This site uses <strong>privacy-friendly analytics</strong> (Umami, no cookies) and <strong>localStorage</strong> to save your game progress. No personal data is collected. By continuing, you agree to our <a href="/privacy.html">Privacy Policy</a> and <a href="/cookies.html">Cookie Policy</a>.';
+    text.innerHTML = 'This site uses <strong>localStorage</strong> to save game progress. Content pages may use analytics or advertising services as described in our <a href="/privacy.html">Privacy Policy</a> and <a href="/cookies.html">Cookie Policy</a>.';
     banner.appendChild(text);
 
     var btn = document.createElement('button');

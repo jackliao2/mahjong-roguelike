@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy Policy - Mahjong Quiz</title>
-<meta name="description" content="Privacy Policy for Mahjong Quiz. We use privacy-friendly analytics (Umami) and store your game progress locally in your browser. No personal data is collected.">
+<meta name="description" content="Privacy Policy for Mahjong Quiz. Learn how the game uses localStorage, optional analytics, hosting logs, and advertising services if ads are enabled.">
 <meta name="keywords" content="privacy policy, GDPR, CCPA, mahjong quiz privacy, browser game privacy">
 <meta property="og:title" content="Privacy Policy - Mahjong Quiz">
-<meta property="og:description" content="We use privacy-friendly analytics and store game progress locally. No personal data collected.">
+<meta property="og:description" content="Learn how Mahjong Quiz handles local game progress, optional analytics, hosting logs, and advertising services.">
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/privacy.html">
 <meta property="og:type" content="article">
@@ -145,8 +145,6 @@
   "publisher": { "@type": "Organization", "name": "Mahjong Quiz" }
 }
 </script>
-<!-- Analytics: Umami -->
-<script async src="https://analytics.umami.is/script.js" data-website-id="YOUR_UMAMI_ID"></script>
 </head>
 <body>
 
@@ -166,10 +164,10 @@
 
 <div class="container">
   <h1>Privacy Policy</h1>
-  <p class="last-updated">Last updated: June 27, 2026</p>
+  <p class="last-updated">Last updated: July 7, 2026</p>
 
   <div class="callout">
-    <strong>The short version:</strong> We collect almost nothing. Your game progress is stored in your browser's localStorage. We use Umami, a privacy-friendly analytics tool that does not use cookies or track individuals. No account, no email, no personal data required.
+    <strong>The short version:</strong> We collect very little. Your game progress is stored in your browser's localStorage. The Game does not require an account, email, or registration. If analytics or advertising is enabled, the relevant third-party provider may receive limited technical data as described below.
   </div>
 
   <div class="toc">
@@ -179,8 +177,9 @@
       <li><a href="#data-we-collect">Data We Collect</a></li>
       <li><a href="#legal-basis">Legal Basis for Processing (GDPR)</a></li>
       <li><a href="#local-storage">Local Storage &amp; Game Data</a></li>
-      <li><a href="#analytics">Analytics (Umami)</a></li>
-      <li><a href="#cookies">Cookies</a></li>
+      <li><a href="#analytics">Analytics</a></li>
+      <li><a href="#ads">Advertising</a></li>
+      <li><a href="#cookies">Cookies and Local Storage</a></li>
       <li><a href="#third-party">Third-Party Services</a></li>
       <li><a href="#international-transfers">International Data Transfers</a></li>
       <li><a href="#retention">Data Retention</a></li>
@@ -207,16 +206,15 @@
 
   <h3>2.2 Data Collected Automatically</h3>
   <ul>
-    <li><strong>Anonymous analytics data</strong> via Umami (see Section 4 for details). This includes page views, referrer URL, country (derived from IP, not stored), browser type, and device type — all in aggregate, never linked to individuals.</li>
+    <li><strong>Anonymous analytics data</strong> if analytics is enabled. This may include page views, referrer URL, approximate country, browser type, and device type, in aggregate.</li>
+    <li><strong>Advertising-related technical data</strong> if display ads are enabled on content pages. Advertising providers may process cookies, device identifiers, IP address, page URL, and browser information to serve, measure, and protect ads.</li>
     <li><strong>Game progress data</strong> stored locally in your browser (see Section 3). This never leaves your device.</li>
   </ul>
 
   <h3>2.3 Data We Do NOT Collect</h3>
   <ul>
     <li>Your name, email, phone number, or physical address</li>
-    <li>Your exact IP address (Umami derives country-level location only, then discards the IP)</li>
     <li>Your browsing history on other websites</li>
-    <li>Personal identifiers or tracking IDs across sessions</li>
     <li>Biometric or health data</li>
     <li>Payment information (the Game is free; no payment processing occurs)</li>
   </ul>
@@ -224,10 +222,11 @@
   <h2 id="legal-basis">3. Legal Basis for Processing (GDPR Article 6)</h2>
   <p>Under the GDPR, we must identify a legal basis for any processing of personal data. Because the Game is designed to collect no personally identifiable data, the legal bases we rely on for the limited processing we do perform are:</p>
   <ul>
-    <li><strong>Legitimate Interests (Art. 6(1)(f))</strong> — We process anonymous, aggregated analytics data (via Umami) to understand how the Game is used, fix bugs, and improve features. This is our legitimate interest as the developer and does not override your rights, since no personal data is tied to you as an individual.</li>
+    <li><strong>Legitimate Interests (Art. 6(1)(f))</strong> — We may process aggregate analytics and security data to understand site usage, fix bugs, prevent abuse, and improve features.</li>
     <li><strong>Performance of a Contract (Art. 6(1)(b))</strong> — Storing game progress in your browser's localStorage is necessary to deliver the Game you requested. This data stays on your device and is not transmitted.</li>
+    <li><strong>Consent (Art. 6(1)(a))</strong> — Where legally required, personalized advertising and non-essential advertising cookies are used only after consent.</li>
   </ul>
-  <p>We do not rely on consent (Art. 6(1)(a)) because we do not process personal data that would require it. We do not process special category data (Art. 9) under any circumstances.</p>
+  <p>We do not process special category data (Art. 9) under any circumstances.</p>
 
   <h2 id="local-storage">4. Local Storage &amp; Game Data</h2>
   <p>The Game stores your progress — including your current run state, unlocked achievements, high scores, and settings — in your browser's <strong>localStorage</strong>. This data:</p>
@@ -245,31 +244,36 @@
   </ul>
   <p>You can clear this data at any time through your browser settings or by clicking "Reset Progress" in the Game.</p>
 
-  <h2 id="analytics">5. Analytics (Umami)</h2>
-  <p>We use <a href="https://umami.is" target="_blank" rel="noopener">Umami</a>, an open-source, privacy-focused web analytics platform. Unlike Google Analytics, Umami:</p>
+  <h2 id="analytics">5. Analytics</h2>
+  <p>We may use <a href="https://umami.is" target="_blank" rel="noopener">Umami</a>, an open-source, privacy-focused web analytics platform. When enabled, Umami:</p>
   <ul>
     <li><strong>Does not use cookies</strong> — no tracking cookies of any kind.</li>
     <li><strong>Does not collect or store IP addresses</strong> — country-level location is derived in-memory and immediately discarded.</li>
     <li><strong>Does not track individuals</strong> — all data is aggregated and anonymous.</li>
     <li><strong>Does not fingerprint devices</strong> — no canvas fingerprinting, no cross-site tracking.</li>
-    <li><strong>Is GDPR compliant by design</strong> — no consent banner required because no personal data is processed.</li>
+    <li><strong>Is privacy-focused by design</strong> — no cross-site advertising profile is created.</li>
   </ul>
-  <p>The analytics data we receive includes: total page views, unique visitors (anonymized), referrer URLs, browser type, operating system, and country. This helps us understand which features are popular and improve the Game.</p>
+  <p>The analytics data we receive may include total page views, unique visitors (anonymized), referrer URLs, browser type, operating system, and approximate country. This helps us understand which features are popular and improve the Game.</p>
 
-  <h2 id="cookies">6. Cookies</h2>
-  <p><strong>We do not use cookies.</strong> The Game does not set any tracking cookies, advertising cookies, or session cookies. Umami analytics operates without cookies. Your browser's localStorage is used for game progress only, which is not a cookie and is not transmitted to any server.</p>
-  <p>Because we do not use cookies for tracking, we are not subject to the EU ePrivacy Directive's cookie consent requirements. No cookie banner is displayed because none is needed.</p>
+  <h2 id="ads">6. Advertising</h2>
+  <p>We may display advertising on article, guide, and blog pages to support the free Game. We do not place display ads inside the core game canvas where they would interfere with gameplay.</p>
+  <p>If Google AdSense or another Google advertising service is enabled, Google and its partners may use cookies or similar technologies to serve and measure ads, prevent fraud and abuse, limit ad frequency, and personalize ads where legally permitted. You can learn more from <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google's advertising technologies policy</a> and manage ad personalization at <a href="https://adssettings.google.com/" target="_blank" rel="noopener">Google Ad Settings</a>.</p>
 
-  <h2 id="third-party">7. Third-Party Services</h2>
+  <h2 id="cookies">7. Cookies and Local Storage</h2>
+  <p>The Game uses browser localStorage for game progress. localStorage is not sent with every HTTP request and remains on your device unless you clear site data.</p>
+  <p>We do not set our own account or session cookies. Third-party services, including Google advertising services if enabled, may use cookies or similar technologies. Where required by law, non-essential cookies are controlled through a consent flow.</p>
+
+  <h2 id="third-party">8. Third-Party Services</h2>
   <p>The Game uses the following third-party services:</p>
   <ul>
     <li><strong>Google Fonts</strong> — We load web fonts (Press Start 2P, Inter) from Google's CDN. Google may log the request including your IP address. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>. This is a standard web font service; no personal data is shared by us.</li>
-    <li><strong>Umami Analytics</strong> — As described in Section 5. Privacy-friendly, no cookies, no personal data.</li>
+    <li><strong>Umami Analytics</strong> — As described in Section 5, if enabled.</li>
+    <li><strong>Google AdSense / Google advertising services</strong> — As described in Section 6, if enabled on content pages.</li>
     <li><strong>Hosting provider</strong> — The Game is hosted on a static hosting platform (Vercel or Cloudflare Pages). The hosting provider may log standard server request data (IP, timestamp, URL) for security and operational purposes.</li>
   </ul>
-  <p>We do not sell, rent, or share any data with advertising networks, social media platforms, or data brokers.</p>
+  <p>We do not sell your personal information. Advertising providers may process data under their own policies when ads are enabled.</p>
 
-  <h2 id="international-transfers">8. International Data Transfers</h2>
+  <h2 id="international-transfers">9. International Data Transfers</h2>
   <p>Because we collect no personal data, the GDPR's restrictions on transferring personal data outside the European Economic Area (EEA) apply only minimally to us. For transparency, here is where each service we use processes data:</p>
   <ul>
     <li><strong>Game progress (localStorage)</strong> — Stored on your device only. No transfer occurs.</li>
@@ -279,7 +283,7 @@
   </ul>
   <p>If you are in the EEA, UK, or Switzerland and prefer not to have any data leave your jurisdiction, you can: (a) block Google Fonts in your browser (the Game falls back to system fonts), and (b) block the Umami script (the Game continues to function normally).</p>
 
-  <h2 id="retention">9. Data Retention</h2>
+  <h2 id="retention">10. Data Retention</h2>
   <p>Our data retention practices are minimal because we collect so little:</p>
   <ul>
     <li><strong>Game progress (localStorage)</strong> — Retained on your device until you clear your browser data or use the in-game "Reset Progress" button. We have no access to this data and cannot delete it remotely.</li>
@@ -288,7 +292,7 @@
   </ul>
   <p>We do not retain any data longer than necessary for the purpose for which it was collected.</p>
 
-  <h2 id="security">10. Security Measures</h2>
+  <h2 id="security">11. Security Measures</h2>
   <p>Although we collect minimal data, we take reasonable measures to protect what little we do process:</p>
   <ul>
     <li><strong>HTTPS/TLS encryption</strong> — All traffic between your browser and our servers is encrypted in transit.</li>
@@ -300,7 +304,7 @@
   </ul>
   <p>If you discover a security vulnerability, please report it responsibly to <a href="mailto:security@mahjongroguelike.com">security@mahjongroguelike.com</a>. We will acknowledge receipt within 72 hours and work with you to address the issue.</p>
 
-  <h2 id="gdpr">11. Your Rights Under GDPR</h2>
+  <h2 id="gdpr">12. Your Rights Under GDPR</h2>
   <p>If you are a resident of the European Economic Area (EEA), United Kingdom, or Switzerland, you have the following rights under the GDPR:</p>
   <ul>
     <li><strong>Right of Access</strong> — You can request a copy of any personal data we hold about you. Since we do not collect personal data, this will typically return an empty result.</li>
@@ -313,7 +317,7 @@
   </ul>
   <p>To exercise any of these rights, contact us at <a href="mailto:privacy@mahjongroguelike.com">privacy@mahjongroguelike.com</a>. We will respond within 30 days.</p>
 
-  <h2 id="ccpa">12. Your Rights Under CCPA</h2>
+  <h2 id="ccpa">13. Your Rights Under CCPA</h2>
   <p>If you are a California resident, you have the following rights under the California Consumer Privacy Act (CCPA):</p>
   <ul>
     <li><strong>Right to Know</strong> — You can request disclosure of the categories and specific pieces of personal data we collect. Since we do not collect personal data as defined by CCPA, this will typically return "no data collected."</li>
@@ -323,11 +327,11 @@
   </ul>
   <p>To exercise these rights, email <a href="mailto:privacy@mahjongroguelike.com">privacy@mahjongroguelike.com</a>.</p>
 
-  <h2 id="children">13. Children's Privacy</h2>
+  <h2 id="children">14. Children's Privacy</h2>
   <p>The Game is suitable for all ages and does not knowingly collect any personal data from children or adults. We do not direct marketing at children, and no account creation is required. Since we do not collect personal data, the Game is fully compliant with the Children's Online Privacy Protection Act (COPPA) and the GDPR's provisions regarding children's data.</p>
   <p>If you believe a child has provided personal data (which should not be possible given our data collection practices), please contact us immediately and we will take appropriate action.</p>
 
-  <h2 id="changes">14. Changes to This Policy</h2>
+  <h2 id="changes">15. Changes to This Policy</h2>
   <p>We may update this Privacy Policy from time to time. When we do, we will:</p>
   <ul>
     <li>Update the "Last updated" date at the top of this page.</li>
@@ -336,7 +340,7 @@
   </ul>
   <p>We encourage you to review this page periodically to stay informed about how we protect your privacy. Material changes take effect 30 days after the "Last updated" date, giving you time to review them.</p>
 
-  <h2 id="contact">15. Contact Us</h2>
+  <h2 id="contact">16. Contact Us</h2>
   <p>If you have any questions, concerns, or requests regarding this Privacy Policy or your data, please contact us:</p>
   <ul>
     <li><strong>Email:</strong> <a href="mailto:privacy@mahjongroguelike.com">privacy@mahjongroguelike.com</a></li>
