@@ -55,3 +55,21 @@ export function getBuildScoreMultiplier(buildId: BuildId, targetYaku?: string, i
 
   return 1;
 }
+
+export function getBuildQuestionType(
+  buildId: BuildId,
+  round: number,
+  isBoss: boolean,
+  roll: number = Math.random()
+): string | undefined {
+  if (buildId === 'balanced' || isBoss || round <= 2) {
+    return undefined;
+  }
+
+  const build = BUILD_DEFS[buildId];
+  if (!build.targetYaku) {
+    return undefined;
+  }
+
+  return roll < 0.55 ? `yaku-form:${build.targetYaku}` : undefined;
+}

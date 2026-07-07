@@ -607,10 +607,11 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
   let q: QuizQuestion;
 
   if (forcedType) {
-    switch (forcedType) {
+    const [type, detail] = forcedType.split(':');
+    switch (type) {
       case 'tenpai-win': q = generateTenpaiWin(); break;
       case 'waiting-tiles': q = generateWaitingTiles(); break;
-      case 'yaku-form': q = generateYakuForm('tanyao'); break;
+      case 'yaku-form': q = generateYakuForm(detail || 'tanyao'); break;
       case 'discard-best': q = generateDiscardBest(); break;
       case 'safe-discard': q = generateSafeDiscard(); break;
       case 'multi-wait': q = generateMultiWait(); break;

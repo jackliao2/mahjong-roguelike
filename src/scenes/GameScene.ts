@@ -9,7 +9,7 @@ import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
 import { generateQuestionForRound, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
 import { RelicId, getRandomRelics, Relic } from '@/game/relics';
-import { BUILD_DEFS, BuildId, getBuildScoreMultiplier } from '@/roguelike/builds';
+import { BUILD_DEFS, BuildId, getBuildQuestionType, getBuildScoreMultiplier } from '@/roguelike/builds';
 
 const OPTION_TILE_W = 64;
 const OPTION_TILE_H = 82;
@@ -557,7 +557,9 @@ export class GameScene extends Phaser.Scene {
       const levelType = levels[this.currentTrainingLevel]?.type || 'tenpai-win';
       this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds, levelType);
     } else {
-      this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds);
+      const ch = getChapterForRound(this.round);
+      const forcedType = getBuildQuestionType(this.buildStrategy, this.round, ch.isBoss);
+      this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds, forcedType);
       if (this.currentPath === 'risky') {
         this.currentQuestion.isBoss = true;
       }
@@ -605,7 +607,16 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0.5);
       this.questionContainer.add(chapterLabel);
 
-      const promptY = 115;
+      const routeMatches = BUILD_DEFS[this.buildStrategy].targetYaku === q.targetYaku;
+      if (routeMatches) {
+        const routeLabel = this.add.text(512, 98, `${BUILD_DEFS[this.buildStrategy].shortName} ROUTE`, {
+          fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+          letterSpacing: 2,
+        }).setOrigin(0.5);
+        this.questionContainer.add(routeLabel);
+      }
+
+      const promptY = routeMatches ? 128 : 115;
       const prompt = this.add.text(512, promptY, q.prompt, {
         fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 900 },
