@@ -9,6 +9,7 @@ import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
 import { generateQuestionForRound, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
 import { RelicId, getRandomRelics, Relic } from '@/game/relics';
+import { BUILD_DEFS, BuildId, getBuildScoreMultiplier } from '@/roguelike/builds';
 
 const OPTION_TILE_W = 64;
 const OPTION_TILE_H = 82;
@@ -55,6 +56,7 @@ export class GameScene extends Phaser.Scene {
   // Path system
   private currentPath: 'safe' | 'risky' = 'safe';
   private pathMultiplier: number = 1;
+  private buildStrategy: BuildId = 'balanced';
 
   // Endless mode
   private isEndless: boolean = false;
@@ -104,6 +106,7 @@ export class GameScene extends Phaser.Scene {
     this.shieldUsedThisChapter = false;
     this.currentPath = 'safe';
     this.pathMultiplier = 1;
+    this.buildStrategy = 'balanced';
     this.endlessDifficulty = 1;
 
     trackRunStart(this.isBeginner ? 'beginner' : 'normal');
@@ -120,7 +123,13 @@ export class GameScene extends Phaser.Scene {
     this.feedbackContainer = this.add.container(0, 0);
 
     // Start first round
-    this.time.delayedCall(400, () => this.startRound());
+    this.time.delayedCall(400, () => {
+      if (!this.teachingMode && !this.isBeginner) {
+        this.showBuildChoice(() => this.startRound());
+      } else {
+        this.startRound();
+      }
+    });
   }
 
   // ===== Background =====
@@ -159,6 +168,10 @@ export class GameScene extends Phaser.Scene {
     this.add.text(130, y, '', {
       fontSize: '16px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('comboLabel');
+
+    this.add.text(245, y, '', {
+      fontSize: '12px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(10001).setName('buildLabel');
 
     // === Center: SCORE (big, prominent, with background box) ===
     const scoreBoxX = 420;
@@ -221,6 +234,7 @@ export class GameScene extends Phaser.Scene {
     const roundLabel = this.children.getByName('roundLabel') as Phaser.GameObjects.Text;
     const livesLabel = this.children.getByName('livesLabel') as Phaser.GameObjects.Text;
     const comboLabel = this.children.getByName('comboLabel') as Phaser.GameObjects.Text;
+    const buildLabel = this.children.getByName('buildLabel') as Phaser.GameObjects.Text;
     const scoreValue = this.children.getByName('scoreValue') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
@@ -231,6 +245,7 @@ export class GameScene extends Phaser.Scene {
       if (roundLabel) roundLabel.setText(`TEACHING · ${this.round}/${this.maxRounds}`);
       if (livesLabel) livesLabel.setText('');
       if (comboLabel) comboLabel.setText('');
+      if (buildLabel) buildLabel.setText('');
       if (scoreValue) scoreValue.setText('');
       if (timerLabel) timerLabel.setText('');
       if (relicLabel) relicLabel.setText('');
@@ -255,6 +270,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (comboLabel) {
       comboLabel.setText(this.combo >= 2 ? `COMBO x${this.combo}` : '');
+    }
+    if (buildLabel) {
+      buildLabel.setText(this.isBeginner ? '' : `BUILD: ${BUILD_DEFS[this.buildStrategy].shortName}`);
     }
     if (scoreValue) {
       const prevScore = parseInt(scoreValue.text) || 0;
@@ -409,6 +427,76 @@ export class GameScene extends Phaser.Scene {
       this.soundManager.playClick();
       elements.forEach(el => el.destroy());
       onComplete();
+    });
+
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 250,
+    });
+  }
+
+  private showBuildChoice(onComplete: () => void): void {
+    const depth = 900;
+    const builds = Object.values(BUILD_DEFS);
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.82).setDepth(depth);
+    const title = this.add.text(512, 110, 'CHOOSE YOUR BUILD', {
+      fontSize: '28px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const subtitle = this.add.text(512, 145, 'Pick a scoring route for this run', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
+    const cardW = 220;
+    const cardH = 300;
+    const gap = 22;
+    const startX = 512 - (builds.length * cardW + (builds.length - 1) * gap) / 2 + cardW / 2;
+    const y = 360;
+
+    builds.forEach((build, i) => {
+      const x = startX + i * (cardW + gap);
+      const accent = build.id === 'balanced'
+        ? 0xe5b567
+        : build.id === 'tanyao'
+          ? 0x4a9e4a
+          : build.id === 'pinfu'
+            ? 0x4a6fa5
+            : 0xc73e3a;
+
+      const cardBg = this.add.rectangle(x, y, cardW, cardH, 0x1a0f08)
+        .setStrokeStyle(2, accent, 0.85).setDepth(depth);
+      const tag = this.add.text(x, y - 112, build.shortName, {
+        fontSize: '12px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        letterSpacing: 2,
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const name = this.add.text(x, y - 68, build.name, {
+        fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: cardW - 24 },
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const desc = this.add.text(x, y + 4, build.description, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+        align: 'center', wordWrap: { width: cardW - 30 }, lineSpacing: 4,
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const bonus = this.add.text(x, y + 92, build.bonusText, {
+        fontSize: '13px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: cardW - 28 },
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const hit = this.add.rectangle(x, y, cardW, cardH, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+
+      hit.on('pointerover', () => cardBg.setStrokeStyle(4, accent));
+      hit.on('pointerout', () => cardBg.setStrokeStyle(2, accent, 0.85));
+      hit.on('pointerdown', () => {
+        this.soundManager.playClick();
+        this.buildStrategy = build.id;
+        this.updateTopBar();
+        elements.forEach(el => el.destroy());
+        onComplete();
+      });
+
+      elements.push(cardBg, tag, name, desc, bonus, hit);
     });
 
     elements.forEach(el => { (el as any).setAlpha?.(0); });
@@ -695,6 +783,8 @@ export class GameScene extends Phaser.Scene {
 
       let baseScore = q.isBoss ? 1500 : 1000;
       baseScore *= this.pathMultiplier;
+      const buildMultiplier = getBuildScoreMultiplier(this.buildStrategy, q.targetYaku, q.isBoss);
+      baseScore *= buildMultiplier;
       if (this.relics.includes('lucky-coin')) baseScore *= 1.3;
       if (this.combo >= 2) {
         const comboBonusBase = Math.min(1, (this.combo - 1) * 0.1);
@@ -782,7 +872,12 @@ export class GameScene extends Phaser.Scene {
       fontSize: '32px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
-    const expText = this.add.text(512, 360, q.explanation, {
+    const buildMultiplier = getBuildScoreMultiplier(this.buildStrategy, q.targetYaku, q.isBoss);
+    const buildBonus = !this.isBeginner && buildMultiplier > 1
+      ? `\n\n${BUILD_DEFS[this.buildStrategy].name}: x${buildMultiplier.toFixed(2)} score`
+      : '';
+
+    const expText = this.add.text(512, 360, q.explanation + buildBonus, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
