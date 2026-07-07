@@ -9,7 +9,15 @@ import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
 import { generateQuestionForRound, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
 import { RelicId, getRandomRelics, Relic } from '@/game/relics';
-import { BUILD_DEFS, BuildId, getBuildQuestionType, getBuildScoreMultiplier } from '@/roguelike/builds';
+import {
+  BUILD_DEFS,
+  BUILD_FOCUS_BONUS,
+  BUILD_FOCUS_TARGET,
+  BuildId,
+  getBuildQuestionType,
+  getBuildScoreMultiplier,
+  isBuildRouteMatch,
+} from '@/roguelike/builds';
 
 const OPTION_TILE_W = 64;
 const OPTION_TILE_H = 82;
@@ -57,6 +65,8 @@ export class GameScene extends Phaser.Scene {
   private currentPath: 'safe' | 'risky' = 'safe';
   private pathMultiplier: number = 1;
   private buildStrategy: BuildId = 'balanced';
+  private buildFocus: number = 0;
+  private lastFocusBonus: number = 0;
 
   // Endless mode
   private isEndless: boolean = false;
@@ -107,6 +117,8 @@ export class GameScene extends Phaser.Scene {
     this.currentPath = 'safe';
     this.pathMultiplier = 1;
     this.buildStrategy = 'balanced';
+    this.buildFocus = 0;
+    this.lastFocusBonus = 0;
     this.endlessDifficulty = 1;
 
     trackRunStart(this.isBeginner ? 'beginner' : 'normal');
@@ -173,6 +185,10 @@ export class GameScene extends Phaser.Scene {
       fontSize: '12px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('buildLabel');
 
+    this.add.text(245, y + 18, '', {
+      fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(10001).setName('focusLabel');
+
     // === Center: SCORE (big, prominent, with background box) ===
     const scoreBoxX = 420;
     const scoreBoxW = 200;
@@ -235,6 +251,7 @@ export class GameScene extends Phaser.Scene {
     const livesLabel = this.children.getByName('livesLabel') as Phaser.GameObjects.Text;
     const comboLabel = this.children.getByName('comboLabel') as Phaser.GameObjects.Text;
     const buildLabel = this.children.getByName('buildLabel') as Phaser.GameObjects.Text;
+    const focusLabel = this.children.getByName('focusLabel') as Phaser.GameObjects.Text;
     const scoreValue = this.children.getByName('scoreValue') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
@@ -246,6 +263,7 @@ export class GameScene extends Phaser.Scene {
       if (livesLabel) livesLabel.setText('');
       if (comboLabel) comboLabel.setText('');
       if (buildLabel) buildLabel.setText('');
+      if (focusLabel) focusLabel.setText('');
       if (scoreValue) scoreValue.setText('');
       if (timerLabel) timerLabel.setText('');
       if (relicLabel) relicLabel.setText('');
@@ -273,6 +291,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (buildLabel) {
       buildLabel.setText(this.isBeginner ? '' : `BUILD: ${BUILD_DEFS[this.buildStrategy].shortName}`);
+    }
+    if (focusLabel) {
+      focusLabel.setText(!this.isBeginner && this.buildStrategy !== 'balanced' ? `FOCUS ${this.buildFocus}/${BUILD_FOCUS_TARGET}` : '');
     }
     if (scoreValue) {
       const prevScore = parseInt(scoreValue.text) || 0;
@@ -791,6 +812,7 @@ export class GameScene extends Phaser.Scene {
       this.soundManager.playWin();
       this.combo += 1;
       this.bestCombo = Math.max(this.bestCombo, this.combo);
+      this.lastFocusBonus = 0;
 
       let baseScore = q.isBoss ? 1500 : 1000;
       baseScore *= this.pathMultiplier;
@@ -811,7 +833,15 @@ export class GameScene extends Phaser.Scene {
         this.doubleTalismanUses -= 1;
       }
 
-      const finalScore = Math.round(baseScore);
+      let finalScore = Math.round(baseScore);
+      if (isBuildRouteMatch(this.buildStrategy, q.targetYaku)) {
+        this.buildFocus += 1;
+        if (this.buildFocus >= BUILD_FOCUS_TARGET) {
+          this.lastFocusBonus = BUILD_FOCUS_BONUS;
+          finalScore += BUILD_FOCUS_BONUS;
+          this.buildFocus = 0;
+        }
+      }
       this.score += finalScore;
       trackWin([q.targetYaku || q.type], 1, finalScore, false);
       this.updateTopBar();
@@ -887,8 +917,13 @@ export class GameScene extends Phaser.Scene {
     const buildBonus = !this.isBeginner && buildMultiplier > 1
       ? `\n\n${BUILD_DEFS[this.buildStrategy].name}: x${buildMultiplier.toFixed(2)} score`
       : '';
+    const focusText = !this.isBeginner && isBuildRouteMatch(this.buildStrategy, q.targetYaku)
+      ? this.lastFocusBonus > 0
+        ? `\nFOCUS COMPLETE: +${this.lastFocusBonus} score`
+        : `\nFOCUS: ${this.buildFocus}/${BUILD_FOCUS_TARGET}`
+      : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + focusText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);

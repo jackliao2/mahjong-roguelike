@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getBuildQuestionType, getBuildScoreMultiplier } from './builds';
+import {
+  BUILD_FOCUS_BONUS,
+  BUILD_FOCUS_TARGET,
+  getBuildQuestionType,
+  getBuildScoreMultiplier,
+  isBuildRouteMatch,
+} from './builds';
 
 describe('roguelike builds', () => {
   it('rewards focused yaku routes', () => {
@@ -33,5 +39,19 @@ describe('roguelike builds', () => {
 
   it('does not force route questions on high rolls', () => {
     expect(getBuildQuestionType('tanyao', 4, false, 0.9)).toBeUndefined();
+  });
+
+  it('identifies route-matching yaku for focus rewards', () => {
+    expect(isBuildRouteMatch('tanyao', 'tanyao')).toBe(true);
+    expect(isBuildRouteMatch('pinfu', 'pinfu')).toBe(true);
+    expect(isBuildRouteMatch('yakuhai', 'yakuhai')).toBe(true);
+    expect(isBuildRouteMatch('balanced', 'tanyao')).toBe(false);
+    expect(isBuildRouteMatch('tanyao', 'pinfu')).toBe(false);
+    expect(isBuildRouteMatch('tanyao')).toBe(false);
+  });
+
+  it('defines focus reward tuning in one place', () => {
+    expect(BUILD_FOCUS_TARGET).toBe(3);
+    expect(BUILD_FOCUS_BONUS).toBe(1200);
   });
 });

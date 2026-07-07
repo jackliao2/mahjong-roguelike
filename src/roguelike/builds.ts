@@ -9,6 +9,9 @@ export interface BuildDef {
   targetYaku?: string;
 }
 
+export const BUILD_FOCUS_TARGET = 3;
+export const BUILD_FOCUS_BONUS = 1200;
+
 export const BUILD_DEFS: Record<BuildId, BuildDef> = {
   balanced: {
     id: 'balanced',
@@ -72,4 +75,9 @@ export function getBuildQuestionType(
   }
 
   return roll < 0.55 ? `yaku-form:${build.targetYaku}` : undefined;
+}
+
+export function isBuildRouteMatch(buildId: BuildId, targetYaku?: string): boolean {
+  const build = BUILD_DEFS[buildId];
+  return !!build.targetYaku && build.targetYaku === targetYaku;
 }
