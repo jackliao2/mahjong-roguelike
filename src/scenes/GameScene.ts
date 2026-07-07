@@ -69,6 +69,7 @@ export class GameScene extends Phaser.Scene {
     this.soundManager = new SoundManager(this);
 
     this.isBeginner = data?.difficulty === 'beginner';
+    this.isEndless = data?.endless === true;
     this.tutorialActive = data?.tutorial === true;
     this.teachingMode = data?.teaching === true;
     this.tutorialStep = 0;
@@ -476,7 +477,7 @@ export class GameScene extends Phaser.Scene {
     this.renderQuestion();
     if (!this.teachingMode) {
       const hasHourglass = this.relics.includes('hourglass');
-      const extraSec = hasHourglass ? 5 : 0;
+      const extraSec = hasHourglass ? 10 : 0;
       const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
       const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
       this.startTimer(Math.max(8, base - endlessPenalty));
@@ -1306,10 +1307,13 @@ export class GameScene extends Phaser.Scene {
     this.relics.push(id);
     // Apply immediate effects
     if (id === 'time-charm') {
-      this.lives += 1;
+      this.lives += 2;
     }
     if (id === 'double-talisman') {
       this.doubleTalismanUses += 3;
+    }
+    if (id === 'shield-tile') {
+      this.lives += 1;
     }
     this.updateTopBar();
   }

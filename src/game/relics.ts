@@ -38,7 +38,7 @@ export const RELICS: Record<RelicId, Relic> = {
   'double-talisman': {
     id: 'double-talisman',
     name: 'Double Talisman',
-    description: 'ALL questions give double score for the rest of the run',
+    description: 'Your next 3 correct answers give double score',
     rarity: 'rare',
   },
   'perspective-glass': {
@@ -50,7 +50,7 @@ export const RELICS: Record<RelicId, Relic> = {
   'combo-feather': {
     id: 'combo-feather',
     name: 'Combo Feather',
-    description: 'Combo never resets on wrong answer; x2 combo score multiplier',
+    description: 'Combo never resets on wrong answer; combo bonuses are stronger',
     rarity: 'rare',
   },
   'hourglass': {
@@ -62,7 +62,7 @@ export const RELICS: Record<RelicId, Relic> = {
   'lucky-coin': {
     id: 'lucky-coin',
     name: 'Lucky Coin',
-    description: '+30% bonus score; start each chapter with +1 skip token',
+    description: '+30% bonus score',
     rarity: 'epic',
   },
   'shield-tile': {

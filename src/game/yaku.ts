@@ -183,12 +183,8 @@ export const YAKU_LIST: Yaku[] = [
     romaji: 'Chanta',
     han: 2,
     description: 'Every set and the pair contain at least one terminal or honor tile.',
-    check: (hand, rawTiles) => {
-      // All tiles must be terminal or honor, AND every meld must contain at least one terminal/honor.
-      if (!rawTiles.every(t => isTerminal(t) || isHonorTile(t))) return false;
-      // Additionally, every meld must contain at least one terminal or honor (already guaranteed by above)
-      // But Chanta allows simples in sequences — recheck: actually Chanta requires each meld to have ≥1 terminal/honor.
-      // Simplified: every meld has at least one terminal or honor.
+    check: (hand) => {
+      if (hand.melds.length !== 5) return false;
       return hand.melds.every(m => m.tiles.some(t => isTerminal(t) || isHonorTile(t)));
     },
   },
