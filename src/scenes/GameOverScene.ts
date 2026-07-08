@@ -9,7 +9,16 @@ export class GameOverScene extends Phaser.Scene {
     super('GameOverScene');
   }
 
-  create(data: { runState: RunState; won: boolean; meta: MetaProgression; newAchievements?: Achievement[] }): void {
+  create(data: {
+    runState: RunState;
+    won: boolean;
+    meta: MetaProgression;
+    newAchievements?: Achievement[];
+    bestCombo?: number;
+    bossKills?: number;
+    relicCount?: number;
+    perfectRun?: boolean;
+  }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     const { runState, won, meta, newAchievements } = data;
 
@@ -62,7 +71,7 @@ export class GameOverScene extends Phaser.Scene {
     });
 
     // ===== Stats panel with decorative border =====
-    this.createStatsPanel(512, 320, runState, meta, won);
+    this.createStatsPanel(512, 320, runState, meta, won, data);
 
     // ===== New achievements banner (if any) =====
     if (newAchievements && newAchievements.length > 0) {
@@ -96,9 +105,16 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   // ===== Stats panel with framed sections =====
-  private createStatsPanel(cx: number, cy: number, runState: RunState, meta: MetaProgression, won: boolean): void {
+  private createStatsPanel(
+    cx: number,
+    cy: number,
+    runState: RunState,
+    meta: MetaProgression,
+    won: boolean,
+    runStats: { bestCombo?: number; bossKills?: number; relicCount?: number; perfectRun?: boolean }
+  ): void {
     const panelW = 480;
-    const panelH = 280;
+    const panelH = 310;
 
     // Outer shadow
     this.add.rectangle(cx + 4, cy + 4, panelW, panelH, 0x000000, 0.5).setOrigin(0.5);
@@ -129,23 +145,30 @@ export class GameOverScene extends Phaser.Scene {
     const runStatsY = cy - 70;
     this.createStatRow(cx - 110, runStatsY, 'ROUNDS', `${runState.round} / ${runState.maxRounds}`, '#f5e6d3');
     this.createStatRow(cx + 110, runStatsY, 'SCORE', `${runState.score}`, '#e5b567');
-    this.createStatRow(cx - 110, runStatsY + 36, 'TARGET', `${runState.targetScore}`, '#c73e3a');
+    this.createStatRow(cx - 110, runStatsY + 36, 'BEST COMBO', `${runStats.bestCombo ?? 0}`, '#ffd700');
     this.createStatRow(cx + 110, runStatsY + 36, 'RESULT', won ? 'WIN' : 'LOSS', won ? '#d4a574' : '#c73e3a');
+    this.createStatRow(cx - 110, runStatsY + 72, 'BOSS KILLS', `${runStats.bossKills ?? 0}`, '#c73e3a');
+    this.createStatRow(cx + 110, runStatsY + 72, 'RELICS', `${runStats.relicCount ?? 0}`, '#6aa3e0');
+    if (runStats.perfectRun) {
+      this.add.text(cx, runStatsY + 105, 'PERFECT RUN', {
+        fontSize: '13px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0.5);
+    }
 
     // Divider
-    this.add.rectangle(cx, cy + 14, panelW - 40, 1, 0x5c3825);
+    this.add.rectangle(cx, cy + 48, panelW - 40, 1, 0x5c3825);
 
     // Section header: META
-    this.add.text(cx, cy + 28, 'META PROGRESSION', {
+    this.add.text(cx, cy + 62, 'META PROGRESSION', {
       fontSize: '13px', color: '#8b6f47', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
 
     // Meta stats - 2-column layout
-    const metaStatsY = cy + 56;
+    const metaStatsY = cy + 90;
     const isNewBest = runState.score >= meta.bestScore && runState.score > 0;
     this.createStatRow(cx - 110, metaStatsY, 'TOTAL RUNS', `${meta.totalRuns}`, '#f5e6d3');
     this.createStatRow(cx + 110, metaStatsY, 'TOTAL WINS', `${meta.totalWins}`, '#d4a574');
-    this.createStatRow(cx - 110, metaStatsY + 36, 'BEST SCORE',
+    this.createStatRow(cx - 110, metaStatsY + 36, 'TOP',
       `${meta.bestScore}${isNewBest ? '  *NEW*' : ''}`,
       isNewBest ? '#e5b567' : '#c9b89a');
   }

@@ -94,6 +94,8 @@ export class GameScene extends Phaser.Scene {
   private lastComboBonus: number = 0;
   private lastRelicBonus: number = 0;
   private lastRelicBonusName: string = '';
+  private mistakesThisRun: number = 0;
+  private bossKillsThisRun: number = 0;
 
   // Timer system
   private timeLeft: number = 0;
@@ -160,6 +162,8 @@ export class GameScene extends Phaser.Scene {
     this.lastComboBonus = 0;
     this.lastRelicBonus = 0;
     this.lastRelicBonusName = '';
+    this.mistakesThisRun = 0;
+    this.bossKillsThisRun = 0;
     this.relics = [];
     this.doubleTalismanUses = 0;
     this.shieldUsedThisChapter = false;
@@ -423,6 +427,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.lives -= 1;
+    this.mistakesThisRun += 1;
     if (!this.relics.includes('combo-feather')) this.combo = 0;
     this.updateTopBar();
     if (this.lives > 0) {
@@ -910,18 +915,23 @@ export class GameScene extends Phaser.Scene {
         }
       }
       this.score += finalScore;
+      if (q.isBoss) {
+        this.bossKillsThisRun += 1;
+      }
       trackWin([q.targetYaku || q.type], 1, finalScore, false);
       this.updateTopBar();
       this.showCorrectFeedback(q);
     } else {
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
         this.shieldUsedThisChapter = true;
+        this.mistakesThisRun += 1;
         if (!this.relics.includes('combo-feather')) this.combo = 0;
         this.showShieldBlockFeedback(optionIndex);
         this.updateTopBar();
         return;
       }
       this.lives -= 1;
+      this.mistakesThisRun += 1;
       if (!this.relics.includes('combo-feather')) this.combo = 0;
       this.updateTopBar();
       if (this.lives > 0) {
@@ -1324,7 +1334,7 @@ export class GameScene extends Phaser.Scene {
     const btnY = 360 + panelH / 2 - 36;
     const btnBg = this.add.rectangle(430, btnY, btnW, btnH, 0xc73e3a)
       .setStrokeStyle(3, 0x2b1810).setDepth(depth);
-    const btnText = this.add.text(430, btnY, 'TRY AGAIN', {
+    const btnText = this.add.text(430, btnY, 'RUN SUMMARY', {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const btnHit = this.add.rectangle(430, btnY, btnW, btnH, 0xffffff, 0)
@@ -1333,7 +1343,7 @@ export class GameScene extends Phaser.Scene {
     btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
     btnHit.on('pointerdown', () => {
       this.soundManager.playClick();
-      this.scene.restart({ action: 'new_run', difficulty: this.isBeginner ? 'beginner' : 'normal' });
+      this.finishRun(false);
     });
     elements.push(btnBg, btnText, btnHit);
 
@@ -1349,7 +1359,7 @@ export class GameScene extends Phaser.Scene {
     menuHit.on('pointerout', () => menuBg.setFillStyle(0x5c3825));
     menuHit.on('pointerdown', () => {
       this.soundManager.playClick();
-      window.location.href = '/play.html';
+      this.finishRun(false);
     });
     elements.push(menuBg, menuText, menuHit);
 
@@ -1417,18 +1427,39 @@ export class GameScene extends Phaser.Scene {
     };
     persistRun(runState);
 
+    const difficulty = this.isEndless ? 'endless' : this.isBeginner ? 'beginner' : 'normal';
+    const perfectRun = this.mistakesThisRun === 0;
+    const { meta, newAchievements } = endRun(runState, won, {
+      score: this.score,
+      won,
+      difficulty,
+      maxRound: this.round,
+      bestCombo: this.bestCombo,
+      perfectRun,
+      bossKills: this.bossKillsThisRun,
+      relicsCollected: this.relics.length,
+    });
+    trackRunComplete(won, this.score, this.round);
+
     if (won) {
-      const { meta, newAchievements } = endRun(runState, true);
-      trackRunComplete(true, this.score, this.round);
       if (this.isBeginner) {
         localStorage.setItem(GameConfig.beginner.completedKey, '1');
       }
       if (!this.isBeginner && !this.isEndless && this.round >= this.maxRounds) {
         localStorage.setItem('mjrg_normal_done', '1');
       }
-      this.scene.launch('GameOverScene', { runState, won: true, meta, newAchievements, bestCombo: this.bestCombo });
-      this.scene.pause();
     }
+    this.scene.launch('GameOverScene', {
+      runState,
+      won,
+      meta,
+      newAchievements,
+      bestCombo: this.bestCombo,
+      bossKills: this.bossKillsThisRun,
+      relicCount: this.relics.length,
+      perfectRun,
+    });
+    this.scene.pause();
   }
 
   // ===== Relic choice screen (after BOSS) =====
