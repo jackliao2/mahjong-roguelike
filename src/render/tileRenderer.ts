@@ -208,7 +208,7 @@ function drawDots(g: Gfx, count: number, cx: number, cy: number, color: number):
   // 2-9 pin: radius depends on count to prevent overlap
   const positions = getDotPositions(count);
   // Use smaller dots when more dots need to fit
-  const radius = count <= 5 ? 7 : count === 9 ? 5 : 6;
+  const radius = count <= 5 ? 7 : 5;
   for (const [dx, dy] of positions) {
     const px = cx + dx;
     const py = cy + dy;
@@ -243,16 +243,18 @@ function getDotPositions(count: number): [number, number][] {
     case 4: return [[-9, -10], [9, -10], [-9, 10], [9, 10]];
     // 5: 4 corners + center
     case 5: return [[-9, -10], [9, -10], [0, 0], [-9, 10], [9, 10]];
-    // 6: 3-3 (3 top, 3 bottom) — traditional 六筒
+    // 6-pin: two vertical columns of three dots.
     case 6: return [
-      [-11, -10], [0, -10], [11, -10],
-      [-11, 10], [0, 10], [11, 10],
+      [-13, -16], [13, -16],
+      [-13, 0], [13, 0],
+      [-13, 16], [13, 16],
     ];
-    // 7: 3-1-3 (3 top, 1 center, 3 bottom) — traditional 七筒
+    // 7-pin: 6-pin layout with a center dot.
     case 7: return [
-      [-11, -13], [0, -13], [11, -13],
+      [-13, -16], [13, -16],
+      [-13, 0], [13, 0],
       [0, 0],
-      [-11, 13], [0, 13], [11, 13],
+      [-13, 16], [13, 16],
     ];
     // 8: 4-4 (4 top, 4 bottom) — traditional 八筒
     case 8: return [
