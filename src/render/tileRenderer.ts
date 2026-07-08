@@ -140,12 +140,7 @@ function drawTileSymbol(g: Gfx, ctx: CanvasRenderingContext2D, tile: Tile, color
   if (tile.suit === 'man') {
     // Draw Arabic number at top (in suit color)
     drawNumber(g, tile.rank, cx, cy - 20, color);
-    // Draw traditional Chinese 萬 character in red below (like real mahjong tiles)
-    ctx.fillStyle = hexToRgba(COLORS.wanRed, 1);
-    ctx.font = 'bold 18px "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "SimHei", "Noto Sans CJK SC", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('萬', cx, cy + 14);
+    drawWanGlyph(g, cx, cy + 14);
   } else if (tile.suit === 'pin') {
     drawDots(g, tile.rank, cx, cy, color);
   } else if (tile.suit === 'sou') {
@@ -155,6 +150,18 @@ function drawTileSymbol(g: Gfx, ctx: CanvasRenderingContext2D, tile: Tile, color
   } else if (tile.suit === 'dragon') {
     drawDragonSymbol(g, tile.rank, cx, cy, color);
   }
+}
+
+function drawWanGlyph(g: Gfx, cx: number, cy: number): void {
+  g.fillStyle(COLORS.wanRed, 1);
+  // Pixel-styled "wan" mark. Avoids relying on system CJK fonts.
+  g.fillRect(cx - 12, cy - 13, 24, 4);
+  g.fillRect(cx + 1, cy - 9, 4, 6);
+  g.fillRect(cx - 8, cy - 3, 20, 4);
+  g.fillRect(cx - 8, cy + 1, 4, 5);
+  g.fillRect(cx - 10, cy + 6, 4, 5);
+  g.fillRect(cx + 8, cy + 1, 4, 14);
+  g.fillRect(cx + 4, cy + 12, 8, 4);
 }
 
 function drawNumber(g: Gfx, num: number, cx: number, cy: number, color: number): void {

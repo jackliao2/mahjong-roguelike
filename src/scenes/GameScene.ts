@@ -48,6 +48,7 @@ export class GameScene extends Phaser.Scene {
   // Combo system
   private combo: number = 0;
   private bestCombo: number = 0;
+  private lastComboBonus: number = 0;
 
   // Timer system
   private timeLeft: number = 0;
@@ -111,6 +112,7 @@ export class GameScene extends Phaser.Scene {
     // Initialize systems
     this.combo = 0;
     this.bestCombo = 0;
+    this.lastComboBonus = 0;
     this.relics = [];
     this.doubleTalismanUses = 0;
     this.shieldUsedThisChapter = false;
@@ -181,17 +183,17 @@ export class GameScene extends Phaser.Scene {
       fontSize: '16px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('comboLabel');
 
-    this.add.text(245, y, '', {
+    this.add.text(555, y - 10, '', {
       fontSize: '12px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('buildLabel');
 
-    this.add.text(245, y + 18, '', {
+    this.add.text(555, y + 10, '', {
       fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('focusLabel');
 
     // === Center: SCORE (big, prominent, with background box) ===
-    const scoreBoxX = 420;
-    const scoreBoxW = 200;
+    const scoreBoxX = 385;
+    const scoreBoxW = 250;
     const scoreBoxH = 48;
     this.add.rectangle(scoreBoxX, y, scoreBoxW, scoreBoxH, 0x1a0a00, 1)
       .setStrokeStyle(2, 0xe5b567, 0.9).setDepth(10000).setName('scoreBox');
@@ -199,12 +201,12 @@ export class GameScene extends Phaser.Scene {
       fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001);
     this.add.text(scoreBoxX - scoreBoxW / 2 + 12, y + 10, '0', {
-      fontSize: '28px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      fontSize: '30px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('scoreValue');
 
     // === Right-center: RELICS (with background box, always visible) ===
-    const relicBoxX = 650;
-    const relicBoxW = 220;
+    const relicBoxX = 725;
+    const relicBoxW = 190;
     const relicBoxH = 48;
     this.add.rectangle(relicBoxX, y, relicBoxW, relicBoxH, 0x1a0a00, 1)
       .setStrokeStyle(2, 0xe5b567, 0.9).setDepth(10000).setName('relicBox');
@@ -287,7 +289,8 @@ export class GameScene extends Phaser.Scene {
       livesLabel.setText(hearts || '✕');
     }
     if (comboLabel) {
-      comboLabel.setText(this.combo >= 2 ? `COMBO x${this.combo}` : '');
+      const nextComboGoal = this.combo < 3 ? 3 : this.combo < 5 ? 5 : this.combo < 8 ? 8 : null;
+      comboLabel.setText(nextComboGoal ? `COMBO ${this.combo}/${nextComboGoal}` : `COMBO x${this.combo}`);
     }
     if (buildLabel) {
       buildLabel.setText(this.isBeginner ? '' : `BUILD: ${BUILD_DEFS[this.buildStrategy].shortName}`);
@@ -812,6 +815,7 @@ export class GameScene extends Phaser.Scene {
       this.soundManager.playWin();
       this.combo += 1;
       this.bestCombo = Math.max(this.bestCombo, this.combo);
+      this.lastComboBonus = 0;
       this.lastFocusBonus = 0;
 
       let baseScore = q.isBoss ? 1500 : 1000;
@@ -834,6 +838,10 @@ export class GameScene extends Phaser.Scene {
       }
 
       let finalScore = Math.round(baseScore);
+      if (this.combo === 3 || this.combo === 5 || this.combo === 8) {
+        this.lastComboBonus = this.combo * 250;
+        finalScore += this.lastComboBonus;
+      }
       if (isBuildRouteMatch(this.buildStrategy, q.targetYaku)) {
         this.buildFocus += 1;
         if (this.buildFocus >= BUILD_FOCUS_TARGET) {
@@ -922,8 +930,11 @@ export class GameScene extends Phaser.Scene {
         ? `\nFOCUS COMPLETE: +${this.lastFocusBonus} score`
         : `\nFOCUS: ${this.buildFocus}/${BUILD_FOCUS_TARGET}`
       : '';
+    const comboText = this.lastComboBonus > 0
+      ? `\nCOMBO BREAKPOINT x${this.combo}: +${this.lastComboBonus} score`
+      : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + focusText, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + focusText + comboText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
