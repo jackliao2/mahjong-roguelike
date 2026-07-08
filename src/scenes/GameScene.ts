@@ -92,6 +92,8 @@ export class GameScene extends Phaser.Scene {
   private combo: number = 0;
   private bestCombo: number = 0;
   private lastComboBonus: number = 0;
+  private lastRelicBonus: number = 0;
+  private lastRelicBonusName: string = '';
 
   // Timer system
   private timeLeft: number = 0;
@@ -156,6 +158,8 @@ export class GameScene extends Phaser.Scene {
     this.combo = 0;
     this.bestCombo = 0;
     this.lastComboBonus = 0;
+    this.lastRelicBonus = 0;
+    this.lastRelicBonusName = '';
     this.relics = [];
     this.doubleTalismanUses = 0;
     this.shieldUsedThisChapter = false;
@@ -369,7 +373,7 @@ export class GameScene extends Phaser.Scene {
         const icons: Record<string, string> = {
           'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
           'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
-          'lucky-coin': '🪙', 'shield-tile': '🛡',
+          'lucky-coin': '🪙', 'shield-tile': '🛡', 'red-five': '5',
         };
         relicLabel.setColor('#c9b89a');
         relicLabel.setText(this.relics.map(r => icons[r] || '?').join(' '));
@@ -863,6 +867,8 @@ export class GameScene extends Phaser.Scene {
       this.combo += 1;
       this.bestCombo = Math.max(this.bestCombo, this.combo);
       this.lastComboBonus = 0;
+      this.lastRelicBonus = 0;
+      this.lastRelicBonusName = '';
       this.lastFocusBonus = 0;
 
       let baseScore = q.isBoss ? 1500 : 1000;
@@ -888,6 +894,12 @@ export class GameScene extends Phaser.Scene {
       if (this.combo === 3 || this.combo === 5 || this.combo === 8) {
         this.lastComboBonus = this.combo * 250;
         finalScore += this.lastComboBonus;
+      }
+      const chosenTile = q.options[optionIndex];
+      if (this.relics.includes('red-five') && this.questionHasFive(q, chosenTile)) {
+        this.lastRelicBonus = 750;
+        this.lastRelicBonusName = 'Red Five';
+        finalScore += this.lastRelicBonus;
       }
       if (isBuildRouteMatch(this.buildStrategy, q.targetYaku)) {
         this.buildFocus += 1;
@@ -954,6 +966,10 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private questionHasFive(q: QuizQuestion, chosenTile?: Tile): boolean {
+    return q.hand.some(tile => tile.rank === 5) || chosenTile?.rank === 5;
+  }
+
   // ===== Feedback overlays =====
   private showCorrectFeedback(q: QuizQuestion): void {
     const depth = 1100;
@@ -983,8 +999,11 @@ export class GameScene extends Phaser.Scene {
     const comboText = this.lastComboBonus > 0
       ? `\nCOMBO BREAKPOINT x${this.combo}: +${this.lastComboBonus} score`
       : '';
+    const relicText = this.lastRelicBonus > 0
+      ? `\n${this.lastRelicBonusName}: +${this.lastRelicBonus} score`
+      : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + relicText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
@@ -1451,10 +1470,11 @@ export class GameScene extends Phaser.Scene {
       const iconMap: Record<string, string> = {
         'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
         'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
-        'lucky-coin': '🪙', 'shield-tile': '🛡',
+        'lucky-coin': '🪙', 'shield-tile': '🛡', 'red-five': '5',
       };
       const icon = this.add.text(x, y - 20, iconMap[relic.id] || '?', {
         fontSize: '48px',
+        color: relic.id === 'red-five' ? '#c73e3a' : '#f5e6d3',
       }).setOrigin(0.5).setDepth(depth + 1);
 
       const nameText = this.add.text(x, y + 40, relic.name, {

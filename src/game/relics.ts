@@ -13,7 +13,8 @@ export type RelicId =
   | 'combo-feather'
   | 'hourglass'
   | 'lucky-coin'
-  | 'shield-tile';
+  | 'shield-tile'
+  | 'red-five';
 
 export interface Relic {
   id: RelicId;
@@ -70,6 +71,12 @@ export const RELICS: Record<RelicId, Relic> = {
     name: 'Shield Tile',
     description: 'First wrong answer each chapter is free; +1 life on pickup',
     rarity: 'epic',
+  },
+  'red-five': {
+    id: 'red-five',
+    name: 'Red Five',
+    description: '+750 score when the hand or chosen tile contains a 5',
+    rarity: 'rare',
   },
 };
 
