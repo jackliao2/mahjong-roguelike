@@ -23,6 +23,49 @@ const OPTION_TILE_W = 64;
 const OPTION_TILE_H = 82;
 const HAND_TILE_W = 52;
 const HAND_TILE_H = 68;
+type PathId = 'safe' | 'elite' | 'treasure';
+
+const PATH_DEFS: Record<PathId, {
+  name: string;
+  hud: string;
+  compact: string;
+  title: string;
+  description: string;
+  multiplier: number;
+  color: number;
+  textColor: string;
+}> = {
+  safe: {
+    name: 'Safe',
+    hud: 'SAFE x0.9',
+    compact: 'SAFE',
+    title: 'SAFE SUPPLY',
+    description: '+1 life now\nNormal questions\nLower score',
+    multiplier: 0.9,
+    color: 0x4a9e4a,
+    textColor: '#4a9e4a',
+  },
+  elite: {
+    name: 'Elite',
+    hud: 'ELITE x1.8',
+    compact: 'ELITE',
+    title: 'ELITE TABLE',
+    description: 'All questions become BOSS\nHarder patterns\nHuge score',
+    multiplier: 1.8,
+    color: 0xc73e3a,
+    textColor: '#c73e3a',
+  },
+  treasure: {
+    name: 'Treasure',
+    hud: 'TREASURE x1.2',
+    compact: 'TRSR',
+    title: 'TREASURE ROOM',
+    description: 'Pick an extra relic now\nNormal questions\nBonus score',
+    multiplier: 1.2,
+    color: 0xe5b567,
+    textColor: '#e5b567',
+  },
+};
 
 export class GameScene extends Phaser.Scene {
   // Core state
@@ -63,7 +106,7 @@ export class GameScene extends Phaser.Scene {
   private shieldUsedThisChapter: boolean = false;
 
   // Path system
-  private currentPath: 'safe' | 'risky' = 'safe';
+  private currentPath: PathId = 'safe';
   private pathMultiplier: number = 1;
   private buildStrategy: BuildId = 'balanced';
   private buildFocus: number = 0;
@@ -184,11 +227,11 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5).setDepth(10001).setName('comboLabel');
 
     this.add.text(555, y - 10, '', {
-      fontSize: '12px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      fontSize: '11px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('buildLabel');
 
     this.add.text(555, y + 10, '', {
-      fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('focusLabel');
 
     // === Center: SCORE (big, prominent, with background box) ===
@@ -293,10 +336,14 @@ export class GameScene extends Phaser.Scene {
       comboLabel.setText(nextComboGoal ? `COMBO ${this.combo}/${nextComboGoal}` : `COMBO x${this.combo}`);
     }
     if (buildLabel) {
-      buildLabel.setText(this.isBeginner ? '' : `BUILD: ${BUILD_DEFS[this.buildStrategy].shortName}`);
+      buildLabel.setText(this.isBeginner ? '' : `B:${BUILD_DEFS[this.buildStrategy].shortName}`);
     }
     if (focusLabel) {
-      focusLabel.setText(!this.isBeginner && this.buildStrategy !== 'balanced' ? `FOCUS ${this.buildFocus}/${BUILD_FOCUS_TARGET}` : '');
+      const pathText = this.isBeginner ? '' : PATH_DEFS[this.currentPath].compact;
+      const focusText = !this.isBeginner && this.buildStrategy !== 'balanced'
+        ? ` F${this.buildFocus}/${BUILD_FOCUS_TARGET}`
+        : '';
+      focusLabel.setText(pathText + focusText);
     }
     if (scoreValue) {
       const prevScore = parseInt(scoreValue.text) || 0;
@@ -584,7 +631,7 @@ export class GameScene extends Phaser.Scene {
       const ch = getChapterForRound(this.round);
       const forcedType = getBuildQuestionType(this.buildStrategy, this.round, ch.isBoss);
       this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds, forcedType);
-      if (this.currentPath === 'risky') {
+      if (this.currentPath === 'elite') {
         this.currentQuestion.isBoss = true;
       }
     }
@@ -925,6 +972,9 @@ export class GameScene extends Phaser.Scene {
     const buildBonus = !this.isBeginner && buildMultiplier > 1
       ? `\n\n${BUILD_DEFS[this.buildStrategy].name}: x${buildMultiplier.toFixed(2)} score`
       : '';
+    const pathBonus = !this.isBeginner && this.pathMultiplier !== 1
+      ? `\n${PATH_DEFS[this.currentPath].name} path: x${this.pathMultiplier.toFixed(2)} score`
+      : '';
     const focusText = !this.isBeginner && isBuildRouteMatch(this.buildStrategy, q.targetYaku)
       ? this.lastFocusBonus > 0
         ? `\nFOCUS COMPLETE: +${this.lastFocusBonus} score`
@@ -934,7 +984,7 @@ export class GameScene extends Phaser.Scene {
       ? `\nCOMBO BREAKPOINT x${this.combo}: +${this.lastComboBonus} score`
       : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + focusText + comboText, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
@@ -1484,66 +1534,53 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
-    const cardW = 280;
+    const cardW = 230;
     const cardH = 320;
-    const gap = 50;
-
-    // Safe path
-    const safeX = 512 - cardW / 2 - gap / 2;
-    const riskyX = 512 + cardW / 2 + gap / 2;
+    const gap = 28;
     const y = 380;
+    const paths: PathId[] = ['safe', 'elite', 'treasure'];
+    const startX = 512 - (paths.length * cardW + (paths.length - 1) * gap) / 2 + cardW / 2;
 
-    // Safe card
-    const safeBg = this.add.rectangle(safeX, y, cardW, cardH, 0x1a0f08)
-      .setStrokeStyle(3, 0x4a9e4a).setDepth(depth);
-    const safeTitle = this.add.text(safeX, y - 110, 'SAFE PATH', {
-      fontSize: '20px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const safeDesc = this.add.text(safeX, y - 50, 'Normal questions\nNo extra risk\nStandard score', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
-      align: 'center', lineSpacing: 6,
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const safeMul = this.add.text(safeX, y + 20, 'x1.0 SCORE', {
-      fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const safeHit = this.add.rectangle(safeX, y, cardW, cardH, 0xffffff, 0)
-      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
-    safeHit.on('pointerover', () => safeBg.setStrokeStyle(5, 0x4a9e4a));
-    safeHit.on('pointerout', () => safeBg.setStrokeStyle(3, 0x4a9e4a));
-    safeHit.on('pointerdown', () => {
-      this.soundManager.playClick();
-      this.currentPath = 'safe';
-      this.pathMultiplier = 1;
-      elements.forEach(el => el.destroy());
-      onDone();
+    paths.forEach((path, i) => {
+      const def = PATH_DEFS[path];
+      const x = startX + i * (cardW + gap);
+      const bg = this.add.rectangle(x, y, cardW, cardH, 0x1a0f08)
+        .setStrokeStyle(3, def.color).setDepth(depth);
+      const titleText = this.add.text(x, y - 112, def.title, {
+        fontSize: '18px', color: def.textColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const desc = this.add.text(x, y - 42, def.description, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+        align: 'center', lineSpacing: 6, wordWrap: { width: cardW - 28 },
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const mult = this.add.text(x, y + 54, `x${def.multiplier.toFixed(1)} SCORE`, {
+        fontSize: '18px', color: path === 'safe' ? '#f5e6d3' : '#e5b567',
+        fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const hint = this.add.text(x, y + 112, path === 'elite' ? 'High risk route' : path === 'treasure' ? 'Build faster' : 'Stabilize run', {
+        fontSize: '12px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const hit = this.add.rectangle(x, y, cardW, cardH, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+      hit.on('pointerover', () => bg.setStrokeStyle(5, def.color));
+      hit.on('pointerout', () => bg.setStrokeStyle(3, def.color));
+      hit.on('pointerdown', () => {
+        this.soundManager.playClick();
+        this.currentPath = path;
+        this.pathMultiplier = def.multiplier;
+        if (path === 'safe') {
+          this.lives += 1;
+        }
+        elements.forEach(el => el.destroy());
+        this.updateTopBar();
+        if (path === 'treasure') {
+          this.showRelicChoice(onDone);
+        } else {
+          onDone();
+        }
+      });
+      elements.push(bg, titleText, desc, mult, hint, hit);
     });
-    elements.push(safeBg, safeTitle, safeDesc, safeMul, safeHit);
-
-    // Risky card
-    const riskyBg = this.add.rectangle(riskyX, y, cardW, cardH, 0x1a0f08)
-      .setStrokeStyle(3, 0xc73e3a).setDepth(depth);
-    const riskyTitle = this.add.text(riskyX, y - 110, 'RISKY PATH', {
-      fontSize: '20px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const riskyDesc = this.add.text(riskyX, y - 50, 'All questions are BOSS\nHarder hand patterns\nHigher rewards', {
-      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
-      align: 'center', lineSpacing: 6,
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const riskyMul = this.add.text(riskyX, y + 20, 'x1.5 SCORE', {
-      fontSize: '18px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(depth + 1);
-    const riskyHit = this.add.rectangle(riskyX, y, cardW, cardH, 0xffffff, 0)
-      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
-    riskyHit.on('pointerover', () => riskyBg.setStrokeStyle(5, 0xc73e3a));
-    riskyHit.on('pointerout', () => riskyBg.setStrokeStyle(3, 0xc73e3a));
-    riskyHit.on('pointerdown', () => {
-      this.soundManager.playClick();
-      this.currentPath = 'risky';
-      this.pathMultiplier = 1.5;
-      elements.forEach(el => el.destroy());
-      onDone();
-    });
-    elements.push(riskyBg, riskyTitle, riskyDesc, riskyMul, riskyHit);
 
     elements.forEach(el => { (el as any).setAlpha?.(0); });
     this.tweens.add({
