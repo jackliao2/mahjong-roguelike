@@ -214,15 +214,16 @@ function drawDots(g: Gfx, count: number, cx: number, cy: number, color: number):
   const positions = getDotPositions(count);
   // Use smaller dots when more dots need to fit
   const radius = count <= 5 ? 7 : 5;
-  for (const [dx, dy] of positions) {
+  positions.forEach(([dx, dy], index) => {
     const px = cx + dx;
     const py = cy + dy;
-    drawPixelCircle(g, px, py, radius, color);
+    const dotColor = getDotColor(count, index, color);
+    drawPixelCircle(g, px, py, radius, dotColor);
     // Small cream highlight makes dots look rounded and readable
     g.fillStyle(0xffffff, 0.35);
     drawPixelCircle(g, px - 2, py - 2, 2, 0xffffff);
-    g.fillStyle(color, 1);
-  }
+    g.fillStyle(dotColor, 1);
+  });
 }
 
 // Pixel-art style circle using filled rectangles (sharp, no anti-aliasing blur)
@@ -254,17 +255,18 @@ function getDotPositions(count: number): [number, number][] {
       [-13, 0], [13, 0],
       [-13, 16], [13, 16],
     ];
-    // 7-pin: 6-pin layout with a center dot.
+    // 7-pin: three dots slant on top, four red dots in a square below.
     case 7: return [
-      [-13, -16], [13, -16],
-      [-13, 0], [13, 0],
-      [0, 0],
-      [-13, 16], [13, 16],
+      [-15, -21], [0, -14], [15, -7],
+      [-8, 8], [8, 8],
+      [-8, 22], [8, 22],
     ];
     // 8: 4-4 (4 top, 4 bottom) — traditional 八筒
     case 8: return [
-      [-18, -10], [-6, -10], [6, -10], [18, -10],
-      [-18, 10], [-6, 10], [6, 10], [18, 10],
+      [-10, -21], [10, -21],
+      [-10, -7], [10, -7],
+      [-10, 7], [10, 7],
+      [-10, 21], [10, 21],
     ];
     // 9: 3-3-3 (3 rows of 3) — traditional 九筒
     case 9: return [
@@ -277,6 +279,12 @@ function getDotPositions(count: number): [number, number][] {
 }
 
 // ===== Sou (索/bamboo) =====
+function getDotColor(count: number, index: number, fallback: number): number {
+  if (count === 5 && index === 2) return COLORS.dragon;
+  if (count === 7 && index >= 3) return COLORS.dragon;
+  return fallback;
+}
+
 function drawBamboo(g: Gfx, count: number, cx: number, cy: number, color: number): void {
   g.fillStyle(color, 1);
   const positions = getBambooPositions(count);
