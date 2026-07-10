@@ -47,7 +47,7 @@ export class DeckSelectScene extends Phaser.Scene {
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
       { id: 'beginner', label: 'BEGINNER', desc: '8 questions · 2 lives\nCh.1-3: tenpai / tanyao / pinfu\nBoss · Relics · Shop · Events', locked: false, recommended: !beginnerDone },
-      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nCh.1-4: full course\nBoss · Relics · Shop · Events' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
+      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nCh.1-4: win / yaku / defense\nBoss · Relics · Shop · Events' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
       { id: 'endless', label: 'ENDLESS', desc: normalDone ? 'Infinite chapters\nDifficulty ramps up\nHow far can you go?' : 'Complete Normal\nto unlock', locked: !normalDone, recommended: false },
     ];
 

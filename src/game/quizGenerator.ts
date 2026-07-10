@@ -12,7 +12,7 @@
  */
 
 import { Tile, Suit } from '@/types';
-import { createTile, tileKey } from './tiles';
+import { createTile, getTileDisplay, tileKey } from './tiles';
 import { detectWin, findWaitingTiles } from './winDetector';
 import { checkAllYaku } from './yaku';
 
@@ -534,6 +534,12 @@ export function generateYakuCombo(): QuizQuestion {
 }
 
 export function generateSafeDiscard(): QuizQuestion {
+  const safetyNotes = [
+    'Terminals and honors are usually the cleanest emergency folds in this drill.',
+    'When riichi pressure hits, keeping the hand alive matters less than avoiding deal-in.',
+    'This tile is the best defensive anchor among the four choices.',
+  ];
+
   for (let attempt = 0; attempt < 80; attempt++) {
     const melds: Tile[][] = [];
     for (let i = 0; i < 3; i++) { 
@@ -550,13 +556,23 @@ export function generateSafeDiscard(): QuizQuestion {
       safeTile = createTile(hs, hs === 'wind' ? 1 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 3)); 
     }
     melds.push([safeTile]);
+    melds.push([
+      createTile(rand(SUITS), 2 + Math.floor(Math.random() * 6)),
+      createTile(rand(SUITS), 2 + Math.floor(Math.random() * 6)),
+    ]);
     
     const hand14 = melds.flat();
     if (hand14.length !== 14) continue;
     if (!isValidTileCount(hand14)) continue;
     if (detectWin(hand14)) continue;
     
-    const wrongTiles = shuffle(hand14.filter(t => t.id !== safeTile.id)).slice(0, 3);
+    const safeKey = tileKey(safeTile);
+    const wrongTiles: Tile[] = [];
+    for (const tile of shuffle(hand14.filter(t => tileKey(t) !== safeKey))) {
+      if (wrongTiles.some(wrong => tileKey(wrong) === tileKey(tile))) continue;
+      wrongTiles.push(tile);
+      if (wrongTiles.length === 3) break;
+    }
     if (wrongTiles.length < 3) continue;
     
     const options = shuffle([safeTile, ...wrongTiles]);
@@ -565,10 +581,10 @@ export function generateSafeDiscard(): QuizQuestion {
     return { 
       type: 'safe-discard', 
       hand: hand14, 
-      prompt: 'Someone declared RIICHI! Which tile is SAFEST to discard?', 
+      prompt: 'Opponent declared RIICHI. Which tile is the safest fold?', 
       options, 
       correctIndices: [correctIndex], 
-      explanation: tileKey(safeTile).toUpperCase() + ' is safest!' 
+      explanation: getTileDisplay(safeTile).englishName + ' is safest. ' + rand(safetyNotes),
     };
   }
   return generateFallback();
@@ -586,7 +602,7 @@ const CHAPTER_DEFS: { name: string; title: string }[] = [
   { name: 'CH 1', title: 'TENPAI BASICS' },
   { name: 'CH 2', title: 'TANYAO PATH' },
   { name: 'CH 3', title: 'PINFU MASTERY' },
-  { name: 'CH 4', title: 'YAKUHAI DRAGONS' },
+  { name: 'CH 4', title: 'RIICHI DEFENSE' },
   { name: 'CH 5', title: 'ADVANCED TRIALS' },
 ];
 
@@ -632,9 +648,19 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
     } else if (round === 9) {
       q = generateYakuCombo();
     } else if (round === 10 || round === 11) {
-      q = generateYakuForm('yakuhai');
+      q = generateSafeDiscard();
+    } else if (round === 12) {
+      q = generateSafeDiscard();
     } else {
-      const generators = [generateTenpaiWin, generateWaitingTiles, generateDiscardBest, generateMultiWait, generateYakuCombo, generateSafeDiscard];
+      const generators = [
+        generateTenpaiWin,
+        generateWaitingTiles,
+        generateDiscardBest,
+        generateMultiWait,
+        generateYakuCombo,
+        generateSafeDiscard,
+        generateSafeDiscard,
+      ];
       q = rand(generators)();
     }
   }

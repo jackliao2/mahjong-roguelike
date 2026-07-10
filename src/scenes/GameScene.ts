@@ -95,6 +95,7 @@ export class GameScene extends Phaser.Scene {
   private lastRelicBonus: number = 0;
   private lastRelicBonusName: string = '';
   private lastSpeedBonus: number = 0;
+  private lastDefenseBonus: number = 0;
   private mistakesThisRun: number = 0;
   private bossKillsThisRun: number = 0;
 
@@ -164,6 +165,7 @@ export class GameScene extends Phaser.Scene {
     this.lastRelicBonus = 0;
     this.lastRelicBonusName = '';
     this.lastSpeedBonus = 0;
+    this.lastDefenseBonus = 0;
     this.mistakesThisRun = 0;
     this.bossKillsThisRun = 0;
     this.relics = [];
@@ -604,7 +606,9 @@ export class GameScene extends Phaser.Scene {
     const bossTag = ch.isBoss ? ' [BOSS]' : '';
     const title = `${ch.chapter}${bossTag}`;
     const subtitle = ch.isBoss
-      ? 'Boss question — multiple waiting tiles may exist'
+      ? ch.title.includes('DEFENSE')
+        ? 'Boss question - survive riichi pressure'
+        : 'Boss question - multiple waiting tiles may exist'
       : ch.title;
 
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.7).setDepth(500);
@@ -706,7 +710,17 @@ export class GameScene extends Phaser.Scene {
         this.questionContainer.add(routeLabel);
       }
 
-      const promptY = routeMatches ? 128 : 115;
+      const isDefenseQuestion = q.type === 'safe-discard';
+      if (isDefenseQuestion) {
+        const defenseY = routeMatches ? 116 : 98;
+        const defenseLabel = this.add.text(512, defenseY, 'DEFENSE READ', {
+          fontSize: '11px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+          letterSpacing: 2,
+        }).setOrigin(0.5);
+        this.questionContainer.add(defenseLabel);
+      }
+
+      const promptY = routeMatches || isDefenseQuestion ? 132 : 115;
       const prompt = this.add.text(512, promptY, q.prompt, {
         fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 900 },
@@ -885,6 +899,7 @@ export class GameScene extends Phaser.Scene {
       this.lastRelicBonus = 0;
       this.lastRelicBonusName = '';
       this.lastSpeedBonus = 0;
+      this.lastDefenseBonus = 0;
       this.lastFocusBonus = 0;
 
       let baseScore = q.isBoss ? 1500 : 1000;
@@ -914,6 +929,10 @@ export class GameScene extends Phaser.Scene {
       if (this.timeLeft >= totalTime * 0.5) {
         this.lastSpeedBonus = q.isBoss ? 650 : 400;
         finalScore += this.lastSpeedBonus;
+      }
+      if (q.type === 'safe-discard') {
+        this.lastDefenseBonus = q.isBoss ? 900 : 600;
+        finalScore += this.lastDefenseBonus;
       }
       const chosenTile = q.options[optionIndex];
       if (this.relics.includes('red-five') && this.questionHasFive(q, chosenTile)) {
@@ -1027,11 +1046,14 @@ export class GameScene extends Phaser.Scene {
     const speedText = this.lastSpeedBonus > 0
       ? `\nQUICK DRAW: +${this.lastSpeedBonus} score`
       : '';
+    const defenseText = this.lastDefenseBonus > 0
+      ? `\nSAFE FOLD: +${this.lastDefenseBonus} score`
+      : '';
     const relicText = this.lastRelicBonus > 0
       ? `\n${this.lastRelicBonusName}: +${this.lastRelicBonus} score`
       : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + speedText + relicText, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + speedText + defenseText + relicText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
