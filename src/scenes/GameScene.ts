@@ -221,16 +221,21 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(512, y + 30, 1024, 2, 0xe5b567, 0.8).setDepth(10000);
 
     // === Left: round + lives ===
-    this.add.text(20, y - 12, '', {
+    const livesBoxX = 74;
+    const livesBoxW = 112;
+    const livesBoxH = 48;
+    this.add.rectangle(livesBoxX, y, livesBoxW, livesBoxH, 0x1a0a00, 1)
+      .setStrokeStyle(2, 0xc73e3a, 0.9).setDepth(10000).setName('livesBox');
+    this.add.text(livesBoxX - livesBoxW / 2 + 10, y - 12, '', {
       fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('roundLabel');
 
-    this.add.text(20, y + 10, '', {
+    this.add.text(livesBoxX - livesBoxW / 2 + 10, y + 10, '', {
       fontSize: '22px', color: '#ff4444', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('livesLabel');
 
     // === Center-left: combo ===
-    this.add.text(130, y, '', {
+    this.add.text(150, y, '', {
       fontSize: '16px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('comboLabel');
 
@@ -308,24 +313,27 @@ export class GameScene extends Phaser.Scene {
     const scoreValue = this.children.getByName('scoreValue') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
+    const livesBox = this.children.getByName('livesBox') as Phaser.GameObjects.Rectangle;
     const scoreBox = this.children.getByName('scoreBox') as Phaser.GameObjects.Rectangle;
     const relicBox = this.children.getByName('relicBox') as Phaser.GameObjects.Rectangle;
 
     if (this.teachingMode) {
-      if (roundLabel) roundLabel.setText(`TEACHING · ${this.round}/${this.maxRounds}`);
-      if (livesLabel) livesLabel.setText('');
+      if (roundLabel) roundLabel.setText(`LESSON ${this.round}/${this.maxRounds}`);
+      if (livesLabel) livesLabel.setText('∞');
       if (comboLabel) comboLabel.setText('');
       if (buildLabel) buildLabel.setText('');
       if (focusLabel) focusLabel.setText('');
-      if (scoreValue) scoreValue.setText('');
+      if (scoreValue) scoreValue.setText(`${this.score}`);
       if (timerLabel) timerLabel.setText('');
       if (relicLabel) relicLabel.setText('');
-      if (scoreBox) scoreBox.setVisible(false);
+      if (livesBox) livesBox.setVisible(true);
+      if (scoreBox) scoreBox.setVisible(true);
       if (relicBox) relicBox.setVisible(false);
       return;
     }
 
     // Show score/relic boxes in normal mode
+    if (livesBox) livesBox.setVisible(true);
     if (scoreBox) scoreBox.setVisible(true);
     if (relicBox) relicBox.setVisible(true);
 
