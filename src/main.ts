@@ -16,7 +16,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     pixelArt,
     scale: {
       mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
     },
     scene: [BootScene, DeckSelectScene, GameScene, GameOverScene],
   });
