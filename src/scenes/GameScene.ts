@@ -24,6 +24,7 @@ const OPTION_TILE_H = 82;
 const HAND_TILE_W = 52;
 const HAND_TILE_H = 68;
 type PathId = 'safe' | 'elite' | 'treasure';
+type OpponentId = 'calm' | 'speed' | 'hunter' | 'riichi';
 
 const PATH_DEFS: Record<PathId, {
   name: string;
@@ -64,6 +65,58 @@ const PATH_DEFS: Record<PathId, {
     multiplier: 1.2,
     color: 0xe5b567,
     textColor: '#e5b567',
+  },
+};
+
+const OPPONENT_DEFS: Record<OpponentId, {
+  name: string;
+  threat: string;
+  startRisk: number;
+  pushRisk: number;
+  bossPushRisk: number;
+  safeRisk: number;
+  wrongRisk: number;
+  timeoutRisk: number;
+}> = {
+  calm: {
+    name: 'Calm Dealer',
+    threat: 'Watches your waits',
+    startRisk: 8,
+    pushRisk: 8,
+    bossPushRisk: 14,
+    safeRisk: -24,
+    wrongRisk: 34,
+    timeoutRisk: 28,
+  },
+  speed: {
+    name: 'Speed Demon',
+    threat: 'Fast riichi pressure',
+    startRisk: 18,
+    pushRisk: 12,
+    bossPushRisk: 20,
+    safeRisk: -28,
+    wrongRisk: 42,
+    timeoutRisk: 34,
+  },
+  hunter: {
+    name: 'Mangan Hunter',
+    threat: 'Big hand danger',
+    startRisk: 24,
+    pushRisk: 14,
+    bossPushRisk: 22,
+    safeRisk: -30,
+    wrongRisk: 48,
+    timeoutRisk: 38,
+  },
+  riichi: {
+    name: 'Riichi Shark',
+    threat: 'Punishes unsafe push',
+    startRisk: 35,
+    pushRisk: 18,
+    bossPushRisk: 26,
+    safeRisk: -36,
+    wrongRisk: 58,
+    timeoutRisk: 45,
   },
 };
 
@@ -117,6 +170,10 @@ export class GameScene extends Phaser.Scene {
   private buildStrategy: BuildId = 'balanced';
   private buildFocus: number = 0;
   private lastFocusBonus: number = 0;
+  private currentOpponent: OpponentId = 'calm';
+  private opponentRisk: number = 0;
+  private lastRiskDelta: number = 0;
+  private lastRonReason: string = '';
 
   // Endless mode
   private isEndless: boolean = false;
@@ -176,6 +233,10 @@ export class GameScene extends Phaser.Scene {
     this.buildStrategy = 'balanced';
     this.buildFocus = 0;
     this.lastFocusBonus = 0;
+    this.currentOpponent = 'calm';
+    this.opponentRisk = 0;
+    this.lastRiskDelta = 0;
+    this.lastRonReason = '';
     this.endlessDifficulty = 1;
 
     trackRunStart(this.isBeginner ? 'beginner' : 'normal');
@@ -239,16 +300,16 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5).setDepth(10001).setName('livesLabel');
 
     // === Center-left: combo ===
-    this.add.text(150, y, '', {
-      fontSize: '16px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    this.add.text(150, y - 9, '', {
+      fontSize: '14px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('comboLabel');
 
-    this.add.text(555, y - 10, '', {
-      fontSize: '11px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    this.add.text(150, y + 12, '', {
+      fontSize: '10px', color: '#8a7560', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('buildLabel');
 
-    this.add.text(555, y + 10, '', {
-      fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    this.add.text(214, y + 12, '', {
+      fontSize: '10px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('focusLabel');
 
     // === Center: SCORE (big, prominent, with background box) ===
@@ -264,9 +325,29 @@ export class GameScene extends Phaser.Scene {
       fontSize: '30px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('scoreValue');
 
+    // === Right-center: OPPONENT / RISK ===
+    const threatBoxX = 592;
+    const threatBoxW = 150;
+    const threatBoxH = 48;
+    this.add.rectangle(threatBoxX, y, threatBoxW, threatBoxH, 0x1a0a00, 1)
+      .setStrokeStyle(2, 0xc73e3a, 0.85).setDepth(10000).setName('threatBox');
+    this.add.text(threatBoxX - threatBoxW / 2 + 10, y - 13, 'OPPONENT', {
+      fontSize: '10px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(10001).setName('opponentTitle');
+    this.add.text(threatBoxX - threatBoxW / 2 + 10, y + 4, '', {
+      fontSize: '11px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(10001).setName('opponentLabel');
+    this.add.rectangle(threatBoxX - 6, y + 17, 104, 5, 0x3a2018, 1)
+      .setOrigin(0, 0.5).setDepth(10001).setName('riskTrack');
+    this.add.rectangle(threatBoxX - 6, y + 17, 0, 5, 0xc73e3a, 1)
+      .setOrigin(0, 0.5).setDepth(10002).setName('riskFill');
+    this.add.text(threatBoxX + 54, y + 17, '', {
+      fontSize: '10px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(10001).setName('riskLabel');
+
     // === Right-center: RELICS (with background box, always visible) ===
-    const relicBoxX = 725;
-    const relicBoxW = 190;
+    const relicBoxX = 790;
+    const relicBoxW = 160;
     const relicBoxH = 48;
     this.add.rectangle(relicBoxX, y, relicBoxW, relicBoxH, 0x1a0a00, 1)
       .setStrokeStyle(2, 0xe5b567, 0.9).setDepth(10000).setName('relicBox');
@@ -317,9 +398,15 @@ export class GameScene extends Phaser.Scene {
     const scoreValue = this.children.getByName('scoreValue') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
+    const opponentLabel = this.children.getByName('opponentLabel') as Phaser.GameObjects.Text;
+    const opponentTitle = this.children.getByName('opponentTitle') as Phaser.GameObjects.Text;
+    const riskLabel = this.children.getByName('riskLabel') as Phaser.GameObjects.Text;
+    const riskTrack = this.children.getByName('riskTrack') as Phaser.GameObjects.Rectangle;
+    const riskFill = this.children.getByName('riskFill') as Phaser.GameObjects.Rectangle;
     const livesBox = this.children.getByName('livesBox') as Phaser.GameObjects.Rectangle;
     const scoreBox = this.children.getByName('scoreBox') as Phaser.GameObjects.Rectangle;
     const relicBox = this.children.getByName('relicBox') as Phaser.GameObjects.Rectangle;
+    const threatBox = this.children.getByName('threatBox') as Phaser.GameObjects.Rectangle;
 
     if (this.teachingMode) {
       if (roundLabel) roundLabel.setText(`LESSON ${this.round}/${this.maxRounds}`);
@@ -333,6 +420,12 @@ export class GameScene extends Phaser.Scene {
       if (livesBox) livesBox.setVisible(true);
       if (scoreBox) scoreBox.setVisible(true);
       if (relicBox) relicBox.setVisible(false);
+      if (threatBox) threatBox.setVisible(false);
+      if (opponentTitle) opponentTitle.setVisible(false);
+      if (opponentLabel) opponentLabel.setText('');
+      if (riskLabel) riskLabel.setText('');
+      if (riskTrack) riskTrack.setVisible(false);
+      if (riskFill) riskFill.setDisplaySize(0, 5);
       return;
     }
 
@@ -340,6 +433,9 @@ export class GameScene extends Phaser.Scene {
     if (livesBox) livesBox.setVisible(true);
     if (scoreBox) scoreBox.setVisible(true);
     if (relicBox) relicBox.setVisible(true);
+    if (threatBox) threatBox.setVisible(true);
+    if (opponentTitle) opponentTitle.setVisible(true);
+    if (riskTrack) riskTrack.setVisible(true);
 
     const ch = getChapterForRound(this.round);
     if (roundLabel) {
@@ -380,6 +476,18 @@ export class GameScene extends Phaser.Scene {
     }
     if (timerLabel) {
       timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
+    }
+    if (opponentLabel) {
+      opponentLabel.setText(OPPONENT_DEFS[this.currentOpponent].name.toUpperCase());
+    }
+    if (riskLabel) {
+      riskLabel.setText(`${this.opponentRisk}%`);
+      riskLabel.setColor(this.opponentRisk >= 75 ? '#ff5a4f' : this.opponentRisk >= 45 ? '#e5b567' : '#4a9e4a');
+    }
+    if (riskFill) {
+      const color = this.opponentRisk >= 75 ? 0xc73e3a : this.opponentRisk >= 45 ? 0xe5b567 : 0x4a9e4a;
+      riskFill.setFillStyle(color, 1);
+      riskFill.setDisplaySize(Math.max(2, Math.round(this.opponentRisk * 1.04)), 5);
     }
     if (relicLabel) {
       if (this.relics.length === 0) {
@@ -438,11 +546,17 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    this.lastRonReason = "Time ran out under pressure.";
+    const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].timeoutRisk);
     this.lives -= 1;
     this.mistakesThisRun += 1;
     if (!this.relics.includes('combo-feather')) this.combo = 0;
+    if (hitRon && this.lives > 0) this.opponentRisk = 35;
     this.updateTopBar();
-    if (this.lives > 0) {
+    if (hitRon) {
+      this.soundManager.playGameOver();
+      this.showRonFeedback(this.currentQuestion);
+    } else if (this.lives > 0) {
       this.showTimeoutRetry();
     } else {
       this.soundManager.playGameOver();
@@ -455,6 +569,7 @@ export class GameScene extends Phaser.Scene {
     this.answered = false;
     this.feedbackContainer.removeAll(true);
     this.questionContainer.removeAll(true);
+    this.syncOpponentForRound();
     this.updateTopBar();
 
     if (this.teachingMode) {
@@ -527,6 +642,38 @@ export class GameScene extends Phaser.Scene {
       alpha: 1,
       duration: 250,
     });
+  }
+
+  private syncOpponentForRound(): void {
+    if (this.teachingMode) return;
+
+    const chapterIndex = Math.floor((this.round - 1) / 3);
+    const opponentOrder: OpponentId[] = ['calm', 'speed', 'hunter', 'riichi'];
+    const nextOpponent = opponentOrder[Math.min(chapterIndex, opponentOrder.length - 1)];
+    if (nextOpponent !== this.currentOpponent || this.round === 1) {
+      this.currentOpponent = nextOpponent;
+      this.opponentRisk = OPPONENT_DEFS[nextOpponent].startRisk;
+      this.lastRiskDelta = 0;
+      this.lastRonReason = '';
+    }
+  }
+
+  private getCorrectRiskDelta(q: QuizQuestion): number {
+    const opponent = OPPONENT_DEFS[this.currentOpponent];
+    if (q.type === 'safe-discard') return opponent.safeRisk;
+
+    let delta = q.isBoss ? opponent.bossPushRisk : opponent.pushRisk;
+    if (this.currentPath === 'safe') delta = Math.max(4, delta - 5);
+    if (this.currentPath === 'elite') delta += 8;
+    return delta;
+  }
+
+  private applyRiskDelta(delta: number): boolean {
+    if (this.teachingMode) return false;
+
+    this.lastRiskDelta = delta;
+    this.opponentRisk = Phaser.Math.Clamp(this.opponentRisk + delta, 0, 100);
+    return this.opponentRisk >= 100;
   }
 
   private showBuildChoice(onComplete: () => void): void {
@@ -901,6 +1048,8 @@ export class GameScene extends Phaser.Scene {
       this.lastSpeedBonus = 0;
       this.lastDefenseBonus = 0;
       this.lastFocusBonus = 0;
+      this.lastRiskDelta = 0;
+      this.lastRonReason = '';
 
       let baseScore = q.isBoss ? 1500 : 1000;
       baseScore *= this.pathMultiplier;
@@ -953,7 +1102,21 @@ export class GameScene extends Phaser.Scene {
         this.bossKillsThisRun += 1;
       }
       trackWin([q.targetYaku || q.type], 1, finalScore, false);
+      const hitRon = this.applyRiskDelta(this.getCorrectRiskDelta(q));
       this.updateTopBar();
+      if (hitRon) {
+        this.lastRonReason = q.type === 'safe-discard'
+          ? 'The fold came too late.'
+          : 'You pushed through a dangerous table.';
+        this.lives -= 1;
+        this.mistakesThisRun += 1;
+        if (!this.relics.includes('combo-feather')) this.combo = 0;
+        if (this.lives > 0) this.opponentRisk = 35;
+        this.updateTopBar();
+        this.soundManager.playGameOver();
+        this.showRonFeedback(q);
+        return;
+      }
       this.showCorrectFeedback(q);
     } else {
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
@@ -964,11 +1127,17 @@ export class GameScene extends Phaser.Scene {
         this.updateTopBar();
         return;
       }
+      this.lastRonReason = 'Unsafe read gave the opponent a shot.';
+      const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].wrongRisk);
       this.lives -= 1;
       this.mistakesThisRun += 1;
       if (!this.relics.includes('combo-feather')) this.combo = 0;
+      if (hitRon && this.lives > 0) this.opponentRisk = 35;
       this.updateTopBar();
-      if (this.lives > 0) {
+      if (hitRon) {
+        this.soundManager.playGameOver();
+        this.showRonFeedback(q);
+      } else if (this.lives > 0) {
         this.soundManager.playClick();
         this.showRetryFeedback(q, optionIndex);
       } else {
@@ -1049,11 +1218,14 @@ export class GameScene extends Phaser.Scene {
     const defenseText = this.lastDefenseBonus > 0
       ? `\nSAFE FOLD: +${this.lastDefenseBonus} score`
       : '';
+    const riskText = this.lastRiskDelta !== 0
+      ? `\nRISK ${this.lastRiskDelta > 0 ? '+' : ''}${this.lastRiskDelta} -> ${this.opponentRisk}%`
+      : '';
     const relicText = this.lastRelicBonus > 0
       ? `\n${this.lastRelicBonusName}: +${this.lastRelicBonus} score`
       : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + speedText + defenseText + relicText, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + speedText + defenseText + riskText + relicText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
@@ -1402,6 +1574,68 @@ export class GameScene extends Phaser.Scene {
       this.finishRun(false);
     });
     elements.push(menuBg, menuText, menuHit);
+
+    this.feedbackContainer.add(elements);
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({
+      targets: elements,
+      alpha: 1,
+      duration: 300,
+    });
+  }
+
+  private showRonFeedback(q: QuizQuestion): void {
+    const depth = 1100;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.86).setDepth(depth);
+    const panelW = 620;
+    const panelH = 350;
+    const panel = this.add.rectangle(512, 360, panelW, panelH, 0x120a06)
+      .setStrokeStyle(2, 0xc73e3a, 0.9).setDepth(depth);
+    const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 3, 0xc73e3a, 0.9).setDepth(depth);
+
+    const title = this.add.text(512, 278, 'RON!', {
+      fontSize: '38px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const opponent = OPPONENT_DEFS[this.currentOpponent];
+    const sub = this.add.text(512, 322, `${opponent.name} caught your discard`, {
+      fontSize: '17px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const riskLine = this.lives > 0
+      ? `Risk hit 100%. You lost 1 life, pressure resets to ${this.opponentRisk}%.`
+      : 'Risk hit 100%. You dealt in and the run is over.';
+    const detail = `${this.lastRonReason}\n${riskLine}\n\n${q.explanation}`;
+    const expText = this.add.text(512, 390, detail, {
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+      align: 'center', wordWrap: { width: panelW - 70 }, lineSpacing: 6,
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub, expText];
+
+    const btnW = 190;
+    const btnH = 46;
+    const btnY = 360 + panelH / 2 - 38;
+    const btnLabel = this.lives > 0 ? 'CONTINUE' : 'RUN SUMMARY';
+    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
+      .setStrokeStyle(3, 0x2b1810).setDepth(depth);
+    const btnText = this.add.text(512, btnY, btnLabel, {
+      fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0xe04e4a));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
+    btnHit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      if (this.lives > 0) {
+        elements.forEach(el => el.destroy());
+        this.proceedToNextRound();
+      } else {
+        this.finishRun(false);
+      }
+    });
+    elements.push(btnBg, btnText, btnHit);
 
     this.feedbackContainer.add(elements);
     elements.forEach(el => { (el as any).setAlpha?.(0); });
