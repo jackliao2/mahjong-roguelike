@@ -146,9 +146,9 @@ function drawTileSymbol(g: Gfx, ctx: CanvasRenderingContext2D, tile: Tile, color
   } else if (tile.suit === 'sou') {
     drawBamboo(g, tile.rank, cx, cy, color);
   } else if (tile.suit === 'wind') {
-    drawWindSymbol(g, tile.rank, cx, cy, color);
+    drawWindSymbol(ctx, tile.rank, cx, cy);
   } else if (tile.suit === 'dragon') {
-    drawDragonSymbol(g, tile.rank, cx, cy, color);
+    drawDragonSymbol(ctx, tile.rank, cx, cy);
   }
 }
 
@@ -342,32 +342,26 @@ function getBambooPositions(count: number): [number, number][] {
 }
 
 // ===== Winds =====
-function drawWindSymbol(g: Gfx, rank: number, cx: number, cy: number, color: number): void {
-  g.fillStyle(color, 1);
-  const letters = ['E', 'S', 'W', 'N'];
-  const letter = letters[rank - 1] || '?';
-  drawPixelLetter(g, letter, cx - 8, cy - 10, color);
+function drawWindSymbol(ctx: CanvasRenderingContext2D, rank: number, cx: number, cy: number): void {
+  const winds = ['\u6771', '\u5357', '\u897f', '\u5317'];
+  drawHonorGlyph(ctx, winds[rank - 1] || '?', cx, cy, COLORS.wind, 27);
 }
 
 // ===== Dragons =====
-function drawDragonSymbol(g: Gfx, rank: number, cx: number, cy: number, color: number): void {
-  g.fillStyle(color, 1);
-  if (rank === 1) {
-    // Red dragon - simplified 中
-    g.fillRect(cx - 11, cy - 14, 22, 28);
-    g.fillStyle(COLORS.tileBg, 1);
-    g.fillRect(cx - 6, cy - 8, 12, 16);
-  } else if (rank === 2) {
-    // White dragon - simplified 白
-    g.lineStyle(3, color, 1);
-    g.strokeRect(cx - 11, cy - 14, 22, 28);
-  } else if (rank === 3) {
-    // Green dragon - simplified 發
-    g.fillRect(cx - 10, cy - 14, 20, 28);
-    g.fillStyle(COLORS.tileBg, 1);
-    g.fillRect(cx - 5, cy - 8, 10, 6);
-    g.fillRect(cx - 5, cy + 2, 10, 6);
-  }
+function drawDragonSymbol(ctx: CanvasRenderingContext2D, rank: number, cx: number, cy: number): void {
+  const dragons = ['\u4e2d', '\u767d', '\u767c'];
+  const colors = [COLORS.dragon, COLORS.pin, COLORS.sou];
+  drawHonorGlyph(ctx, dragons[rank - 1] || '?', cx, cy, colors[rank - 1] || COLORS.dragon, 27);
+}
+
+function drawHonorGlyph(ctx: CanvasRenderingContext2D, glyph: string, cx: number, cy: number, color: number, size: number): void {
+  ctx.save();
+  ctx.fillStyle = hexToRgba(color, 1);
+  ctx.font = `bold ${size}px "Microsoft JhengHei", "PMingLiU", "MingLiU", "Noto Serif CJK TC", "Songti TC", "SimSun", serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(glyph, cx, cy + 1);
+  ctx.restore();
 }
 
 function drawPixelLetter(g: Gfx, letter: string, x: number, y: number, color: number): void {

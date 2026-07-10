@@ -94,6 +94,7 @@ export class GameScene extends Phaser.Scene {
   private lastComboBonus: number = 0;
   private lastRelicBonus: number = 0;
   private lastRelicBonusName: string = '';
+  private lastSpeedBonus: number = 0;
   private mistakesThisRun: number = 0;
   private bossKillsThisRun: number = 0;
 
@@ -162,6 +163,7 @@ export class GameScene extends Phaser.Scene {
     this.lastComboBonus = 0;
     this.lastRelicBonus = 0;
     this.lastRelicBonusName = '';
+    this.lastSpeedBonus = 0;
     this.mistakesThisRun = 0;
     this.bossKillsThisRun = 0;
     this.relics = [];
@@ -882,6 +884,7 @@ export class GameScene extends Phaser.Scene {
       this.lastComboBonus = 0;
       this.lastRelicBonus = 0;
       this.lastRelicBonusName = '';
+      this.lastSpeedBonus = 0;
       this.lastFocusBonus = 0;
 
       let baseScore = q.isBoss ? 1500 : 1000;
@@ -907,6 +910,10 @@ export class GameScene extends Phaser.Scene {
       if (this.combo === 3 || this.combo === 5 || this.combo === 8) {
         this.lastComboBonus = this.combo * 250;
         finalScore += this.lastComboBonus;
+      }
+      if (this.timeLeft >= totalTime * 0.5) {
+        this.lastSpeedBonus = q.isBoss ? 650 : 400;
+        finalScore += this.lastSpeedBonus;
       }
       const chosenTile = q.options[optionIndex];
       if (this.relics.includes('red-five') && this.questionHasFive(q, chosenTile)) {
@@ -1017,11 +1024,14 @@ export class GameScene extends Phaser.Scene {
     const comboText = this.lastComboBonus > 0
       ? `\nCOMBO BREAKPOINT x${this.combo}: +${this.lastComboBonus} score`
       : '';
+    const speedText = this.lastSpeedBonus > 0
+      ? `\nQUICK DRAW: +${this.lastSpeedBonus} score`
+      : '';
     const relicText = this.lastRelicBonus > 0
       ? `\n${this.lastRelicBonusName}: +${this.lastRelicBonus} score`
       : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + relicText, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + speedText + relicText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
