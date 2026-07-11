@@ -1716,6 +1716,17 @@ export class GameScene extends Phaser.Scene {
 
   // ===== Round progression =====
   private proceedToNextRound(): void {
+    if (this.teachingMode) {
+      if (this.round >= this.maxRounds) {
+        window.location.href = '/play.html';
+        return;
+      }
+
+      this.round += 1;
+      this.startRound();
+      return;
+    }
+
     const wasBoss = getChapterForRound(this.round).isBoss;
     const nextRound = this.round + 1;
     const isNewChapter = nextRound > 1 && (nextRound - 1) % 3 === 0; // next is first of new chapter
