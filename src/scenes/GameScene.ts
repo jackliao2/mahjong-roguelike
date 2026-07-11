@@ -320,7 +320,7 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xe5b567, 0.9).setDepth(10000).setName('scoreBox');
     this.add.text(scoreBoxX - scoreBoxW / 2 + 12, y - 12, 'SCORE', {
       fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(10001);
+    }).setOrigin(0, 0.5).setDepth(10001).setName('scoreTitle');
     this.add.text(scoreBoxX - scoreBoxW / 2 + 12, y + 10, '0', {
       fontSize: '30px', color: '#ffd700', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('scoreValue');
@@ -353,7 +353,7 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xe5b567, 0.9).setDepth(10000).setName('relicBox');
     this.add.text(relicBoxX - relicBoxW / 2 + 12, y - 12, 'RELICS', {
       fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(10001);
+    }).setOrigin(0, 0.5).setDepth(10001).setName('relicTitle');
     this.add.text(relicBoxX - relicBoxW / 2 + 12, y + 10, 'None', {
       fontSize: '16px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10001).setName('relicLabel');
@@ -396,8 +396,10 @@ export class GameScene extends Phaser.Scene {
     const buildLabel = this.children.getByName('buildLabel') as Phaser.GameObjects.Text;
     const focusLabel = this.children.getByName('focusLabel') as Phaser.GameObjects.Text;
     const scoreValue = this.children.getByName('scoreValue') as Phaser.GameObjects.Text;
+    const scoreTitle = this.children.getByName('scoreTitle') as Phaser.GameObjects.Text;
     const timerLabel = this.children.getByName('timerLabel') as Phaser.GameObjects.Text;
     const relicLabel = this.children.getByName('relicLabel') as Phaser.GameObjects.Text;
+    const relicTitle = this.children.getByName('relicTitle') as Phaser.GameObjects.Text;
     const opponentLabel = this.children.getByName('opponentLabel') as Phaser.GameObjects.Text;
     const opponentTitle = this.children.getByName('opponentTitle') as Phaser.GameObjects.Text;
     const riskLabel = this.children.getByName('riskLabel') as Phaser.GameObjects.Text;
@@ -414,12 +416,14 @@ export class GameScene extends Phaser.Scene {
       if (comboLabel) comboLabel.setText('');
       if (buildLabel) buildLabel.setText('');
       if (focusLabel) focusLabel.setText('');
-      if (scoreValue) scoreValue.setText(`${this.score}`);
+      if (scoreValue) scoreValue.setVisible(false);
+      if (scoreTitle) scoreTitle.setVisible(false);
       if (timerLabel) timerLabel.setText('');
       if (relicLabel) relicLabel.setText('');
       if (livesBox) livesBox.setVisible(true);
-      if (scoreBox) scoreBox.setVisible(true);
+      if (scoreBox) scoreBox.setVisible(false);
       if (relicBox) relicBox.setVisible(false);
+      if (relicTitle) relicTitle.setVisible(false);
       if (threatBox) threatBox.setVisible(false);
       if (opponentTitle) opponentTitle.setVisible(false);
       if (opponentLabel) opponentLabel.setText('');
@@ -432,7 +436,10 @@ export class GameScene extends Phaser.Scene {
     // Show score/relic boxes in normal mode
     if (livesBox) livesBox.setVisible(true);
     if (scoreBox) scoreBox.setVisible(true);
+    if (scoreTitle) scoreTitle.setVisible(true);
+    if (scoreValue) scoreValue.setVisible(true);
     if (relicBox) relicBox.setVisible(true);
+    if (relicTitle) relicTitle.setVisible(true);
     if (threatBox) threatBox.setVisible(true);
     if (opponentTitle) opponentTitle.setVisible(true);
     if (riskTrack) riskTrack.setVisible(true);
@@ -598,33 +605,38 @@ export class GameScene extends Phaser.Scene {
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.85).setDepth(500);
     elements.push(overlay);
 
-    const panel = this.add.rectangle(512, 360, 560, 200, 0x120a06)
-      .setStrokeStyle(1, accentColor, 0.6).setDepth(501);
+    const panel = this.add.rectangle(512, 360, 620, 280, 0x120a06)
+      .setStrokeStyle(2, accentColor, 0.7).setDepth(501);
     elements.push(panel);
 
-    const titleText = this.add.text(512, 300, level.title, {
-      fontSize: '22px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    const titleText = this.add.text(512, 258, level.title, {
+      fontSize: '24px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
     elements.push(titleText);
 
-    const descText = this.add.text(512, 365, level.description, {
+    const subtitleText = this.add.text(512, 296, level.subtitle, {
+      fontSize: '14px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(502);
+    elements.push(subtitleText);
+
+    const descText = this.add.text(512, 370, `${level.description}\n\nGoal: ${level.objective}\nTip: ${level.tip}`, {
       fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
-      align: 'center', wordWrap: { width: 500 }, lineSpacing: 6,
+      align: 'center', wordWrap: { width: 540 }, lineSpacing: 7,
     }).setOrigin(0.5).setDepth(502);
     elements.push(descText);
 
-    const btnW = 160;
+    const btnW = 180;
     const btnH = 40;
-    const btnBg = this.add.rectangle(512, 430, btnW, btnH, 0x4a9e4a, 0.9)
+    const btnBg = this.add.rectangle(512, 472, btnW, btnH, 0x4a9e4a, 0.9)
       .setStrokeStyle(1, 0x2b1810).setDepth(501);
     elements.push(btnBg);
 
-    const btnText = this.add.text(512, 430, 'START', {
+    const btnText = this.add.text(512, 472, 'START LESSON', {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(502);
     elements.push(btnText);
 
-    const btnHit = this.add.rectangle(512, 430, btnW, btnH, 0xffffff, 0)
+    const btnHit = this.add.rectangle(512, 472, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(503);
     elements.push(btnHit);
 
@@ -822,22 +834,76 @@ export class GameScene extends Phaser.Scene {
 
     if (this.teachingMode) {
       const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
-      const progressLabel = this.add.text(512, 60, `LESSON ${this.round} / ${this.maxRounds}`, {
-        fontSize: '12px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-      }).setOrigin(0.5);
+      const lessonPanel = this.add.rectangle(158, 320, 260, 430, 0x120a06, 0.94)
+        .setStrokeStyle(2, 0x4a9e4a, 0.75);
+      this.questionContainer.add(lessonPanel);
+
+      const progressLabel = this.add.text(52, 132, `LESSON ${this.round} / ${this.maxRounds}`, {
+        fontSize: '11px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        letterSpacing: 2,
+      }).setOrigin(0, 0.5);
       this.questionContainer.add(progressLabel);
 
-      const promptY = 100;
-      const prompt = this.add.text(512, promptY, q.prompt, {
-        fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-        align: 'center', wordWrap: { width: 800 },
+      const lessonTitle = this.add.text(52, 170, level.title.replace('LESSON ' + this.round + ': ', ''), {
+        fontSize: '19px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        wordWrap: { width: 210 },
+      }).setOrigin(0, 0.5);
+      this.questionContainer.add(lessonTitle);
+
+      const lessonSub = this.add.text(52, 214, level.subtitle, {
+        fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        wordWrap: { width: 210 },
+      }).setOrigin(0, 0.5);
+      this.questionContainer.add(lessonSub);
+
+      const descriptionText = this.add.text(52, 226, level.description, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+        wordWrap: { width: 215 }, lineSpacing: 4,
+      }).setOrigin(0);
+      this.questionContainer.add(descriptionText);
+
+      const goalTitle = this.add.text(52, 304, 'GOAL', {
+        fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0);
+      this.questionContainer.add(goalTitle);
+
+      const goalText = this.add.text(52, 326, level.objective, {
+        fontSize: '13px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
+        wordWrap: { width: 215 }, lineSpacing: 4,
+      }).setOrigin(0);
+      this.questionContainer.add(goalText);
+
+      const tipTitle = this.add.text(52, 398, 'TIP', {
+        fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0);
+      this.questionContainer.add(tipTitle);
+
+      const tipText = this.add.text(52, 420, level.tip, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+        wordWrap: { width: 215 }, lineSpacing: 4,
+      }).setOrigin(0);
+      this.questionContainer.add(tipText);
+
+      const noPressure = this.add.text(52, 502, 'No timer. No Risk. Wrong answers explain the idea.', {
+        fontSize: '12px', color: '#6fbf73', fontFamily: '"Nunito", sans-serif',
+        wordWrap: { width: 215 }, lineSpacing: 4,
+      }).setOrigin(0, 0.5);
+      this.questionContainer.add(noPressure);
+
+      const prompt = this.add.text(650, 104, q.prompt, {
+        fontSize: '19px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: 650 },
       }).setOrigin(0.5);
       this.questionContainer.add(prompt);
 
-      const sortedHand = sortHand([...q.hand]);
-      this.renderHandTiles(sortedHand, 512, 245);
+      const handPanelBg = this.add.rectangle(650, 255, 700, 110, 0x0a0604, 0.45)
+        .setStrokeStyle(1, 0x315f34, 0.55);
+      this.questionContainer.add(handPanelBg);
 
-      this.renderOptions(q.options, 512, 470);
+      const sortedHand = sortHand([...q.hand]);
+      this.renderHandTiles(sortedHand, 650, 255);
+
+      this.renderOptions(q.options, 650, 500);
     } else {
       const ch = getChapterForRound(this.round);
       const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
@@ -1277,17 +1343,17 @@ export class GameScene extends Phaser.Scene {
     const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
       .setStrokeStyle(2, 0x4a9e4a).setDepth(depth);
 
-    const title = this.add.text(512, 290, 'CORRECT!', {
+    const title = this.add.text(512, 282, 'LESSON CLEAR', {
       fontSize: '28px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
     const lessonName = level?.title.split(':')[1]?.trim() || 'Lesson';
-    const subText = this.add.text(512, 330, `You mastered: ${lessonName}`, {
+    const subText = this.add.text(512, 322, `You learned: ${lessonName}`, {
       fontSize: '16px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
-    const expText = this.add.text(512, 385, q.explanation, {
+    const expText = this.add.text(512, 392, `Rule check\n${level.objective}\n\nWhy it works\n${q.explanation}`, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
@@ -1295,7 +1361,7 @@ export class GameScene extends Phaser.Scene {
     const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, title, subText, expText];
 
     const isLastLesson = this.round >= this.maxRounds;
-    const btnLabel = isLastLesson ? 'ALL LESSONS COMPLETE!' : 'NEXT LESSON ▶';
+    const btnLabel = isLastLesson ? 'FINISH GUIDE' : 'NEXT LESSON';
     const btnW = 220;
     const btnH = 48;
     const btnY = 360 + panelH / 2 - 40;
@@ -1336,15 +1402,17 @@ export class GameScene extends Phaser.Scene {
     const panel = this.add.rectangle(512, 360, panelW, panelH, 0x1a0f08)
       .setStrokeStyle(2, 0xc73e3a).setDepth(depth);
 
-    const title = this.add.text(512, 290, 'NOT QUITE!', {
-      fontSize: '26px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    const title = this.add.text(512, 286, 'REVIEW THIS SHAPE', {
+      fontSize: '25px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
-    const subText = this.add.text(512, 330, 'Let\'s understand why — try again!', {
+    const level = GameConfig.beginner.trainingLevels[this.currentTrainingLevel];
+    const subText = this.add.text(512, 328, level.tip, {
       fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
+      align: 'center', wordWrap: { width: panelW - 70 },
     }).setOrigin(0.5).setDepth(depth + 1);
 
-    const expText = this.add.text(512, 380, q.explanation, {
+    const expText = this.add.text(512, 388, `Goal: ${level.objective}\n\n${q.explanation}`, {
       fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
@@ -1352,15 +1420,15 @@ export class GameScene extends Phaser.Scene {
     const btnW = 180;
     const btnH = 44;
     const btnY = 360 + panelH / 2 - 36;
-    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
+    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0x4a9e4a)
       .setStrokeStyle(2, 0x2b1810).setDepth(depth);
     const btnText = this.add.text(512, btnY, 'TRY AGAIN', {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
     const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
-    btnHit.on('pointerover', () => btnBg.setFillStyle(0xd44a46));
-    btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
+    btnHit.on('pointerover', () => btnBg.setFillStyle(0x5abf5a));
+    btnHit.on('pointerout', () => btnBg.setFillStyle(0x4a9e4a));
     btnHit.on('pointerdown', () => {
       this.soundManager.playClick();
       elements.forEach(el => el.destroy());

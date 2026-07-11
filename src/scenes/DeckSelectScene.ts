@@ -46,8 +46,8 @@ export class DeckSelectScene extends Phaser.Scene {
     const y = 320;
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
-      { id: 'beginner', label: 'BEGINNER', desc: '8 questions · 2 lives\nCh.1-3: tenpai / tanyao / pinfu\nBoss · Relics · Shop · Events', locked: false, recommended: !beginnerDone },
-      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nCh.1-4: win / yaku / defense\nBoss · Relics · Shop · Events' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
+      { id: 'beginner', label: 'BEGINNER', desc: 'Learn or play\n5 guided lessons + 8 question run\nNo Risk meter in lessons', locked: false, recommended: !beginnerDone },
+      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nCh.1-4: win / yaku / defense\nOpponent Risk active' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
       { id: 'endless', label: 'ENDLESS', desc: normalDone ? 'Infinite chapters\nDifficulty ramps up\nHow far can you go?' : 'Complete Normal\nto unlock', locked: !normalDone, recommended: false },
     ];
 
@@ -129,58 +129,30 @@ export class DeckSelectScene extends Phaser.Scene {
   private createBottomButtons(): void {
     const y = 640;
 
-    // START QUIZ (large, right)
-    const startW = 220;
-    const startH = 48;
-    const startX = 760;
-    const startBg = this.add.rectangle(startX, y, startW, startH, 0xc73e3a).setStrokeStyle(1, 0x8b2b28);
-    const startText = this.add.text(startX, y, 'START QUIZ', {
-      fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    const startHit = this.add.rectangle(startX, y, startW, startH, 0xffffff, 0).setInteractive({ useHandCursor: true });
-    startHit.on('pointerover', () => { startBg.setFillStyle(0xd44a46); });
-    startHit.on('pointerout', () => { startBg.setFillStyle(0xc73e3a); });
-    startHit.on('pointerdown', () => {
-      this.soundManager.playClick();
-      const isEndless = this.difficulty === 'endless';
-      const isBeginner = this.difficulty === 'beginner';
-      const isFirstTime = localStorage.getItem(GameConfig.beginner.tutorialSeenKey) !== '1';
-
-      if (isBeginner && isFirstTime) {
-        localStorage.setItem(GameConfig.beginner.tutorialSeenKey, '1');
+    if (this.difficulty === 'beginner') {
+      this.createActionButton(610, y, 190, 48, 'LEARN GUIDE', 0x2d6a4f, 0x4a9e4a, () => {
         this.scene.start('GameScene', {
           action: 'new_run',
           difficulty: 'beginner',
-          tutorial: true,
+          teaching: true,
         });
-      } else {
+      });
+      this.createActionButton(820, y, 190, 48, 'START RUN', 0xc73e3a, 0xd44a46, () => {
+        this.scene.start('GameScene', {
+          action: 'new_run',
+          difficulty: 'beginner',
+        });
+      });
+    } else {
+      const isEndless = this.difficulty === 'endless';
+      this.createActionButton(760, y, 220, 48, isEndless ? 'START ENDLESS' : 'START NORMAL', 0xc73e3a, 0xd44a46, () => {
         this.scene.start('GameScene', {
           action: 'new_run',
           difficulty: isEndless ? 'normal' : this.difficulty,
           endless: isEndless,
         });
-      }
-    });
-
-    // TEACHING (middle)
-    const teachW = 180;
-    const teachH = 44;
-    const teachX = 512;
-    const teachBg = this.add.rectangle(teachX, y, teachW, teachH, 0x281a10).setStrokeStyle(1, 0x4a9e4a);
-    const teachText = this.add.text(teachX, y, 'TEACHING MODE', {
-      fontSize: '13px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    const teachHit = this.add.rectangle(teachX, y, teachW, teachH, 0xffffff, 0).setInteractive({ useHandCursor: true });
-    teachHit.on('pointerover', () => { teachBg.setFillStyle(0x2f2214); });
-    teachHit.on('pointerout', () => { teachBg.setFillStyle(0x281a10); });
-    teachHit.on('pointerdown', () => {
-      this.soundManager.playClick();
-      this.scene.start('GameScene', {
-        action: 'new_run',
-        difficulty: 'beginner',
-        teaching: true,
       });
-    });
+    }
 
     // HOME (left)
     const homeW = 120;
@@ -196,6 +168,35 @@ export class DeckSelectScene extends Phaser.Scene {
     homeHit.on('pointerdown', () => {
       this.soundManager.playClick();
       window.location.href = '/';
+    });
+  }
+
+  private createActionButton(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    label: string,
+    color: number,
+    hoverColor: number,
+    onClick: () => void,
+  ): void {
+    const bg = this.add.rectangle(x, y, w, h, color).setStrokeStyle(1, 0x2b1810);
+    const text = this.add.text(x, y, label, {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    const hit = this.add.rectangle(x, y, w, h, 0xffffff, 0).setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => {
+      bg.setFillStyle(hoverColor);
+      text.setScale(1.03);
+    });
+    hit.on('pointerout', () => {
+      bg.setFillStyle(color);
+      text.setScale(1);
+    });
+    hit.on('pointerdown', () => {
+      this.soundManager.playClick();
+      onClick();
     });
   }
 }
