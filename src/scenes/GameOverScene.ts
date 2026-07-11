@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { RunState, MetaProgression } from '@/types';
 import { Achievement } from '@/roguelike/meta';
+import { addLeaderboardEntry, LeaderboardEntry } from '@/data/storage';
 
 export class GameOverScene extends Phaser.Scene {
   private titleColorHex = '#c73e3a';
@@ -18,9 +19,20 @@ export class GameOverScene extends Phaser.Scene {
     bossKills?: number;
     relicCount?: number;
     perfectRun?: boolean;
+    difficulty?: string;
+    buildName?: string;
   }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     const { runState, won, meta, newAchievements } = data;
+    const leaderboard = addLeaderboardEntry({
+      score: runState.score,
+      round: runState.round,
+      maxRounds: runState.maxRounds,
+      won,
+      difficulty: data.difficulty || 'run',
+      build: data.buildName || 'Build',
+      date: new Date().toLocaleDateString(),
+    });
 
     // ===== Decorative background (matches GameScene theme) =====
     this.add.rectangle(0, 0, 1024, 720, 0x2b1810).setOrigin(0);
@@ -71,7 +83,8 @@ export class GameOverScene extends Phaser.Scene {
     });
 
     // ===== Stats panel with decorative border =====
-    this.createStatsPanel(512, 320, runState, meta, won, data);
+    this.createStatsPanel(330, 320, runState, meta, won, data);
+    this.createLeaderboardPanel(770, 320, leaderboard, runState.score);
 
     // ===== New achievements banner (if any) =====
     if (newAchievements && newAchievements.length > 0) {
@@ -171,6 +184,50 @@ export class GameOverScene extends Phaser.Scene {
     this.createStatRow(cx - 110, metaStatsY + 36, 'TOP',
       `${meta.bestScore}${isNewBest ? '  *NEW*' : ''}`,
       isNewBest ? '#e5b567' : '#c9b89a');
+  }
+
+  private createLeaderboardPanel(cx: number, cy: number, entries: LeaderboardEntry[], currentScore: number): void {
+    const panelW = 350;
+    const panelH = 310;
+    this.add.rectangle(cx + 4, cy + 4, panelW, panelH, 0x000000, 0.45).setOrigin(0.5);
+    this.add.rectangle(cx, cy, panelW, panelH, 0x1a0f08)
+      .setStrokeStyle(3, 0x4a6fa5);
+    this.add.rectangle(cx, cy - panelH / 2 + 4, panelW - 10, 2, 0x4a6fa5).setOrigin(0.5);
+
+    this.add.text(cx, cy - 130, 'LOCAL TOP 5', {
+      fontSize: '13px', color: '#8b9cc8', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      letterSpacing: 2,
+    }).setOrigin(0.5);
+
+    if (entries.length === 0) {
+      this.add.text(cx, cy, 'No scores yet', {
+        fontSize: '14px', color: '#8b7a67', fontFamily: '"Nunito", sans-serif',
+      }).setOrigin(0.5);
+      return;
+    }
+
+    entries.forEach((entry, index) => {
+      const y = cy - 92 + index * 44;
+      const isCurrent = entry.score === currentScore && index === entries.findIndex(e => e.score === currentScore);
+      const rowColor = isCurrent ? 0x263a22 : 0x120a06;
+      const strokeColor = isCurrent ? 0x4a9e4a : 0x2a2018;
+      this.add.rectangle(cx, y, panelW - 30, 34, rowColor, 0.8)
+        .setStrokeStyle(1, strokeColor, 0.9);
+      this.add.text(cx - 150, y, `${index + 1}`, {
+        fontSize: '15px', color: isCurrent ? '#4a9e4a' : '#8b7a67',
+        fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0, 0.5);
+      this.add.text(cx - 118, y - 6, `${entry.score}`, {
+        fontSize: '16px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0, 0.5);
+      this.add.text(cx - 118, y + 9, `${entry.difficulty.toUpperCase()} · ${entry.build}`, {
+        fontSize: '10px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+      }).setOrigin(0, 0.5);
+      this.add.text(cx + 132, y, entry.won ? 'WIN' : `R${entry.round}`, {
+        fontSize: '12px', color: entry.won ? '#4a9e4a' : '#c73e3a',
+        fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(1, 0.5);
+    });
   }
 
   // ===== Single labeled stat row =====

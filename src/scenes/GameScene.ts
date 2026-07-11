@@ -705,7 +705,7 @@ export class GameScene extends Phaser.Scene {
     const title = this.add.text(512, 110, 'CHOOSE YOUR BUILD', {
       fontSize: '28px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
-    const subtitle = this.add.text(512, 145, 'Pick a scoring route for this run', {
+    const subtitle = this.add.text(512, 145, 'Pick a scoring style. This is not difficulty mode.', {
       fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -728,19 +728,19 @@ export class GameScene extends Phaser.Scene {
 
       const cardBg = this.add.rectangle(x, y, cardW, cardH, 0x1a0f08)
         .setStrokeStyle(2, accent, 0.85).setDepth(depth);
-      const tag = this.add.text(x, y - 112, build.shortName, {
+      const tag = this.add.text(x, y - 112, `${build.difficulty.toUpperCase()} · ${build.shortName}`, {
         fontSize: '12px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         letterSpacing: 2,
       }).setOrigin(0.5).setDepth(depth + 1);
-      const name = this.add.text(x, y - 68, build.name, {
+      const name = this.add.text(x, y - 66, build.label, {
         fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: cardW - 24 },
       }).setOrigin(0.5).setDepth(depth + 1);
-      const desc = this.add.text(x, y + 4, build.description, {
+      const desc = this.add.text(x, y - 4, build.description, {
         fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
         align: 'center', wordWrap: { width: cardW - 30 }, lineSpacing: 4,
       }).setOrigin(0.5).setDepth(depth + 1);
-      const bonus = this.add.text(x, y + 92, build.bonusText, {
+      const bonus = this.add.text(x, y + 76, build.bonusText, {
         fontSize: '13px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: cardW - 28 },
       }).setOrigin(0.5).setDepth(depth + 1);
@@ -1821,6 +1821,8 @@ export class GameScene extends Phaser.Scene {
       bossKills: this.bossKillsThisRun,
       relicCount: this.relics.length,
       perfectRun,
+      difficulty,
+      buildName: BUILD_DEFS[this.buildStrategy].label,
     });
     this.scene.pause();
   }

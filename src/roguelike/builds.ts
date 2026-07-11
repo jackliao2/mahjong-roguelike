@@ -4,6 +4,8 @@ export interface BuildDef {
   id: BuildId;
   name: string;
   shortName: string;
+  label: string;
+  difficulty: string;
   description: string;
   bonusText: string;
   targetYaku?: string;
@@ -17,31 +19,39 @@ export const BUILD_DEFS: Record<BuildId, BuildDef> = {
     id: 'balanced',
     name: 'Closed Hand',
     shortName: 'CLOSED',
-    description: 'Flexible route. No yaku lock-in, stronger boss clears.',
-    bonusText: '+15% score on BOSS questions',
+    label: 'Balanced',
+    difficulty: 'Easy',
+    description: 'No yaku lock-in.',
+    bonusText: 'Boss score +15%',
   },
   tanyao: {
     id: 'tanyao',
     name: 'All Simples Engine',
     shortName: 'TANYAO',
-    description: 'Build around clean 2-8 tile shapes and fast low-risk wins.',
-    bonusText: '+60% score on Tanyao questions',
+    label: 'Simple tiles',
+    difficulty: 'Easy',
+    description: 'Use numbers 2-8.',
+    bonusText: 'Tanyao score +60%',
     targetYaku: 'tanyao',
   },
   pinfu: {
     id: 'pinfu',
     name: 'Sequence Engine',
     shortName: 'PINFU',
-    description: 'Prioritize sequence reading and efficient two-sided waits.',
-    bonusText: '+60% score on Pinfu questions',
+    label: 'Shape reading',
+    difficulty: 'Medium',
+    description: 'Sequences and waits.',
+    bonusText: 'Pinfu score +60%',
     targetYaku: 'pinfu',
   },
   yakuhai: {
     id: 'yakuhai',
     name: 'Dragon Engine',
     shortName: 'DRAGON',
-    description: 'Hunt value-tile triplets for fewer but bigger spikes.',
-    bonusText: '+70% score on Yakuhai questions',
+    label: 'High variance',
+    difficulty: 'Hard',
+    description: 'Dragon triplet route.',
+    bonusText: 'Yakuhai score +70%',
     targetYaku: 'yakuhai',
   },
 };

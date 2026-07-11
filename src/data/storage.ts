@@ -2,6 +2,17 @@ import { MetaProgression, RunState } from '@/types';
 import { GameConfig } from '@/config/game-config';
 
 const { run: RUN_KEY, meta: META_KEY, settings: SETTINGS_KEY } = GameConfig.storageKeys;
+const LEADERBOARD_KEY = 'mjrg_leaderboard';
+
+export interface LeaderboardEntry {
+  score: number;
+  round: number;
+  maxRounds: number;
+  won: boolean;
+  difficulty: string;
+  build: string;
+  date: string;
+}
 
 export function saveRun(run: RunState): void {
   try {
@@ -70,4 +81,25 @@ export function saveSettings(settings: unknown): void {
   } catch (e) {
     console.error('Failed to save settings:', e);
   }
+}
+
+export function loadLeaderboard(): LeaderboardEntry[] {
+  try {
+    const data = localStorage.getItem(LEADERBOARD_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addLeaderboardEntry(entry: LeaderboardEntry): LeaderboardEntry[] {
+  const next = [...loadLeaderboard(), entry]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(next));
+  } catch (e) {
+    console.error('Failed to save leaderboard:', e);
+  }
+  return next;
 }
