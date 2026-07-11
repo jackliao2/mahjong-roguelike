@@ -435,14 +435,24 @@ export class GameScene extends Phaser.Scene {
 
     // Show score/relic boxes in normal mode
     if (livesBox) livesBox.setVisible(true);
+    if (roundLabel) roundLabel.setVisible(true);
+    if (livesLabel) livesLabel.setVisible(true);
+    if (comboLabel) comboLabel.setVisible(true);
+    if (buildLabel) buildLabel.setVisible(true);
+    if (focusLabel) focusLabel.setVisible(true);
     if (scoreBox) scoreBox.setVisible(true);
     if (scoreTitle) scoreTitle.setVisible(true);
     if (scoreValue) scoreValue.setVisible(true);
+    if (timerLabel) timerLabel.setVisible(true);
+    if (relicLabel) relicLabel.setVisible(true);
     if (relicBox) relicBox.setVisible(true);
     if (relicTitle) relicTitle.setVisible(true);
     if (threatBox) threatBox.setVisible(true);
     if (opponentTitle) opponentTitle.setVisible(true);
+    if (opponentLabel) opponentLabel.setVisible(true);
+    if (riskLabel) riskLabel.setVisible(true);
     if (riskTrack) riskTrack.setVisible(true);
+    if (riskFill) riskFill.setVisible(true);
 
     const ch = getChapterForRound(this.round);
     if (roundLabel) {

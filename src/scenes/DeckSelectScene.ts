@@ -14,7 +14,8 @@ export class DeckSelectScene extends Phaser.Scene {
     super('DeckSelectScene');
   }
 
-  create(): void {
+  create(data?: { difficulty?: Difficulty }): void {
+    this.difficulty = data?.difficulty || this.difficulty;
     this.cameras.main.setBackgroundColor('#1a1008');
     this.soundManager = new SoundManager(this);
 
@@ -121,7 +122,7 @@ export class DeckSelectScene extends Phaser.Scene {
       card.on('pointerdown', () => {
         this.soundManager.playClick();
         this.difficulty = opt.id;
-        this.scene.restart();
+        this.scene.restart({ difficulty: opt.id });
       });
     }
   }
