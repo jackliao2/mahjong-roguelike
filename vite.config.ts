@@ -17,7 +17,6 @@ export default defineConfig({
         blog: resolve(__dirname, 'blog.html'),
         gamesLikeBalatro: resolve(__dirname, 'games-like-balatro.html'),
         riichiVsChinese: resolve(__dirname, 'riichi-vs-chinese-mahjong.html'),
-        mahjongBrain: resolve(__dirname, 'mahjong-brain-benefits.html'),
         riichiStrategy: resolve(__dirname, 'riichi-mahjong-strategy.html'),
         waitingTiles: resolve(__dirname, 'waiting-tiles-explained.html'),
         beginnerMistakes: resolve(__dirname, 'beginner-mistakes-riichi-mahjong.html'),
