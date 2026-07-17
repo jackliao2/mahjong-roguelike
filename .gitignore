@@ -42,3 +42,6 @@ _diag*.cjs
 _shot*.cjs
 _fix*.cjs
 _ss_*.png
+
+.vercel
+.env*
