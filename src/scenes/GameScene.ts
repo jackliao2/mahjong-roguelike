@@ -973,16 +973,19 @@ export class GameScene extends Phaser.Scene {
 
       const isDefenseQuestion = q.type === 'safe-discard';
       const isEfficiencyQuestion = q.type === 'ukeire-choice';
-      if (isDefenseQuestion || isEfficiencyQuestion) {
+      const isTableDecision = q.type === 'table-decision';
+      if (isDefenseQuestion || isEfficiencyQuestion || isTableDecision) {
         const defenseY = routeMatches ? 116 : 98;
-        const defenseLabel = this.add.text(512, defenseY, isDefenseQuestion ? 'DEFENSE READ' : 'EFFICIENCY READ', {
-          fontSize: '11px', color: isDefenseQuestion ? '#4a9e4a' : '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        const readLabel = isDefenseQuestion ? 'DEFENSE READ' : isEfficiencyQuestion ? 'EFFICIENCY READ' : 'TABLE DECISION';
+        const readColor = isDefenseQuestion ? '#4a9e4a' : isEfficiencyQuestion ? '#e5b567' : '#6aa3e0';
+        const defenseLabel = this.add.text(512, defenseY, readLabel, {
+          fontSize: '11px', color: readColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
           letterSpacing: 2,
         }).setOrigin(0.5);
         this.questionContainer.add(defenseLabel);
       }
 
-      const promptY = routeMatches || isDefenseQuestion || isEfficiencyQuestion ? 132 : 115;
+      const promptY = routeMatches || isDefenseQuestion || isEfficiencyQuestion || isTableDecision ? 132 : 115;
       const prompt = this.add.text(512, promptY, q.prompt, {
         fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 900 },
@@ -997,17 +1000,19 @@ export class GameScene extends Phaser.Scene {
         this.questionContainer.add(context);
       }
 
-      const handPanelW = 640;
-      const handPanelH = 110;
-      const handPanelY = 250;
-      const handPanelBg = this.add.rectangle(512, handPanelY, handPanelW, handPanelH, 0x0a0604, 0.4)
-        .setStrokeStyle(1, 0x3a2818, 0.5);
-      this.questionContainer.add(handPanelBg);
+      if (!isTableDecision) {
+        const handPanelW = 640;
+        const handPanelH = 110;
+        const handPanelY = 250;
+        const handPanelBg = this.add.rectangle(512, handPanelY, handPanelW, handPanelH, 0x0a0604, 0.4)
+          .setStrokeStyle(1, 0x3a2818, 0.5);
+        this.questionContainer.add(handPanelBg);
 
-      const sortedHand = sortHand([...q.hand]);
-      this.renderHandTiles(sortedHand, 512, handPanelY + 8);
+        const sortedHand = sortHand([...q.hand]);
+        this.renderHandTiles(sortedHand, 512, handPanelY + 8);
+      }
 
-      this.renderOptions(q.options, 512, 490);
+      this.renderOptions(q.options, 512, isTableDecision ? 410 : 490);
     }
   }
 
@@ -1052,6 +1057,11 @@ export class GameScene extends Phaser.Scene {
     const q = this.currentQuestion;
     if (!q) return;
 
+    if (q.optionLabels) {
+      this.renderSemanticOptions(tiles, q.optionLabels, centerX, y);
+      return;
+    }
+
     // Hint-scroll: hide 2 wrong options (gray them out + disabled)
     const hiddenWrongIndices: Set<number> = new Set();
     if (hasHint) {
@@ -1091,15 +1101,6 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(isBoss ? 2 : 1, frameColor, 0.6);
     const container = this.add.container(x, y, [frame, shadow, sprite]);
     container.setSize(OPTION_TILE_W + 6, OPTION_TILE_H + 6);
-
-    const semanticLabel = this.currentQuestion?.optionLabels?.[index];
-    if (semanticLabel) {
-      const label = this.add.text(0, OPTION_TILE_H / 2 + 19, semanticLabel, {
-        fontSize: '12px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
-        align: 'center',
-      }).setOrigin(0.5);
-      container.add(label);
-    }
 
     if (glowCorrect) {
       const glow = this.add.rectangle(0, 0, OPTION_TILE_W + 10, OPTION_TILE_H + 10, 0xe5b567, 0.1)
@@ -1287,12 +1288,16 @@ export class GameScene extends Phaser.Scene {
     if (!this.currentQuestion) return;
     const q = this.currentQuestion;
 
-    const gap = 20;
-    const totalW = q.options.length * OPTION_TILE_W + (q.options.length - 1) * gap;
-    const startX = 512 - totalW / 2 + OPTION_TILE_W / 2;
+    const semantic = !!q.optionLabels;
+    const optionW = semantic ? 170 : OPTION_TILE_W;
+    const optionH = semantic ? 78 : OPTION_TILE_H;
+    const gap = semantic ? 16 : 20;
+    const totalW = q.options.length * optionW + (q.options.length - 1) * gap;
+    const startX = 512 - totalW / 2 + optionW / 2;
+    const highlightY = q.type === 'table-decision' ? 410 : 490;
 
     q.options.forEach((tile, i) => {
-      const x = startX + i * (OPTION_TILE_W + gap);
+      const x = startX + i * (optionW + gap);
       const isRightAnswer = q.correctIndices.includes(i);
       const isChosen = i === chosenIndex;
 
@@ -1307,15 +1312,53 @@ export class GameScene extends Phaser.Scene {
       }
 
       if (alpha > 0) {
-        const highlight = this.add.rectangle(x, 480, OPTION_TILE_W + 12, OPTION_TILE_H + 12, color, alpha)
+        const highlight = this.add.rectangle(x, highlightY, optionW + 12, optionH + 12, color, alpha)
           .setStrokeStyle(4, color, 1);
         this.questionContainer.add(highlight);
       }
     });
   }
 
+  private renderSemanticOptions(tiles: Tile[], labels: string[], centerX: number, y: number): void {
+    const width = 170;
+    const height = 78;
+    const gap = 16;
+    const totalW = tiles.length * width + (tiles.length - 1) * gap;
+    const startX = centerX - totalW / 2 + width / 2;
+    const isBoss = this.currentQuestion?.isBoss ?? false;
+
+    tiles.forEach((_, index) => {
+      const x = startX + index * (width + gap);
+      const frameColor = isBoss ? 0xc73e3a : 0xd4a574;
+      const bg = this.add.rectangle(0, 0, width, height, 0x1a0e08, 0.96)
+        .setStrokeStyle(isBoss ? 3 : 2, frameColor, 0.9);
+      const label = this.add.text(0, 0, labels[index], {
+        fontSize: '17px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: width - 18 },
+      }).setOrigin(0.5);
+      const container = this.add.container(x, y, [bg, label]);
+      container.setSize(width, height).setInteractive({ useHandCursor: true });
+      container.on('pointerover', () => {
+        if (!this.answered) {
+          container.setScale(1.04);
+          bg.setStrokeStyle(3, 0xe5b567, 1);
+        }
+      });
+      container.on('pointerout', () => {
+        if (!this.answered) {
+          container.setScale(1);
+          bg.setStrokeStyle(isBoss ? 3 : 2, frameColor, 0.9);
+        }
+      });
+      container.on('pointerdown', () => {
+        if (!this.answered) this.handleAnswer(index);
+      });
+      this.questionContainer.add(container);
+    });
+  }
+
   private questionHasFive(q: QuizQuestion, chosenTile?: Tile): boolean {
-    return q.hand.some(tile => tile.rank === 5) || chosenTile?.rank === 5;
+    return q.hand.some(tile => tile.rank === 5) || (!q.optionLabels && chosenTile?.rank === 5);
   }
 
   /** Give a correct read a short, unmistakable reward moment. */

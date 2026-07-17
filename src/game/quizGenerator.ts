@@ -18,7 +18,7 @@ import { checkAllYaku } from './yaku';
 
 // ===== Types =====
 
-export type QuestionType = 'tenpai-win' | 'yaku-form' | 'waiting-tiles' | 'discard-best' | 'ukeire-choice' | 'multi-wait' | 'yaku-combo' | 'safe-discard';
+export type QuestionType = 'tenpai-win' | 'yaku-form' | 'waiting-tiles' | 'discard-best' | 'ukeire-choice' | 'table-decision' | 'multi-wait' | 'yaku-combo' | 'safe-discard';
 
 export interface QuizQuestion {
   type: QuestionType;
@@ -537,6 +537,63 @@ export function generateUkeireChoice(): QuizQuestion {
   return generateDiscardBest();
 }
 
+type TableDecision = {
+  context: string;
+  prompt: string;
+  choices: string[];
+  correct: string;
+  explanation: string;
+};
+
+const TABLE_DECISIONS: TableDecision[] = [
+  {
+    context: 'EAST 1 · NON-DEALER · TURN 5 · CLOSED RYANMEN TENPAI · NO YAKU · NO THREATS',
+    prompt: 'What is the best default decision?',
+    choices: ['RIICHI', 'STAY DAMA', 'FOLD'],
+    correct: 'RIICHI',
+    explanation: 'RIICHI gives this closed no-yaku hand a legal yaku for ron, adds value, and pressures the table. With an early two-sided wait and no threat, folding wastes a strong tenpai.',
+  },
+  {
+    context: 'SOUTH 4 · 2ND PLACE · 700 BEHIND · TURN 8 · CLOSED TANYAO · RYANMEN · 1,000-POINT RON IS ENOUGH',
+    prompt: 'How should you play the tenpai?',
+    choices: ['RIICHI', 'STAY DAMA', 'FOLD'],
+    correct: 'STAY DAMA',
+    explanation: 'STAY DAMA. Tanyao already supplies a yaku, and the current hand value is enough to take first. Concealing tenpai avoids announcing the wait and keeps every opponent discard live.',
+  },
+  {
+    context: 'SOUTH 4 · 1ST PLACE BY 12,000 · TURN 15 · DEALER RIICHI · YOUR HAND IS 1-SHANTEN, CHEAP · TWO GENBUTSU AVAILABLE',
+    prompt: 'What protects the win condition?',
+    choices: ['PUSH', 'STAY DAMA', 'FOLD'],
+    correct: 'FOLD',
+    explanation: 'FOLD with genbutsu. A late, cheap 1-shanten hand does not justify risking a large first-place lead against dealer riichi. Placement value matters more than hand completion here.',
+  },
+  {
+    context: 'EAST 3 · DEALER · TURN 6 · CLOSED PINFU + DORA 1 · RYANMEN TENPAI · NO THREATS',
+    prompt: 'What is the strongest default?',
+    choices: ['RIICHI', 'STAY DAMA', 'FOLD'],
+    correct: 'RIICHI',
+    explanation: 'RIICHI is the strong default: early dealer ryanmen, existing value, and no opposing threat. The declaration raises the hand from a modest dama win toward a much more valuable dealer score.',
+  },
+];
+
+/** Curated placement and pressure decisions with intentionally clear defaults. */
+export function generateTableDecision(): QuizQuestion {
+  const scenario = rand(TABLE_DECISIONS);
+  const iconTiles = [createTile('wind', 1), createTile('pin', 5), createTile('dragon', 2)];
+  const options = scenario.choices.map((_, index) => iconTiles[index]);
+  const correctIndex = scenario.choices.indexOf(scenario.correct);
+  return {
+    type: 'table-decision',
+    hand: [],
+    prompt: scenario.prompt,
+    context: scenario.context,
+    options,
+    optionLabels: scenario.choices,
+    correctIndices: [correctIndex],
+    explanation: scenario.explanation,
+  };
+}
+
 /**
  * Type 5: multi-wait
  */
@@ -728,6 +785,7 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
       case 'yaku-form': q = generateYakuForm(detail || 'tanyao'); break;
       case 'discard-best': q = generateDiscardBest(); break;
       case 'ukeire-choice': q = generateUkeireChoice(); break;
+      case 'table-decision': q = generateTableDecision(); break;
       case 'safe-discard': q = generateSafeDiscard(); break;
       case 'multi-wait': q = generateMultiWait(); break;
       case 'yaku-combo': q = generateYakuCombo(); break;
@@ -747,7 +805,7 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
     } else if (round === 8) {
       q = generateYakuForm('pinfu');
     } else if (round === 9) {
-      q = generateYakuCombo();
+      q = generateTableDecision();
     } else if (round === 10 || round === 11) {
       q = generateSafeDiscard();
     } else if (round === 12) {
@@ -758,6 +816,7 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
         generateWaitingTiles,
         generateDiscardBest,
         generateUkeireChoice,
+        generateTableDecision,
         generateMultiWait,
         generateYakuCombo,
         generateSafeDiscard,

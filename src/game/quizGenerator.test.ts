@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tileKey } from './tiles';
-import { generateQuestionForRound, generateSafeDiscard, generateUkeireChoice, generateYakuCombo } from './quizGenerator';
+import { generateQuestionForRound, generateSafeDiscard, generateTableDecision, generateUkeireChoice, generateYakuCombo } from './quizGenerator';
 
 describe('quiz generator defense questions', () => {
   it('builds real safe-discard questions instead of falling back', () => {
@@ -57,5 +57,24 @@ describe('quiz generator efficiency questions', () => {
 
   it('introduces ukeire in round 7 of a normal run', () => {
     expect(generateQuestionForRound(7, 12).type).toBe('ukeire-choice');
+  });
+});
+
+describe('quiz generator table decisions', () => {
+  it('provides readable riichi, dama, push or fold choices', () => {
+    for (let sample = 0; sample < 12; sample++) {
+      const question = generateTableDecision();
+      expect(question.type).toBe('table-decision');
+      expect(question.hand).toHaveLength(0);
+      expect(question.options).toHaveLength(3);
+      expect(question.optionLabels).toHaveLength(3);
+      expect(question.correctIndices).toHaveLength(1);
+      expect(question.context).toMatch(/TURN|SHANTEN/);
+      expect(question.explanation.length).toBeGreaterThan(80);
+    }
+  });
+
+  it('uses a table decision for the third normal boss', () => {
+    expect(generateQuestionForRound(9, 12).type).toBe('table-decision');
   });
 });
