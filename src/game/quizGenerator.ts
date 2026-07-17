@@ -574,7 +574,62 @@ const TABLE_DECISIONS: TableDecision[] = [
     correct: 'RIICHI',
     explanation: 'RIICHI is the strong default: early dealer ryanmen, existing value, and no opposing threat. The declaration raises the hand from a modest dama win toward a much more valuable dealer score.',
   },
+  {
+    context: 'SOUTH 4 · 3RD PLACE · 3,900 BEHIND 2ND · TURN 9 · NON-DEALER PINFU + DORA 1 · RYANMEN TENPAI',
+    prompt: 'Which choice gives the hand enough value?',
+    choices: ['RIICHI', 'STAY DAMA', 'FOLD'],
+    correct: 'RIICHI',
+    explanation: 'RIICHI supplies the third han needed for a typical 3,900-point ron. The 2,000-point dama hand does not meet the placement target, while the good wait and manageable turn make folding too passive.',
+  },
+  {
+    context: 'SOUTH 4 · 1ST PLACE BY 8,000 · TURN 17 · OPPONENT RIICHI · YOUR HAND IS 2-SHANTEN · THREE GENBUTSU AVAILABLE',
+    prompt: 'What is the placement-first decision?',
+    choices: ['PUSH', 'STAY DAMA', 'FOLD'],
+    correct: 'FOLD',
+    explanation: 'FOLD. At turn 17 there is little time to complete a two-shanten hand, and dealing into riichi is one of the few ways to lose a comfortable lead. Use the available genbutsu.',
+  },
+  {
+    context: 'EAST 2 · DEALER · TURN 7 · MANGAN TENPAI · RYANMEN · NON-DEALER RIICHI · TWO SAFE TILES BUT YOUR WIN ENDS THE THREAT',
+    prompt: 'What is the value-driven default?',
+    choices: ['PUSH', 'STAY DAMA', 'FOLD'],
+    correct: 'PUSH',
+    explanation: 'PUSH is justified by dealer mangan value, a two-sided wait, and early enough timing. This is not permission to ignore safety forever, but the reward and completion chance are strong enough to contest one non-dealer riichi.',
+  },
+  {
+    context: 'SOUTH 4 · 2ND PLACE · 1,100 BEHIND · TURN 11 · CLOSED TANYAO + DORA 1 · RYANMEN · DAMA RON IS 2,000',
+    prompt: 'How should you preserve the easiest winning route?',
+    choices: ['RIICHI', 'STAY DAMA', 'FOLD'],
+    correct: 'STAY DAMA',
+    explanation: 'STAY DAMA. The existing 2,000-point ron already clears the 1,100-point gap, so extra value is unnecessary. Keeping the hand quiet maximizes the chance the leader releases the winning tile.',
+  },
+  {
+    context: 'EAST 1 · NON-DEALER · TURN 14 · CLOSED KANCHAN TENPAI · NO YAKU · NO OPPONENT THREAT',
+    prompt: 'Which action makes a ron win legal?',
+    choices: ['RIICHI', 'STAY DAMA', 'FOLD'],
+    correct: 'RIICHI',
+    explanation: 'RIICHI is required to give this closed hand a yaku for ron. The wait is poor and the turn is late, so changing the hand can be reasonable in a richer simulation, but staying dama cannot ron as described.',
+  },
+  {
+    context: 'SOUTH 3 · 1ST PLACE BY 15,000 · TURN 12 · DEALER RIICHI · YOUR HAND IS CHEAP 2-SHANTEN · GENBUTSU IN HAND',
+    prompt: 'What keeps variance under control?',
+    choices: ['PUSH', 'STAY DAMA', 'FOLD'],
+    correct: 'FOLD',
+    explanation: 'FOLD. The hand is too far away and too cheap to challenge dealer riichi while protecting a large lead. Genbutsu provides a clean exit without guessing from weaker safety signals.',
+  },
 ];
+
+/** Select a harder or recovery question from the current run performance. */
+export function getAdaptiveQuestionType(
+  combo: number,
+  mistakes: number,
+  round: number,
+  isBoss: boolean,
+): 'ukeire-choice' | 'table-decision' | 'tenpai-win' | undefined {
+  if (isBoss || round <= 2) return undefined;
+  if (combo >= 3) return round % 2 === 0 ? 'table-decision' : 'ukeire-choice';
+  if (mistakes >= 2 && combo === 0) return 'tenpai-win';
+  return undefined;
+}
 
 /** Curated placement and pressure decisions with intentionally clear defaults. */
 export function generateTableDecision(): QuizQuestion {

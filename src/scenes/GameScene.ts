@@ -7,7 +7,7 @@ import { completeDailyChallenge, getTodayKey, loadMistakeTypes, loadRun, clearRu
 import { SoundManager } from '@/render/sound';
 import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
-import { generateQuestionForRound, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
+import { generateQuestionForRound, getAdaptiveQuestionType, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
 import { RelicId, getRandomRelics, Relic } from '@/game/relics';
 import {
   BUILD_DEFS,
@@ -833,10 +833,20 @@ export class GameScene extends Phaser.Scene {
       const ch = getChapterForRound(this.round);
       const forcedType = getBuildQuestionType(this.buildStrategy, this.round, ch.isBoss);
       const reviewTypes = loadMistakeTypes();
-      const selectedType = this.isReview && reviewTypes.length > 0
+      const reviewType = this.isReview && reviewTypes.length > 0
         ? reviewTypes[(this.round - 1) % reviewTypes.length] ?? forcedType
         : forcedType;
+      const adaptiveType = !this.isDaily && !this.isReview && !this.isBeginner && !reviewType
+        ? getAdaptiveQuestionType(this.combo, this.mistakesThisRun, this.round, ch.isBoss)
+        : undefined;
+      const selectedType = reviewType ?? adaptiveType;
       this.currentQuestion = this.generateModeQuestion(selectedType);
+      if (adaptiveType) {
+        const adaptiveLabel = adaptiveType === 'tenpai-win' ? 'ADAPTIVE RECOVERY' : 'ADAPTIVE CHALLENGE';
+        this.currentQuestion.context = this.currentQuestion.context
+          ? `${adaptiveLabel} · ${this.currentQuestion.context}`
+          : `${adaptiveLabel} · Difficulty follows your current run`;
+      }
       if (this.currentPath === 'elite') {
         this.currentQuestion.isBoss = true;
       }

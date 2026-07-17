@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tileKey } from './tiles';
-import { generateQuestionForRound, generateSafeDiscard, generateTableDecision, generateUkeireChoice, generateYakuCombo } from './quizGenerator';
+import { generateQuestionForRound, generateSafeDiscard, generateTableDecision, generateUkeireChoice, generateYakuCombo, getAdaptiveQuestionType } from './quizGenerator';
 
 describe('quiz generator defense questions', () => {
   it('builds real safe-discard questions instead of falling back', () => {
@@ -76,5 +76,18 @@ describe('quiz generator table decisions', () => {
 
   it('uses a table decision for the third normal boss', () => {
     expect(generateQuestionForRound(9, 12).type).toBe('table-decision');
+  });
+});
+
+describe('adaptive difficulty', () => {
+  it('raises difficulty after a three-answer combo', () => {
+    expect(getAdaptiveQuestionType(3, 0, 5, false)).toBe('ukeire-choice');
+    expect(getAdaptiveQuestionType(4, 0, 6, false)).toBe('table-decision');
+  });
+
+  it('offers recovery after repeated misses without overriding bosses', () => {
+    expect(getAdaptiveQuestionType(0, 2, 5, false)).toBe('tenpai-win');
+    expect(getAdaptiveQuestionType(0, 2, 6, true)).toBeUndefined();
+    expect(getAdaptiveQuestionType(5, 0, 2, false)).toBeUndefined();
   });
 });
