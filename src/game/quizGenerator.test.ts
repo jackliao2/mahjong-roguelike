@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tileKey } from './tiles';
-import { generateQuestionForRound, generateSafeDiscard, generateYakuCombo } from './quizGenerator';
+import { generateQuestionForRound, generateSafeDiscard, generateUkeireChoice, generateYakuCombo } from './quizGenerator';
 
 describe('quiz generator defense questions', () => {
   it('builds real safe-discard questions instead of falling back', () => {
@@ -37,5 +37,25 @@ describe('quiz generator yaku questions', () => {
     expect(question.optionLabels).toHaveLength(4);
     expect(question.targetYaku).not.toBe('riichi');
     expect(question.explanation).toContain('not inferable');
+  });
+});
+
+describe('quiz generator efficiency questions', () => {
+  it('builds a unique, computed ukeire comparison', () => {
+    for (let sample = 0; sample < 20; sample++) {
+      const question = generateUkeireChoice();
+
+      expect(question.type).toBe('ukeire-choice');
+      expect(question.hand).toHaveLength(14);
+      expect(question.options).toHaveLength(4);
+      expect(new Set(question.options.map(tileKey)).size).toBe(4);
+      expect(question.correctIndices).toHaveLength(1);
+      expect(question.explanation).toContain('live tiles');
+      expect(question.explanation).toContain('→');
+    }
+  });
+
+  it('introduces ukeire in round 7 of a normal run', () => {
+    expect(generateQuestionForRound(7, 12).type).toBe('ukeire-choice');
   });
 });

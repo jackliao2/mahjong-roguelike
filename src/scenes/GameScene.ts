@@ -972,16 +972,17 @@ export class GameScene extends Phaser.Scene {
       }
 
       const isDefenseQuestion = q.type === 'safe-discard';
-      if (isDefenseQuestion) {
+      const isEfficiencyQuestion = q.type === 'ukeire-choice';
+      if (isDefenseQuestion || isEfficiencyQuestion) {
         const defenseY = routeMatches ? 116 : 98;
-        const defenseLabel = this.add.text(512, defenseY, 'DEFENSE READ', {
-          fontSize: '11px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        const defenseLabel = this.add.text(512, defenseY, isDefenseQuestion ? 'DEFENSE READ' : 'EFFICIENCY READ', {
+          fontSize: '11px', color: isDefenseQuestion ? '#4a9e4a' : '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
           letterSpacing: 2,
         }).setOrigin(0.5);
         this.questionContainer.add(defenseLabel);
       }
 
-      const promptY = routeMatches || isDefenseQuestion ? 132 : 115;
+      const promptY = routeMatches || isDefenseQuestion || isEfficiencyQuestion ? 132 : 115;
       const prompt = this.add.text(512, promptY, q.prompt, {
         fontSize: '20px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: 900 },
@@ -1212,7 +1213,7 @@ export class GameScene extends Phaser.Scene {
         this.lastSpeedBonus = q.isBoss ? 650 : 400;
         finalScore += this.lastSpeedBonus;
       }
-      if (q.type === 'safe-discard') {
+      if (q.type === 'safe-discard' || q.type === 'ukeire-choice') {
         this.lastDefenseBonus = q.isBoss ? 900 : 600;
         finalScore += this.lastDefenseBonus;
       }
@@ -1426,7 +1427,7 @@ export class GameScene extends Phaser.Scene {
       ? `\nQUICK DRAW: +${this.lastSpeedBonus} score`
       : '';
     const defenseText = this.lastDefenseBonus > 0
-      ? `\nSAFE FOLD: +${this.lastDefenseBonus} score`
+      ? `\n${q.type === 'ukeire-choice' ? 'EFFICIENCY EDGE' : 'SAFE FOLD'}: +${this.lastDefenseBonus} score`
       : '';
     const riskText = this.lastRiskDelta !== 0
       ? `\nRISK ${this.lastRiskDelta > 0 ? '+' : ''}${this.lastRiskDelta} -> ${this.opponentRisk}%`

@@ -18,7 +18,7 @@ import { checkAllYaku } from './yaku';
 
 // ===== Types =====
 
-export type QuestionType = 'tenpai-win' | 'yaku-form' | 'waiting-tiles' | 'discard-best' | 'multi-wait' | 'yaku-combo' | 'safe-discard';
+export type QuestionType = 'tenpai-win' | 'yaku-form' | 'waiting-tiles' | 'discard-best' | 'ukeire-choice' | 'multi-wait' | 'yaku-combo' | 'safe-discard';
 
 export interface QuizQuestion {
   type: QuestionType;
@@ -468,6 +468,75 @@ export function generateDiscardBest(): QuizQuestion {
   return generateFallback();
 }
 
+interface DiscardMetric {
+  tile: Tile;
+  waits: string[];
+  liveTiles: number;
+}
+
+/** Count remaining winning tiles after discarding one tile type. */
+function measureDiscardUkeire(hand14: Tile[], discardKey: string): DiscardMetric | null {
+  const discardIndex = hand14.findIndex(tile => tileKey(tile) === discardKey);
+  if (discardIndex < 0) return null;
+  const hand13 = [...hand14];
+  const [discarded] = hand13.splice(discardIndex, 1);
+  const waits = findWaitingTiles(hand13);
+  const visibleCounts = new Map<string, number>();
+  hand14.forEach(tile => visibleCounts.set(tileKey(tile), (visibleCounts.get(tileKey(tile)) ?? 0) + 1));
+  const liveTiles = waits.reduce((sum, wait) => sum + Math.max(0, 4 - (visibleCounts.get(wait) ?? 0)), 0);
+  return { tile: discarded, waits, liveTiles };
+}
+
+/**
+ * Authentic efficiency question: every candidate is evaluated by the win
+ * detector, and the answer is the unique discard with the most live tiles.
+ */
+export function generateUkeireChoice(): QuizQuestion {
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const winning = buildWinningHand();
+    if (!detectWin(winning)) continue;
+    winning.splice(Math.floor(Math.random() * winning.length), 1);
+    if (findWaitingTiles(winning).length === 0) continue;
+
+    const extra = randomTile();
+    if (!extra) continue;
+    const hand14 = [...winning, extra];
+    if (!isValidTileCount(hand14) || detectWin(hand14)) continue;
+
+    const uniqueKeys = [...new Set(hand14.map(tileKey))];
+    const metrics = uniqueKeys
+      .map(key => measureDiscardUkeire(hand14, key))
+      .filter((metric): metric is DiscardMetric => metric !== null)
+      .sort((a, b) => b.liveTiles - a.liveTiles);
+    if (metrics.length < 4 || metrics[0].liveTiles <= 0) continue;
+    if (metrics[0].liveTiles === metrics[1].liveTiles || metrics[1].liveTiles <= 0) continue;
+
+    // Use the strongest alternatives, so the question compares plausible
+    // choices instead of padding the answers with obviously dead tiles.
+    const candidates = metrics.slice(0, 4);
+    const options = shuffle(candidates.map(metric => metric.tile));
+    const bestKey = tileKey(metrics[0].tile);
+    const correctIndex = options.findIndex(tile => tileKey(tile) === bestKey);
+    const metricByKey = new Map(candidates.map(metric => [tileKey(metric.tile), metric]));
+    const breakdown = options.map(tile => {
+      const metric = metricByKey.get(tileKey(tile))!;
+      const waits = metric.waits.length ? metric.waits.map(keyToNotation).join('/') : 'none';
+      return `${tileNotation(tile)} → ${metric.liveTiles} live (${waits})`;
+    }).join(' · ');
+
+    return {
+      type: 'ukeire-choice',
+      hand: hand14,
+      prompt: 'Which discard gives the highest UKEIRE?',
+      context: 'Count every unseen tile that leaves this hand ready to win.',
+      options,
+      correctIndices: [correctIndex],
+      explanation: `${tileNotation(metrics[0].tile)} has the largest verified acceptance: ${metrics[0].liveTiles} live tiles.\n${breakdown}`,
+    };
+  }
+  return generateDiscardBest();
+}
+
 /**
  * Type 5: multi-wait
  */
@@ -658,6 +727,7 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
       case 'waiting-tiles': q = generateWaitingTiles(); break;
       case 'yaku-form': q = generateYakuForm(detail || 'tanyao'); break;
       case 'discard-best': q = generateDiscardBest(); break;
+      case 'ukeire-choice': q = generateUkeireChoice(); break;
       case 'safe-discard': q = generateSafeDiscard(); break;
       case 'multi-wait': q = generateMultiWait(); break;
       case 'yaku-combo': q = generateYakuCombo(); break;
@@ -672,7 +742,9 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
       q = generateYakuForm('tanyao');
     } else if (round === 6) {
       q = generateSafeDiscard();
-    } else if (round === 7 || round === 8) {
+    } else if (round === 7) {
+      q = generateUkeireChoice();
+    } else if (round === 8) {
       q = generateYakuForm('pinfu');
     } else if (round === 9) {
       q = generateYakuCombo();
@@ -685,6 +757,7 @@ export function generateQuestionForRound(round: number, maxRounds: number = 8, f
         generateTenpaiWin,
         generateWaitingTiles,
         generateDiscardBest,
+        generateUkeireChoice,
         generateMultiWait,
         generateYakuCombo,
         generateSafeDiscard,
