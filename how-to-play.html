@@ -84,12 +84,12 @@
     {
       "@type": "Question",
       "name": "How long does a quiz run take?",
-      "acceptedAnswer": { "@type": "Answer", "text": "BEGINNER runs have 8 questions and take 5-10 minutes. NORMAL runs have 12 questions and take 10-15 minutes. ENDLESS mode continues until you answer one wrong." }
+      "acceptedAnswer": { "@type": "Answer", "text": "BEGINNER runs have 5 questions and take about five minutes. NORMAL runs have 12 questions and take 10-15 minutes. ENDLESS mode continues while you still have lives." }
     },
     {
       "@type": "Question",
       "name": "What happens if I answer a question wrong?",
-      "acceptedAnswer": { "@type": "Answer", "text": "One wrong answer ends the run. BEGINNER mode gives you 2 lives; NORMAL gives 1 life. This keeps the roguelike tension without punishing exploration." }
+      "acceptedAnswer": { "@type": "Answer", "text": "A wrong answer costs one life and is saved for Review mode. BEGINNER gives you 3 lives and NORMAL gives 2 lives. The run ends when no lives remain." }
     },
     {
       "@type": "Question",
@@ -602,18 +602,20 @@
         <h2>Quiz Basics</h2>
         <p><strong>Mahjong Quiz</strong> is a browser-based learning game. Instead of drawing and discarding tiles against opponents, you answer multiple-choice questions about riichi mahjong hands. Each question shows a hand and four tile options. Pick the right tile to advance.</p>
 
-        <p>The goal is simple: answer every question correctly and climb as high as you can. One wrong answer ends the run (unless you have a spare life). Questions get harder as you progress, but so do the rewards.</p>
+        <p>The goal is simple: make strong decisions and climb as high as you can. Mistakes cost a life and questions get harder as you progress, but so do the rewards.</p>
 
         <h3 id="difficulty">Difficulty Modes</h3>
         <p>Pick a mode before each run:</p>
         <ul>
-          <li><strong>BEGINNER</strong> &mdash; 8 questions, 2 lives. Starts with tenpai questions and gently introduces yaku, waits, and discards.</li>
-          <li><strong>NORMAL</strong> &mdash; 12 questions, 1 life. Harder questions, tighter timer, bigger score potential.</li>
-          <li><strong>ENDLESS</strong> &mdash; unlocked after NORMAL. Questions keep coming with increasing difficulty until you miss one.</li>
+          <li><strong>BEGINNER</strong> &mdash; 5 questions, 3 lives, plus a starting lucky charm. Introduces yaku, waits, and discards in a short run.</li>
+          <li><strong>NORMAL</strong> &mdash; 12 questions, 2 lives. Harder questions, tighter timer, opponents, paths, and bigger score potential.</li>
+          <li><strong>DAILY 5</strong> &mdash; the same five questions for everyone that day, with completion streaks and a personal best.</li>
+          <li><strong>REVIEW</strong> &mdash; focused practice generated from the question types you recently missed.</li>
+          <li><strong>ENDLESS</strong> &mdash; unlocked after NORMAL. Questions keep coming with increasing difficulty while you can survive.</li>
         </ul>
 
         <h3 id="lives">Lives &amp; Game Over</h3>
-        <p>Wrong answers cost a life. Run out of lives and the run ends. Your score is recorded on the local leaderboard so you can chase your personal best. The "one wrong answer" tension is what gives the quiz its roguelike feel &mdash; every choice matters.</p>
+        <p>Wrong answers cost a life and are saved for focused review. Run out of lives and the run ends. Your score is recorded on the local leaderboard so you can chase your personal best.</p>
 
         <div class="callout-box">
           <p><strong>Quick tip:</strong> Read the prompt carefully. A question might ask which tile <em>wins</em>, which tile <em>completes a yaku</em>, which tiles you're <em>waiting on</em>, or which tile is the <em>safest discard</em>. The same hand can have different correct answers depending on the prompt.</p>
@@ -734,7 +736,7 @@
         <div class="concept-grid">
           <div class="concept-card">
             <h4>Hint Scroll</h4>
-            <p>Highlights one wrong option per question. Great when you're unsure.</p>
+            <p>Eliminates two wrong options per question. Great when you're unsure.</p>
           </div>
           <div class="concept-card">
             <h4>Time Charm</h4>
@@ -831,12 +833,12 @@
 
         <div class="faq-item">
           <h3>How long does a quiz run take?</h3>
-          <p>BEGINNER runs have 8 questions and take 5-10 minutes. NORMAL runs have 12 questions and take 10-15 minutes. ENDLESS mode continues until you answer one wrong.</p>
+          <p>BEGINNER runs have 5 questions and take about five minutes. NORMAL runs have 12 questions and take 10-15 minutes. ENDLESS mode continues while you still have lives.</p>
         </div>
 
         <div class="faq-item">
           <h3>What happens if I answer a question wrong?</h3>
-          <p>One wrong answer costs one life. BEGINNER gives you 2 lives; NORMAL gives 1 life. Run out and the run ends. Your score is saved locally.</p>
+          <p>One wrong answer costs one life. BEGINNER gives you 3 lives; NORMAL gives 2 lives. Run out and the run ends. Your score is saved locally, and missed question types appear in Review mode.</p>
         </div>
 
         <div class="faq-item">

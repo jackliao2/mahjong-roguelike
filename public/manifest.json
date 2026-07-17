@@ -1,12 +1,12 @@
 {
   "name": "Mahjong Quiz",
   "short_name": "Mahjong Quiz",
-  "description": "Learn riichi mahjong through 4-option multiple-choice quiz questions with roguelike chapters, BOSS questions, and relics in your browser.",
-  "start_url": "/",
+  "description": "Practice riichi mahjong decisions through five-minute quiz runs, daily challenges, and mistake review.",
+  "start_url": "/play.html",
   "display": "standalone",
   "background_color": "#2B1810",
   "theme_color": "#2B1810",
-  "orientation": "any",
+  "orientation": "landscape",
   "icons": [
     {
       "src": "/og-image.svg",

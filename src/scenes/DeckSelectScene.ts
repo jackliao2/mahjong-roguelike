@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { MetaProgression } from '@/types';
 import { SoundManager } from '@/render/sound';
 import { GameConfig } from '@/config/game-config';
+import { getTodayKey, loadDailyProgress, loadMistakeTypes } from '@/data/storage';
 
 type Difficulty = 'beginner' | 'normal' | 'endless';
 
@@ -47,8 +48,8 @@ export class DeckSelectScene extends Phaser.Scene {
     const y = 320;
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
-      { id: 'beginner', label: 'BEGINNER', desc: 'Learn or play\n5 guided lessons + 8 question run\nNo Risk meter in lessons', locked: false, recommended: !beginnerDone },
-      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 1 life\nCh.1-4: win / yaku / defense\nOpponent Risk active' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
+      { id: 'beginner', label: 'BEGINNER', desc: 'Learn or play\n5 guided lessons + 5 question run\nNo Risk meter in lessons', locked: false, recommended: !beginnerDone },
+      { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 2 lives\nCh.1-4: win / yaku / defense\nOpponent Risk active' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
       { id: 'endless', label: 'ENDLESS', desc: normalDone ? 'Infinite chapters\nDifficulty ramps up\nHow far can you go?' : 'Complete Normal\nto unlock', locked: !normalDone, recommended: false },
     ];
 
@@ -129,16 +130,37 @@ export class DeckSelectScene extends Phaser.Scene {
 
   private createBottomButtons(): void {
     const y = 640;
+    const daily = loadDailyProgress();
+    const dailyDone = daily.lastCompleted === getTodayKey();
+    const reviewCount = loadMistakeTypes().length;
+
+    this.createActionButton(350, y, 170, 48, dailyDone ? `DAILY ✓ · ${daily.streak}` : 'DAILY 5', 0x4a6fa5, 0x6286bd, () => {
+      this.scene.start('GameScene', {
+        action: 'new_run',
+        difficulty: 'beginner',
+        daily: true,
+      });
+    });
+
+    if (reviewCount > 0) {
+      this.createActionButton(535, y, 170, 48, `REVIEW · ${reviewCount}`, 0x5c3825, 0x8b6f47, () => {
+        this.scene.start('GameScene', {
+          action: 'new_run',
+          difficulty: 'beginner',
+          review: true,
+        });
+      });
+    }
 
     if (this.difficulty === 'beginner') {
-      this.createActionButton(610, y, 190, 48, 'LEARN GUIDE', 0x2d6a4f, 0x4a9e4a, () => {
+      this.createActionButton(reviewCount > 0 ? 720 : 620, y, 170, 48, 'LEARN GUIDE', 0x2d6a4f, 0x4a9e4a, () => {
         this.scene.start('GameScene', {
           action: 'new_run',
           difficulty: 'beginner',
           teaching: true,
         });
       });
-      this.createActionButton(820, y, 190, 48, 'START RUN', 0xc73e3a, 0xd44a46, () => {
+      this.createActionButton(reviewCount > 0 ? 900 : 815, y, 170, 48, 'START RUN', 0xc73e3a, 0xd44a46, () => {
         this.scene.start('GameScene', {
           action: 'new_run',
           difficulty: 'beginner',

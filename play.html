@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mahjong Quiz - Play</title>
 <meta name="description" content="Play Mahjong Quiz in your browser - a pixel-art riichi mahjong quiz with roguelike chapters, BOSS questions, relics, and endless mode.">
-<meta name="robots" content="noindex">
+<meta name="robots" content="noindex,follow">
 <meta property="og:title" content="Mahjong Quiz - Play">
 <meta property="og:description" content="Play Mahjong Quiz in your browser - pixel-art riichi mahjong quiz with roguelike progression.">
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/play.html">
 <meta property="og:type" content="website">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2B1810">
 <link rel="canonical" href="https://mahjongroguelike.com/play.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -186,6 +188,52 @@
     overflow: hidden;
     position: relative;
   }
+
+  .mobile-orientation-hint {
+    display: none;
+  }
+
+  @media (max-width: 700px) and (orientation: portrait) {
+    .game-topbar {
+      height: 44px;
+      padding: 0 12px;
+    }
+    .game-topbar .nav-right { display: none; }
+    .game-topbar .game-title { font-size: 9px; }
+    #game-container { top: 44px; }
+    #game-container canvas { margin-top: 58px !important; }
+    .mobile-orientation-hint {
+      position: absolute;
+      display: flex;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 58px;
+      z-index: 8;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      background: #1a0e08;
+      border-bottom: 2px solid var(--amber);
+      color: var(--cream);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .mobile-orientation-hint span {
+      color: var(--amber-bright);
+      margin-right: 8px;
+      font-size: 18px;
+    }
+  }
+
+  @media (max-height: 520px) and (orientation: landscape) {
+    .game-topbar { display: none; }
+    #game-container { top: 0; }
+    #game-container canvas { margin-top: 0 !important; }
+  }
   .loading-bar::after {
     content: "";
     position: absolute;
@@ -219,6 +267,7 @@
   </header>
 
   <div id="game-container">
+    <div class="mobile-orientation-hint" role="status"><span aria-hidden="true">↻</span>Rotate your phone for larger tiles and easier play</div>
     <div class="mri-ad-slot game-ad" aria-label="Advertisement" id="ad-game-top"></div>
     <div class="loading-screen" id="loading-screen">
       <div class="pixel-lantern" aria-hidden="true"></div>

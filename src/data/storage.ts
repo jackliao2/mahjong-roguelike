@@ -3,6 +3,14 @@ import { GameConfig } from '@/config/game-config';
 
 const { run: RUN_KEY, meta: META_KEY, settings: SETTINGS_KEY } = GameConfig.storageKeys;
 const LEADERBOARD_KEY = 'mjrg_leaderboard';
+const DAILY_KEY = 'mjrg_daily';
+const MISTAKES_KEY = 'mjrg_mistakes';
+
+export interface DailyProgress {
+  lastCompleted: string;
+  streak: number;
+  bestScore: number;
+}
 
 export interface LeaderboardEntry {
   score: number;
@@ -102,4 +110,67 @@ export function addLeaderboardEntry(entry: LeaderboardEntry): LeaderboardEntry[]
     console.error('Failed to save leaderboard:', e);
   }
   return next;
+}
+
+export function getTodayKey(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function loadDailyProgress(): DailyProgress {
+  try {
+    const data = localStorage.getItem(DAILY_KEY);
+    return data ? JSON.parse(data) : { lastCompleted: '', streak: 0, bestScore: 0 };
+  } catch {
+    return { lastCompleted: '', streak: 0, bestScore: 0 };
+  }
+}
+
+export function completeDailyChallenge(score: number): DailyProgress {
+  const current = loadDailyProgress();
+  const today = getTodayKey();
+  if (current.lastCompleted === today) {
+    const updated = { ...current, bestScore: Math.max(current.bestScore, score) };
+    localStorage.setItem(DAILY_KEY, JSON.stringify(updated));
+    return updated;
+  }
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const updated: DailyProgress = {
+    lastCompleted: today,
+    streak: current.lastCompleted === getTodayKey(yesterday) ? current.streak + 1 : 1,
+    bestScore: Math.max(current.bestScore, score),
+  };
+  localStorage.setItem(DAILY_KEY, JSON.stringify(updated));
+  return updated;
+}
+
+export function recordMistake(questionType: string): void {
+  try {
+    const mistakes = loadMistakeTypes();
+    const next = [questionType, ...mistakes.filter(type => type !== questionType)].slice(0, 5);
+    localStorage.setItem(MISTAKES_KEY, JSON.stringify(next));
+  } catch {
+    // Practice history must never interrupt a run.
+  }
+}
+
+export function loadMistakeTypes(): string[] {
+  try {
+    const data = localStorage.getItem(MISTAKES_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function resolveMistake(questionType: string): void {
+  try {
+    const next = loadMistakeTypes().filter(type => type !== questionType);
+    localStorage.setItem(MISTAKES_KEY, JSON.stringify(next));
+  } catch {
+    // Practice history must never interrupt a run.
+  }
 }

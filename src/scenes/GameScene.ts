@@ -3,7 +3,7 @@ import { Tile, RunState } from '@/types';
 import { sortHand } from '@/game/hand';
 import { tileKey, getTileDisplay } from '@/game/tiles';
 import { checkRunComplete, persistRun, endRun } from '@/roguelike/run';
-import { loadRun, clearRun } from '@/data/storage';
+import { completeDailyChallenge, getTodayKey, loadMistakeTypes, loadRun, clearRun, recordMistake, resolveMistake } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
 import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
@@ -178,17 +178,21 @@ export class GameScene extends Phaser.Scene {
   // Endless mode
   private isEndless: boolean = false;
   private endlessDifficulty: number = 1;
+  private isDaily: boolean = false;
+  private isReview: boolean = false;
 
   constructor() {
     super('GameScene');
   }
 
-  create(data?: { action?: string; deckId?: string; difficulty?: string; endless?: boolean; tutorial?: boolean; teaching?: boolean }): void {
+  create(data?: { action?: string; deckId?: string; difficulty?: string; endless?: boolean; tutorial?: boolean; teaching?: boolean; daily?: boolean; review?: boolean }): void {
     this.cameras.main.setBackgroundColor('#2b1810');
     this.soundManager = new SoundManager(this);
 
     this.isBeginner = data?.difficulty === 'beginner';
     this.isEndless = data?.endless === true;
+    this.isDaily = data?.daily === true;
+    this.isReview = data?.review === true;
     this.tutorialActive = data?.tutorial === true;
     this.teachingMode = data?.teaching === true;
     this.tutorialStep = 0;
@@ -197,7 +201,7 @@ export class GameScene extends Phaser.Scene {
       this.maxRounds = GameConfig.beginner.trainingLevels.length;
       this.lives = 999;
     } else {
-      this.maxRounds = this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
+      this.maxRounds = this.isDaily || this.isReview ? 5 : this.isBeginner ? GameConfig.beginner.maxRounds : GameConfig.rounds.maxRounds;
       this.lives = this.isBeginner ? GameConfig.beginner.lives : GameConfig.rounds.lives;
     }
 
@@ -239,7 +243,7 @@ export class GameScene extends Phaser.Scene {
     this.lastRonReason = '';
     this.endlessDifficulty = 1;
 
-    trackRunStart(this.isBeginner ? 'beginner' : 'normal');
+    trackRunStart(this.isDaily ? 'daily' : this.isReview ? 'review' : this.isBeginner ? 'beginner' : 'normal');
 
     // Background
     this.createBackground();
@@ -256,6 +260,8 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(400, () => {
       if (!this.teachingMode && !this.isBeginner) {
         this.showBuildChoice(() => this.startRound());
+      } else if (!this.teachingMode && this.isBeginner && !this.isDaily && !this.isReview) {
+        this.showStarterBoost(() => this.startRound());
       } else {
         this.startRound();
       }
@@ -595,9 +601,13 @@ export class GameScene extends Phaser.Scene {
         this.loadQuestion();
       });
     } else {
-      this.showRoundIntro(() => {
-        this.loadQuestion();
-      });
+      const chapter = getChapterForRound(this.round);
+      const isChapterStart = this.round === 1 || (this.round - 1) % 3 === 0;
+      if (isChapterStart || chapter.isBoss) {
+        this.showRoundIntro(() => this.loadQuestion());
+      } else {
+        this.time.delayedCall(120, () => this.loadQuestion());
+      }
     }
   }
 
@@ -822,7 +832,11 @@ export class GameScene extends Phaser.Scene {
     } else {
       const ch = getChapterForRound(this.round);
       const forcedType = getBuildQuestionType(this.buildStrategy, this.round, ch.isBoss);
-      this.currentQuestion = generateQuestionForRound(this.round, this.maxRounds, forcedType);
+      const reviewTypes = loadMistakeTypes();
+      const selectedType = this.isReview && reviewTypes.length > 0
+        ? reviewTypes[(this.round - 1) % reviewTypes.length] ?? forcedType
+        : forcedType;
+      this.currentQuestion = this.generateModeQuestion(selectedType);
       if (this.currentPath === 'elite') {
         this.currentQuestion.isBoss = true;
       }
@@ -834,6 +848,30 @@ export class GameScene extends Phaser.Scene {
       const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
       const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
       this.startTimer(Math.max(8, base - endlessPenalty));
+    }
+  }
+
+  private generateModeQuestion(forcedType?: string): QuizQuestion {
+    if (!this.isDaily) return generateQuestionForRound(this.round, this.maxRounds, forcedType);
+
+    const seedText = `${getTodayKey()}-${this.round}`;
+    let state = 2166136261;
+    for (let i = 0; i < seedText.length; i++) {
+      state ^= seedText.charCodeAt(i);
+      state = Math.imul(state, 16777619);
+    }
+    const originalRandom = Math.random;
+    Math.random = () => {
+      state += 0x6d2b79f5;
+      let value = state;
+      value = Math.imul(value ^ (value >>> 15), value | 1);
+      value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+      return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+    };
+    try {
+      return generateQuestionForRound(this.round, this.maxRounds, forcedType);
+    } finally {
+      Math.random = originalRandom;
     }
   }
 
@@ -1103,6 +1141,8 @@ export class GameScene extends Phaser.Scene {
     this.hideTooltip();
     const q = this.currentQuestion;
     const isCorrect = q.correctIndices.includes(optionIndex);
+    if (!isCorrect && !this.teachingMode) recordMistake(q.type);
+    if (isCorrect && this.isReview) resolveMistake(q.type);
 
     this.highlightOptions(optionIndex, isCorrect);
 
@@ -1174,6 +1214,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
       this.score += finalScore;
+      this.showScoreBurst(finalScore, q.isBoss === true);
       if (q.isBoss) {
         this.bossKillsThisRun += 1;
       }
@@ -1259,6 +1300,82 @@ export class GameScene extends Phaser.Scene {
     return q.hand.some(tile => tile.rank === 5) || chosenTile?.rank === 5;
   }
 
+  /** Give a correct read a short, unmistakable reward moment. */
+  private showScoreBurst(points: number, isBoss: boolean): void {
+    const color = isBoss ? '#ff7b70' : '#ffd166';
+    const text = this.add.text(512, 190, isBoss ? `BOSS CLEAR +${points}` : `+${points}`, {
+      fontSize: isBoss ? '30px' : '25px', color,
+      fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      stroke: '#1a0e08', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(1300);
+    const flash = this.add.rectangle(512, 360, 1024, 720, isBoss ? 0xc73e3a : 0xe5b567, 0.12)
+      .setDepth(1290);
+
+    for (let i = 0; i < 12; i++) {
+      const spark = this.add.rectangle(512, 240, 7, 7, isBoss ? 0xc73e3a : 0xe5b567).setDepth(1300);
+      const angle = (Math.PI * 2 * i) / 12;
+      const distance = 85 + Math.random() * 85;
+      this.tweens.add({
+        targets: spark,
+        x: 512 + Math.cos(angle) * distance,
+        y: 240 + Math.sin(angle) * distance,
+        alpha: 0, scale: 0.2, duration: 420, ease: 'Cubic.easeOut',
+        onComplete: () => spark.destroy(),
+      });
+    }
+    this.tweens.add({
+      targets: text, y: 145, alpha: 0, scale: 1.25, duration: 650, ease: 'Cubic.easeOut',
+      onComplete: () => text.destroy(),
+    });
+    this.tweens.add({ targets: flash, alpha: 0, duration: 260, onComplete: () => flash.destroy() });
+    if (this.combo > 0 && this.combo % 3 === 0) this.cameras.main.shake(90, 0.003);
+  }
+
+  /** First-time runs begin with one simple advantage, creating agency without risk. */
+  private showStarterBoost(onDone: () => void): void {
+    const boostIds: RelicId[] = ['hint-scroll', 'hourglass', 'lucky-coin'];
+    const choices = getRandomRelics(20, []);
+    const depth = 1200;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.78).setDepth(depth);
+    const title = this.add.text(512, 150, 'PICK A LUCKY CHARM', {
+      fontSize: '27px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const subtitle = this.add.text(512, 184, 'A small edge for your first five questions', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
+
+    boostIds.forEach((id, index) => {
+      const relic = choices.find(item => item.id === id);
+      if (!relic) return;
+      const x = 272 + index * 240;
+      const card = this.add.rectangle(x, 365, 205, 230, 0x1a0f08).setStrokeStyle(3, 0xe5b567).setDepth(depth);
+      const icon = this.add.text(x, 305, id === 'hint-scroll' ? '?' : id === 'hourglass' ? '⌛' : '✦', {
+        fontSize: '42px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const name = this.add.text(x, 360, relic.name, {
+        fontSize: '18px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: 175 },
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const description = this.add.text(x, 420, relic.description, {
+        fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+        align: 'center', wordWrap: { width: 165 }, lineSpacing: 4,
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const hit = this.add.rectangle(x, 365, 205, 230, 0xffffff, 0).setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+      hit.on('pointerover', () => card.setStrokeStyle(5, 0xffd166));
+      hit.on('pointerout', () => card.setStrokeStyle(3, 0xe5b567));
+      hit.on('pointerdown', () => {
+        this.soundManager.playReward();
+        this.applyRelic(id);
+        elements.forEach(el => el.destroy());
+        onDone();
+      });
+      elements.push(card, icon, name, description, hit);
+    });
+    elements.forEach(el => { (el as any).setAlpha?.(0); });
+    this.tweens.add({ targets: elements, alpha: 1, duration: 250 });
+  }
+
   // ===== Feedback overlays =====
   private showCorrectFeedback(q: QuizQuestion): void {
     const depth = 1100;
@@ -1269,7 +1386,7 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x4a9e4a, 0.8).setDepth(depth);
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0x4a9e4a, 0.8).setDepth(depth);
 
-    const title = this.add.text(512, 300, 'CORRECT!', {
+    const title = this.add.text(512, 300, this.isReview ? 'REVIEW CLEARED!' : 'CORRECT!', {
       fontSize: '32px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -1790,12 +1907,13 @@ export class GameScene extends Phaser.Scene {
     };
     persistRun(runState);
 
-    const difficulty = this.isEndless ? 'endless' : this.isBeginner ? 'beginner' : 'normal';
+    const difficulty = this.isDaily ? 'daily' : this.isReview ? 'review' : this.isEndless ? 'endless' : this.isBeginner ? 'beginner' : 'normal';
+    const metaDifficulty = this.isEndless ? 'endless' : this.isBeginner ? 'beginner' : 'normal';
     const perfectRun = this.mistakesThisRun === 0;
     const { meta, newAchievements } = endRun(runState, won, {
       score: this.score,
       won,
-      difficulty,
+      difficulty: metaDifficulty,
       maxRound: this.round,
       bestCombo: this.bestCombo,
       perfectRun,
@@ -1803,9 +1921,10 @@ export class GameScene extends Phaser.Scene {
       relicsCollected: this.relics.length,
     });
     trackRunComplete(won, this.score, this.round);
+    if (won && this.isDaily) completeDailyChallenge(this.score);
 
     if (won) {
-      if (this.isBeginner) {
+      if (this.isBeginner && !this.isDaily && !this.isReview) {
         localStorage.setItem(GameConfig.beginner.completedKey, '1');
       }
       if (!this.isBeginner && !this.isEndless && this.round >= this.maxRounds) {

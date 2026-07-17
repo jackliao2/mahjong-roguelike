@@ -50,17 +50,17 @@ export const GameConfig = {
     baseScore: 1000,
     scoreMultiplier: 1.5,
     bossRoundMultiplier: 1.5,
-    lives: 1,            // NORMAL: 1 wrong = game over (rogue tension)
+    lives: 2,            // NORMAL: room to learn before a run ends
   },
 
   // ===== Beginner Mode =====
   beginner: {
-    maxRounds: 8,
+    maxRounds: 5,
     scoreMultiplier: 0.4, // 40% of normal target scores — a single basic yaku clears round 1
     unlockedYaku: ['riichi', 'tanyao', 'pinfu', 'yakuhai'],
     completedKey: 'mjrg_beginner_done',
     tutorialSeenKey: 'mjrg_tutorial_seen',
-    lives: 2,            // BEGINNER: 2 lives — more forgiving for learners
+    lives: 3,            // BEGINNER: mistakes are part of learning
     trainingLevels: [
       {
         id: 'win-hand',

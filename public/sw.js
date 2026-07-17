@@ -2,29 +2,16 @@
 // Strategy: cache-first for same-origin assets, network-first for HTML navigations
 // with cache fallback. This enables offline play after the first visit.
 
-const CACHE_NAME = 'mahjong-quiz-v11';
+const CACHE_NAME = 'mahjong-quiz-v12';
 const PRECACHE_URLS = [
   '/',
-  '/index.html',
   '/play.html',
-  '/blog.html',
   '/how-to-play.html',
   '/yaku-list.html',
-  '/games-like-balatro.html',
-  '/riichi-vs-chinese-mahjong.html',
-  '/mahjong-brain-benefits.html',
-  '/riichi-mahjong-strategy.html',
-  '/license.html',
-  '/contact.html',
-  '/privacy.html',
-  '/terms.html',
-  '/cookies.html',
   '/manifest.json',
   '/favicon.svg',
-  '/og-image.svg',
   '/immersion.css',
   '/immersion.js',
-  '/ads.txt',
 ];
 
 // ===== Install: precache core pages =====
@@ -76,9 +63,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: network-first for JS/CSS (so updates show immediately),
-  // cache-first for everything else
-  if (url.pathname.startsWith('/assets/')) {
+  // Code, styles, and app metadata are network-first so releases appear
+  // immediately even when their public URL is not content-hashed.
+  const updateSensitive = url.pathname.startsWith('/assets/')
+    || url.pathname.endsWith('.js')
+    || url.pathname.endsWith('.css')
+    || url.pathname.endsWith('.json');
+  if (updateSensitive) {
     event.respondWith(
       fetch(req)
         .then((res) => {

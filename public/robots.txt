@@ -2,6 +2,3 @@ User-agent: *
 Allow: /
 
 Sitemap: https://mahjongroguelike.com/sitemap.xml
-
-# Disallow game state pages (no value for search engines)
-Disallow: /play.html
