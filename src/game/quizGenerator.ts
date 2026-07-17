@@ -27,6 +27,8 @@ export interface QuizQuestion {
   options: Tile[];            // 4 options
   correctIndices: number[];   // indices into options (multiple for waiting-tiles)
   explanation: string;
+  context?: string;             // table information needed to make the decision
+  optionLabels?: string[];      // semantic labels when an option represents more than a tile
   targetYaku?: string;
   isBoss?: boolean;           // BOSS round — styled differently
   chapter?: string;           // e.g. "CH 1: TENPAI"
@@ -49,6 +51,21 @@ function rand<T>(arr: T[]): T {
 
 function range(n: number): number[] {
   return Array.from({ length: n }, (_, i) => i);
+}
+
+function keyToNotation(key: string): string {
+  const [suit, rankText] = key.split('-');
+  const rank = Number(rankText);
+  if (suit === 'man') return `${rank}m`;
+  if (suit === 'pin') return `${rank}p`;
+  if (suit === 'sou') return `${rank}s`;
+  if (suit === 'wind') return ['E', 'S', 'W', 'N'][rank - 1] ?? key;
+  if (suit === 'dragon') return ['Red', 'White', 'Green'][rank - 1] ?? key;
+  return key;
+}
+
+function tileNotation(tile: Tile): string {
+  return keyToNotation(tileKey(tile));
 }
 
 const SUITS: Suit[] = ['man', 'pin', 'sou'];
@@ -181,7 +198,7 @@ export function generateTenpaiWin(): QuizQuestion {
       prompt: 'Which tile completes this hand to WIN?',
       options,
       correctIndices: [correctIndex],
-      explanation: `The hand is tenpai, waiting on: ${waiting.join(', ')}. Drawing ${correctKey} wins!`,
+      explanation: `Waits: ${waiting.map(keyToNotation).join(', ')}. ${keyToNotation(correctKey)} completes the four-groups-and-a-pair structure.`,
     };
   }
   // Fallback (should rarely happen)
@@ -282,7 +299,7 @@ export function generateYakuForm(targetYaku: string): QuizQuestion {
       options,
       correctIndices: [correctIndex],
       targetYaku,
-      explanation: `Adding ${tileKey(removedTile!)} completes the hand with ${yakuDisplay}.\nWaiting tiles: ${waiting.join(', ')}`,
+      explanation: `Adding ${tileNotation(removedTile!)} completes the hand with ${yakuDisplay}.\nWinning tiles: ${waiting.map(keyToNotation).join(', ')}`,
     };
   }
   return generateFallback();
@@ -346,7 +363,7 @@ function generateYakuhaiForm(): QuizQuestion {
       options,
       correctIndices: [correctIndex],
       targetYaku: 'yakuhai',
-      explanation: `Adding ${tileKey(removed)} completes the dragon triplet for YAKUHAI.`,
+      explanation: `Adding ${tileNotation(removed)} completes the dragon triplet for YAKUHAI.`,
     };
   }
   return generateFallback();
@@ -398,7 +415,7 @@ export function generateWaitingTiles(): QuizQuestion {
       prompt: 'This hand is READY (tenpai). Which tile are you waiting for?',
       options,
       correctIndices,
-      explanation: `Waiting on: ${waiting.join(', ')}. Any of these completes the hand.`,
+      explanation: `Winning tiles: ${waiting.map(keyToNotation).join(', ')}. Each one completes a legal hand shape.`,
     };
   }
   return generateFallback();
@@ -445,7 +462,7 @@ export function generateDiscardBest(): QuizQuestion {
       prompt: 'Which tile should you discard for best efficiency?',
       options,
       correctIndices: [correctIndex],
-      explanation: `${tileKey(badTile).toUpperCase()} is an isolated honor tile — it can't form a sequence and is hard to pair. Discard it first.`,
+      explanation: `${tileNotation(badTile)} is an isolated honor: it cannot form a sequence and has no matching copy here. Cutting it preserves the connected shapes.`,
     };
   }
   return generateFallback();
@@ -480,7 +497,7 @@ export function generateMultiWait(): QuizQuestion {
     if (wrongTiles.length < wrongCount) continue;
     const options = shuffle([...waitingTileObjs, ...wrongTiles]);
     const correctIndices = options.map((t, i) => (waitingSet.has(tileKey(t)) ? i : -1)).filter(i => i >= 0);
-    return { type: 'multi-wait', hand: hand13, prompt: 'This hand has MULTIPLE waits. Which tiles are you waiting for?', options, correctIndices, explanation: 'Multi-wait! Waiting on ' + waiting.length + ' tiles: ' + waiting.join(', ') + '.' };
+    return { type: 'multi-wait', hand: hand13, prompt: 'Which option is one of this hand\'s multiple waits?', options, correctIndices, explanation: `This shape has ${waiting.length} winning tile types: ${waiting.map(keyToNotation).join(', ')}.` };
   }
   return generateFallback();
 }
@@ -490,9 +507,12 @@ export function generateYakuCombo(): QuizQuestion {
     const winning = buildWinningHand();
     const win = detectWin(winning);
     if (!win) continue;
-    const yakuList = checkAllYaku(win, winning, true);
-    if (yakuList.length === 0) continue;
-    const correctYakuId = yakuList[0].yaku.id;
+    // Riichi is a declaration, not a pattern visible in the tiles. Only ask
+    // about yaku the player can actually infer from this completed hand.
+    const visibleYaku = checkAllYaku(win, winning, false)
+      .filter(match => ['tanyao', 'pinfu', 'yakuhai'].includes(match.yaku.id));
+    if (visibleYaku.length === 0) continue;
+    const correctYakuId = rand(visibleYaku).yaku.id;
     const correctYakuName = correctYakuId.toUpperCase();
     const allYakuOptions = ['TANYAO', 'PINFU', 'YAKUHAI', 'RIICHI'];
     const wrongOptions = allYakuOptions.filter(y => y !== correctYakuName).slice(0, 3);
@@ -514,6 +534,12 @@ export function generateYakuCombo(): QuizQuestion {
     });
 
     const options = shuffle(optionTiles);
+    const optionLabels = options.map(t => (
+      t.suit === 'man' ? 'TANYAO'
+        : t.suit === 'pin' ? 'PINFU'
+          : t.suit === 'dragon' ? 'YAKUHAI'
+            : 'RIICHI'
+    ));
     const correctIndex = options.findIndex(t => {
       const name = t.suit === 'man' ? 'TANYAO' : t.suit === 'pin' ? 'PINFU' : t.suit === 'dragon' ? 'YAKUHAI' : 'RIICHI';
       return name === correctYakuName;
@@ -523,10 +549,11 @@ export function generateYakuCombo(): QuizQuestion {
     return {
       type: 'yaku-combo',
       hand: winning,
-      prompt: 'This hand wins! Which YAKU does it have?',
+      prompt: 'Which of these YAKU is visible in the completed hand?',
       options,
+      optionLabels,
       correctIndices: [correctIndex],
-      explanation: 'This hand has ' + correctYakuName + '.',
+      explanation: `This hand visibly satisfies ${correctYakuName}. RIICHI is not inferable from the tiles alone because it requires a declaration.`,
       targetYaku: correctYakuId,
     };
   }
@@ -534,12 +561,6 @@ export function generateYakuCombo(): QuizQuestion {
 }
 
 export function generateSafeDiscard(): QuizQuestion {
-  const safetyNotes = [
-    'Terminals and honors are usually the cleanest emergency folds in this drill.',
-    'When riichi pressure hits, keeping the hand alive matters less than avoiding deal-in.',
-    'This tile is the best defensive anchor among the four choices.',
-  ];
-
   for (let attempt = 0; attempt < 80; attempt++) {
     const melds: Tile[][] = [];
     for (let i = 0; i < 3; i++) { 
@@ -547,14 +568,10 @@ export function generateSafeDiscard(): QuizQuestion {
     }
     melds.push(buildPair(rand(SUITS), 2 + Math.floor(Math.random() * 7)));
     
-    const useTerminal = Math.random() < 0.5;
-    let safeTile: Tile;
-    if (useTerminal) { 
-      safeTile = createTile(rand(SUITS), Math.random() < 0.5 ? 1 : 9); 
-    } else { 
-      const hs = rand(['wind','dragon'] as Suit[]); 
-      safeTile = createTile(hs, hs === 'wind' ? 1 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 3)); 
-    }
+    // The correct option is genbutsu: a tile already discarded by the
+    // riichi player. It is therefore 100% safe against ron from that player.
+    const safeTile = randomTile();
+    if (!safeTile) continue;
     melds.push([safeTile]);
     melds.push([
       createTile(rand(SUITS), 2 + Math.floor(Math.random() * 6)),
@@ -574,6 +591,17 @@ export function generateSafeDiscard(): QuizQuestion {
       if (wrongTiles.length === 3) break;
     }
     if (wrongTiles.length < 3) continue;
+
+    const river: Tile[] = [createTile(safeTile.suit, safeTile.rank)];
+    const riverKeys = new Set([safeKey]);
+    for (let i = 0; i < 40 && river.length < 6; i++) {
+      const tile = randomTile(new Set([...riverKeys, ...wrongTiles.map(tileKey)]));
+      if (!tile) continue;
+      river.push(tile);
+      riverKeys.add(tileKey(tile));
+    }
+    if (river.length < 6) continue;
+    const shuffledRiver = shuffle(river);
     
     const options = shuffle([safeTile, ...wrongTiles]);
     const correctIndex = options.findIndex(t => t.id === safeTile.id);
@@ -581,10 +609,11 @@ export function generateSafeDiscard(): QuizQuestion {
     return { 
       type: 'safe-discard', 
       hand: hand14, 
-      prompt: 'Opponent declared RIICHI. Which tile is the safest fold?', 
+      prompt: 'Opponent declared RIICHI. Which discard is guaranteed safe?',
+      context: `RIICHI PLAYER'S RIVER: ${shuffledRiver.map(tileNotation).join(' · ')}`,
       options, 
       correctIndices: [correctIndex], 
-      explanation: getTileDisplay(safeTile).englishName + ' is safest. ' + rand(safetyNotes),
+      explanation: `${getTileDisplay(safeTile).englishName} is genbutsu: the riichi player already discarded it, so furiten prevents them from winning by ron on that tile. The other choices are not proven safe from the river alone.`,
     };
   }
   return generateFallback();

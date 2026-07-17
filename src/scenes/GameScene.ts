@@ -988,6 +988,14 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0.5);
       this.questionContainer.add(prompt);
 
+      if (q.context) {
+        const context = this.add.text(512, promptY + 40, q.context, {
+          fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+          align: 'center', wordWrap: { width: 860 },
+        }).setOrigin(0.5);
+        this.questionContainer.add(context);
+      }
+
       const handPanelW = 640;
       const handPanelH = 110;
       const handPanelY = 250;
@@ -1082,6 +1090,15 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(isBoss ? 2 : 1, frameColor, 0.6);
     const container = this.add.container(x, y, [frame, shadow, sprite]);
     container.setSize(OPTION_TILE_W + 6, OPTION_TILE_H + 6);
+
+    const semanticLabel = this.currentQuestion?.optionLabels?.[index];
+    if (semanticLabel) {
+      const label = this.add.text(0, OPTION_TILE_H / 2 + 19, semanticLabel, {
+        fontSize: '12px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        align: 'center',
+      }).setOrigin(0.5);
+      container.add(label);
+    }
 
     if (glowCorrect) {
       const glow = this.add.rectangle(0, 0, OPTION_TILE_W + 10, OPTION_TILE_H + 10, 0xe5b567, 0.1)
