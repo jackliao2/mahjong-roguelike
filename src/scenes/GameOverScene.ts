@@ -64,7 +64,10 @@ export class GameOverScene extends Phaser.Scene {
       fontStyle: 'bold',
     }).setOrigin(0.5);
     // Subtitle
-    const subtitle = won
+    const isBeginnerClear = won && data.difficulty === 'beginner';
+    const subtitle = isBeginnerClear
+      ? 'Beginner warm-up cleared · Normal mode unlocked'
+      : won
       ? `You conquered all ${runState.maxRounds} rounds`
       : `Fell on round ${runState.round} of ${runState.maxRounds}`;
     this.add.text(512, 132, subtitle, {
@@ -92,7 +95,7 @@ export class GameOverScene extends Phaser.Scene {
     }
 
     // ===== Relics & Custom Tiles summary =====
-    this.createCollectionSummary(512, 540, runState);
+    this.createCollectionSummary(512, 540, runState, isBeginnerClear);
 
     // ===== Buttons =====
     this.createButton(400, 640, 'NEW RUN', 0xc73e3a, () => this.startNewRun());
@@ -124,7 +127,7 @@ export class GameOverScene extends Phaser.Scene {
     runState: RunState,
     meta: MetaProgression,
     won: boolean,
-    runStats: { bestCombo?: number; bossKills?: number; relicCount?: number; perfectRun?: boolean }
+    runStats: { bestCombo?: number; bossKills?: number; relicCount?: number; perfectRun?: boolean; difficulty?: string }
   ): void {
     const panelW = 480;
     const panelH = 310;
@@ -160,8 +163,13 @@ export class GameOverScene extends Phaser.Scene {
     this.createStatRow(cx + 110, runStatsY, 'SCORE', `${runState.score}`, '#e5b567');
     this.createStatRow(cx - 110, runStatsY + 36, 'BEST COMBO', `${runStats.bestCombo ?? 0}`, '#ffd700');
     this.createStatRow(cx + 110, runStatsY + 36, 'RESULT', won ? 'WIN' : 'LOSS', won ? '#d4a574' : '#c73e3a');
-    this.createStatRow(cx - 110, runStatsY + 72, 'BOSS KILLS', `${runStats.bossKills ?? 0}`, '#c73e3a');
-    this.createStatRow(cx + 110, runStatsY + 72, 'RELICS', `${runStats.relicCount ?? 0}`, '#6aa3e0');
+    if (runStats.difficulty === 'beginner') {
+      this.createStatRow(cx - 110, runStatsY + 72, 'MODE', 'BEGINNER', '#6fbf73');
+      this.createStatRow(cx + 110, runStatsY + 72, 'HELP', 'GUIDED', '#6aa3e0');
+    } else {
+      this.createStatRow(cx - 110, runStatsY + 72, 'BOSS KILLS', `${runStats.bossKills ?? 0}`, '#c73e3a');
+      this.createStatRow(cx + 110, runStatsY + 72, 'RELICS', `${runStats.relicCount ?? 0}`, '#6aa3e0');
+    }
     if (runStats.perfectRun) {
       this.add.text(cx, runStatsY + 105, 'PERFECT RUN', {
         fontSize: '13px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
@@ -241,18 +249,18 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   // ===== Yaku collection summary =====
-  private createCollectionSummary(cx: number, y: number, runState: RunState): void {
+  private createCollectionSummary(cx: number, y: number, runState: RunState, isBeginnerClear: boolean): void {
     const yakuCount = runState.unlockedYaku.length;
 
     // Background bar
     this.add.rectangle(cx, y, 700, 56, 0x1a0f08, 0.6)
       .setStrokeStyle(2, 0x5c3825);
 
-    // Single centered stat column: Yaku unlocked
-    this.add.text(cx, y - 12, 'YAKU UNLOCKED', {
+    // Beginner completion is a mode unlock; advanced runs retain collection progress.
+    this.add.text(cx, y - 12, isBeginnerClear ? 'NORMAL MODE' : 'YAKU UNLOCKED', {
       fontSize: '12px', color: '#8b6f47', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
-    this.add.text(cx, y + 8, `${yakuCount}`, {
+    this.add.text(cx, y + 8, isBeginnerClear ? 'UNLOCKED' : `${yakuCount}`, {
       fontSize: '24px', color: '#2d6a4f', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
   }

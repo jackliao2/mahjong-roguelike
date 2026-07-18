@@ -262,7 +262,7 @@ export class TutorialScene extends Phaser.Scene {
     this.add.text(512, 175, 'YOU CAN PLAY RIICHI', {
       fontSize: '34px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add.text(512, 232, 'You now know the full decision loop:', {
+    this.add.text(512, 232, 'You now know the essentials:', {
       fontSize: '16px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
     }).setOrigin(0.5);
 

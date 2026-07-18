@@ -308,7 +308,12 @@ export class GameScene extends Phaser.Scene {
       if (!this.teachingMode && !this.isBeginner) {
         this.showBuildChoice(() => this.startRound());
       } else if (!this.teachingMode && this.isBeginner && !this.isDaily && !this.isReview) {
-        this.showStarterBoost(() => this.startRound());
+        // Keep the first playable run linear. The hint scroll quietly narrows each
+        // question to two plausible answers without asking a new player to make a
+        // roguelike build choice before they understand the quiz.
+        this.relics = ['hint-scroll'];
+        this.updateTopBar();
+        this.startRound();
       } else {
         this.startRound();
       }
@@ -507,9 +512,25 @@ export class GameScene extends Phaser.Scene {
     if (riskTrack) riskTrack.setVisible(true);
     if (riskFill) riskFill.setVisible(true);
 
+    if (this.isBeginner || this.isDaily || this.isReview) {
+      if (timerLabel) timerLabel.setText('').setVisible(false);
+      if (threatBox) threatBox.setStrokeStyle(2, 0x4a9e4a, 0.85);
+      if (opponentTitle) opponentTitle.setText('PRACTICE').setColor('#4a9e4a');
+      if (opponentLabel) opponentLabel.setText('NO TIMER · NO RISK').setColor('#f5e6d3');
+      if (riskLabel) riskLabel.setText('').setVisible(false);
+      if (riskTrack) riskTrack.setVisible(false);
+      if (riskFill) riskFill.setVisible(false);
+    } else {
+      if (threatBox) threatBox.setStrokeStyle(2, 0xc73e3a, 0.85);
+      if (opponentTitle) opponentTitle.setText('OPPONENT').setColor('#c73e3a');
+      if (riskLabel) riskLabel.setVisible(true);
+      if (riskTrack) riskTrack.setVisible(true);
+      if (riskFill) riskFill.setVisible(true);
+    }
+
     const ch = getChapterForRound(this.round);
     if (roundLabel) {
-      const bossTag = ch.isBoss ? ' BOSS' : '';
+      const bossTag = ch.isBoss && !this.isBeginner ? ' BOSS' : '';
       const endlessTag = this.isEndless ? ' ENDLESS' : '';
       roundLabel.setText(`Q${this.isEndless ? this.round : `${this.round}/${this.maxRounds}`}${bossTag}${endlessTag}`);
     }
@@ -544,18 +565,18 @@ export class GameScene extends Phaser.Scene {
         });
       }
     }
-    if (timerLabel) {
+    if (timerLabel && !this.isBeginner && !this.isDaily && !this.isReview) {
       timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
     }
-    if (opponentLabel) {
+    if (opponentLabel && !this.isBeginner && !this.isDaily && !this.isReview) {
       opponentLabel.setText(`${this.currentOpponent.toUpperCase()} · ${opponentStatusLabel(this.opponentState)}`);
     }
-    if (riskLabel) {
+    if (riskLabel && !this.isBeginner && !this.isDaily && !this.isReview) {
       const points = `${(this.tablePoints / 1000).toFixed(1)}k`;
       riskLabel.setText(`${this.opponentRisk}% · ${points}`);
       riskLabel.setColor(this.opponentRisk >= 75 ? '#ff5a4f' : this.opponentRisk >= 45 ? '#e5b567' : '#4a9e4a');
     }
-    if (riskFill) {
+    if (riskFill && !this.isBeginner && !this.isDaily && !this.isReview) {
       const color = this.opponentRisk >= 75 ? 0xc73e3a : this.opponentRisk >= 45 ? 0xe5b567 : 0x4a9e4a;
       riskFill.setFillStyle(color, 1);
       riskFill.setDisplaySize(Math.max(2, Math.round(this.opponentRisk * 1.04)), 5);
@@ -674,7 +695,8 @@ export class GameScene extends Phaser.Scene {
     } else {
       const chapter = getChapterForRound(this.round);
       const isChapterStart = this.round === 1 || (this.round - 1) % 3 === 0;
-      if (isChapterStart || chapter.isBoss) {
+      const showIntro = this.isBeginner ? this.round === 1 : isChapterStart || chapter.isBoss;
+      if (showIntro) {
         this.showRoundIntro(() => this.loadQuestion());
       } else {
         this.time.delayedCall(120, () => this.loadQuestion());
@@ -784,7 +806,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private applyRiskDelta(delta: number): boolean {
-    if (this.teachingMode) return false;
+    if (this.teachingMode || this.isBeginner || this.isDaily || this.isReview) {
+      this.lastRiskDelta = 0;
+      return false;
+    }
 
     if (this.riskFrozen) {
       this.lastRiskDelta = 0;
@@ -871,9 +896,11 @@ export class GameScene extends Phaser.Scene {
     const ch = getChapterForRound(this.round);
     const accentColor = ch.isBoss ? 0xc73e3a : 0xe5b567;
     const titleColor = ch.isBoss ? '#c73e3a' : '#d4a574';
-    const bossTag = ch.isBoss ? ' [BOSS]' : '';
-    const title = `${ch.chapter}${bossTag}`;
-    const subtitle = ch.isBoss
+    const bossTag = ch.isBoss && !this.isBeginner ? ' [BOSS]' : '';
+    const title = this.isBeginner ? 'BEGINNER WARM-UP' : `${ch.chapter}${bossTag}`;
+    const subtitle = this.isBeginner
+      ? 'Five calm questions · no timer · no risk'
+      : ch.isBoss
       ? ch.title.includes('DEFENSE')
         ? 'Boss question - survive riichi pressure'
         : 'Boss question - multiple waiting tiles may exist'
@@ -897,11 +924,11 @@ export class GameScene extends Phaser.Scene {
       alpha: 1,
       duration: 300,
       onComplete: () => {
-        this.time.delayedCall(1500, () => {
+        this.time.delayedCall(this.isBeginner ? 650 : 1500, () => {
           this.tweens.add({
             targets: elements,
             alpha: 0,
-            duration: 400,
+            duration: this.isBeginner ? 250 : 400,
             onComplete: () => {
               elements.forEach(el => el.destroy());
               onComplete();
@@ -925,14 +952,25 @@ export class GameScene extends Phaser.Scene {
       const reviewType = this.isReview && reviewTypes.length > 0
         ? reviewTypes[(this.round - 1) % reviewTypes.length] ?? forcedType
         : forcedType;
+      const beginnerType = this.isBeginner && !this.isDaily && !this.isReview
+        ? GameConfig.beginner.trainingLevels[(this.round - 1) % GameConfig.beginner.trainingLevels.length]?.type
+        : undefined;
       const adaptiveType = !this.isDaily && !this.isReview && !this.isBeginner && !reviewType
         ? getAdaptiveQuestionType(this.combo, this.mistakesThisRun, this.round, ch.isBoss)
         : undefined;
-      const selectedType = reviewType ?? adaptiveType;
+      const selectedType = reviewType ?? beginnerType ?? adaptiveType;
       const continuousTurn = !this.isBeginner && !this.isDaily && !this.isReview && !ch.isBoss;
       this.currentQuestion = continuousTurn
         ? generateContinuousTableTurn(this.tableHand13, this.tableTurn, this.playerRiver, this.opponentRiver, this.predictedNextDraw)
         : this.generateModeQuestion(ch.isBoss && !this.isBeginner && !this.isDaily && !this.isReview ? 'table-decision' : selectedType);
+      if (this.isBeginner && this.currentQuestion) {
+        this.currentQuestion.isBoss = false;
+        this.currentQuestion.chapter = 'BEGINNER PRACTICE';
+        if (this.currentQuestion.type === 'yaku-form' && this.currentQuestion.targetYaku === 'tanyao') {
+          this.currentQuestion.prompt = 'All Simples (Tanyao) uses only number tiles 2–8. Which tile completes it?';
+          this.currentQuestion.explanation = `All Simples avoids 1s, 9s, winds, and dragons. ${this.currentQuestion.explanation}`;
+        }
+      }
       if (continuousTurn) {
         this.currentQuestion = this.applyStrategicTableRead(this.currentQuestion);
       }
@@ -956,7 +994,7 @@ export class GameScene extends Phaser.Scene {
     this.stakeRiskPenalty = 0;
     const beginQuestion = () => {
       this.renderQuestion();
-      if (!this.teachingMode && this.currentQuestion) {
+      if (!this.teachingMode && !this.isBeginner && !this.isDaily && !this.isReview && this.currentQuestion) {
         const hasHourglass = this.relics.includes('hourglass');
         const extraSec = hasHourglass ? 10 : 0;
         const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
@@ -1128,15 +1166,18 @@ export class GameScene extends Phaser.Scene {
       this.renderOptions(q.options, 650, 500);
     } else {
       const ch = getChapterForRound(this.round);
-      const chapterText = ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
-      const chapterColor = ch.isBoss ? '#c73e3a' : '#5c4835';
+      const chapterText = this.isBeginner
+        ? `BEGINNER · ${this.round} / ${this.maxRounds}`
+        : ch.isBoss ? `${ch.chapter} · BOSS` : ch.chapter;
+      const chapterColor = this.isBeginner ? '#6fbf73' : ch.isBoss ? '#c73e3a' : '#5c4835';
       const chapterLabel = this.add.text(512, 78, chapterText, {
         fontSize: '12px', color: chapterColor, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         letterSpacing: 4,
       }).setOrigin(0.5);
       this.questionContainer.add(chapterLabel);
 
-      const routeMatches = BUILD_DEFS[this.buildStrategy].targetYaku === q.targetYaku;
+      const buildTargetYaku = BUILD_DEFS[this.buildStrategy].targetYaku;
+      const routeMatches = !this.isBeginner && !!buildTargetYaku && buildTargetYaku === q.targetYaku;
       if (routeMatches) {
         const routeLabel = this.add.text(512, 98, `${BUILD_DEFS[this.buildStrategy].shortName} ROUTE`, {
           fontSize: '11px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
@@ -1910,7 +1951,7 @@ export class GameScene extends Phaser.Scene {
 
   /** First-time runs begin with one simple advantage, creating agency without risk. */
   private showStarterBoost(onDone: () => void): void {
-    const boostIds: RelicId[] = ['hint-scroll', 'hourglass', 'lucky-coin'];
+    const boostIds: RelicId[] = ['hint-scroll', 'shield-tile', 'lucky-coin'];
     const choices = getRandomRelics(20, []);
     const depth = 1200;
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.78).setDepth(depth);
@@ -2002,7 +2043,9 @@ export class GameScene extends Phaser.Scene {
     const pointText = this.lastPointDelta !== 0
       ? ` · POINTS ${this.lastPointDelta > 0 ? '+' : ''}${this.lastPointDelta}`
       : '';
-    const quickSummary = `COMBO x${this.combo} · RISK ${this.opponentRisk}%${pointText}\nGOAL · ${this.currentObjective.title}\nClick WHY? only when you want the full read.`;
+    const quickSummary = this.isBeginner || this.isDaily || this.isReview
+      ? `COMBO x${this.combo} · SCORE ${this.score}\nGood read. Continue now, or tap WHY? for the explanation.`
+      : `COMBO x${this.combo} · RISK ${this.opponentRisk}%${pointText}\nGOAL · ${this.currentObjective.title}\nClick WHY? only when you want the full read.`;
     const expText = this.add.text(512, 360, quickSummary, {
       fontSize: '16px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
@@ -2463,6 +2506,18 @@ export class GameScene extends Phaser.Scene {
         return;
       }
 
+      this.round += 1;
+      this.startRound();
+      return;
+    }
+
+    // Beginner is a single five-question warm-up: no bosses, route forks, or
+    // mid-run relic decisions. Those systems are introduced by Normal mode.
+    if (this.isBeginner && !this.isDaily && !this.isReview) {
+      if (this.round >= this.maxRounds) {
+        this.finishRun(true);
+        return;
+      }
       this.round += 1;
       this.startRound();
       return;

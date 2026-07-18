@@ -434,30 +434,31 @@ export function generateWaitingTiles(): QuizQuestion {
  */
 export function generateDiscardBest(): QuizQuestion {
   for (let attempt = 0; attempt < 80; attempt++) {
-    const melds: Tile[][] = [];
-    const suits = SUITS;
-    for (let i = 0; i < 3; i++) {
-      const suit = rand(suits);
-      const start = 1 + Math.floor(Math.random() * 7);
-      melds.push(buildSequence(suit, start));
-    }
-
-    const pairSuit = rand(suits);
-    const pairRank = 2 + Math.floor(Math.random() * 7);
-    melds.push(buildPair(pairSuit, pairRank));
-
+    // Start from a valid win, remove one tile to make a genuine ready hand,
+    // then add an isolated honor. Discarding that honor restores the strongest
+    // 13-tile shape; candidate quality is verified by actual live-tile count.
+    const winning = buildWinningHand();
+    const hand13 = [...winning];
+    hand13.splice(Math.floor(Math.random() * hand13.length), 1);
+    if (findWaitingTiles(hand13).length === 0) continue;
     const honorSuit = rand(['wind', 'dragon'] as Suit[]);
     const honorRank = honorSuit === 'wind' ? 1 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 3);
     const badTile = createTile(honorSuit, honorRank);
-    melds.push([badTile]);
-
-    const hand14 = melds.flat();
-    if (hand14.length !== 14) continue;
+    const hand14 = [...hand13, badTile];
     if (!isValidTileCount(hand14)) continue;
     if (detectWin(hand14)) continue;
 
-    const otherTiles = hand14.filter(t => t.id !== badTile.id);
-    const wrongTiles = shuffle(otherTiles).slice(0, 3);
+    const candidateMetrics = [...new Set(hand14.map(tileKey))]
+      .map(key => measureDiscardUkeire(hand14, key))
+      .filter((metric): metric is DiscardMetric => metric !== null)
+      .sort((a, b) => b.liveTiles - a.liveTiles);
+    const badMetric = candidateMetrics.find(metric => metric.tile.id === badTile.id);
+    if (!badMetric || badMetric.liveTiles <= 0) continue;
+    if (candidateMetrics.some(metric => metric.tile.id !== badTile.id && metric.liveTiles >= badMetric.liveTiles)) continue;
+
+    const wrongTiles = shuffle(candidateMetrics
+      .filter(metric => metric.tile.id !== badTile.id)
+      .map(metric => metric.tile)).slice(0, 3);
     if (wrongTiles.length < 3) continue;
 
     const options = shuffle([badTile, ...wrongTiles]);
@@ -469,7 +470,7 @@ export function generateDiscardBest(): QuizQuestion {
       prompt: 'Which tile should you discard for best efficiency?',
       options,
       correctIndices: [correctIndex],
-      explanation: `${tileNotation(badTile)} is an isolated honor: it cannot form a sequence and has no matching copy here. Cutting it preserves the connected shapes.`,
+      explanation: `${tileNotation(badTile)} is an isolated honor with no matching copy. Cutting it leaves ${badMetric.liveTiles} live winning tile${badMetric.liveTiles === 1 ? '' : 's'}, more than every other option.`,
     };
   }
   return generateFallback();

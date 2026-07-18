@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tileKey } from './tiles';
-import { generateContinuousTableTurn, generateQuestionForRound, generateSafeDiscard, generateTableDecision, generateUkeireChoice, generateYakuCombo, getAdaptiveQuestionType } from './quizGenerator';
+import { generateContinuousTableTurn, generateDiscardBest, generateQuestionForRound, generateSafeDiscard, generateTableDecision, generateUkeireChoice, generateYakuCombo, getAdaptiveQuestionType, measureDiscardUkeire } from './quizGenerator';
 
 describe('quiz generator defense questions', () => {
   it('builds real safe-discard questions instead of falling back', () => {
@@ -41,6 +41,22 @@ describe('quiz generator yaku questions', () => {
 });
 
 describe('quiz generator efficiency questions', () => {
+  it('builds a real best-discard question with one strongest answer', () => {
+    for (let sample = 0; sample < 20; sample++) {
+      const question = generateDiscardBest();
+      const metrics = question.options.map(tile => measureDiscardUkeire(question.hand, tileKey(tile)));
+      const correctMetric = metrics[question.correctIndices[0]];
+      const wrongMetrics = metrics.filter((_, index) => index !== question.correctIndices[0]);
+
+      expect(question.type).toBe('discard-best');
+      expect(question.hand).toHaveLength(14);
+      expect(question.options).toHaveLength(4);
+      expect(new Set(question.options.map(tileKey)).size).toBe(4);
+      expect(correctMetric).not.toBeNull();
+      expect(wrongMetrics.every(metric => metric !== null && metric.liveTiles < correctMetric!.liveTiles)).toBe(true);
+    }
+  });
+
   it('builds a unique, computed ukeire comparison', () => {
     for (let sample = 0; sample < 20; sample++) {
       const question = generateUkeireChoice();
