@@ -1166,7 +1166,23 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0.5);
       this.questionContainer.add(prompt);
 
-      if (q.context) {
+      if (q.context && isTableDecision) {
+        const contextLines = q.context.split('\n');
+        const panelH = 42 + contextLines.length * 29;
+        const panelY = promptY + 80;
+        const decisionPanel = this.add.rectangle(512, panelY, 760, panelH, 0x0a0604, 0.58)
+          .setStrokeStyle(1, 0x4a6fa5, 0.7);
+        this.questionContainer.add(decisionPanel);
+        contextLines.forEach((line, index) => {
+          const context = this.add.text(512, panelY - (contextLines.length - 1) * 14 + index * 29, line, {
+            fontSize: index === contextLines.length - 1 ? '13px' : '12px',
+            color: index === contextLines.length - 1 ? '#e5b567' : '#c9b89a',
+            fontFamily: '"Nunito", sans-serif', fontStyle: 'bold', align: 'center',
+            wordWrap: { width: 710 },
+          }).setOrigin(0.5);
+          this.questionContainer.add(context);
+        });
+      } else if (q.context) {
         const context = this.add.text(512, promptY + 40, q.context, {
           fontSize: '12px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
           align: 'center', wordWrap: { width: 860 },
@@ -1220,7 +1236,7 @@ export class GameScene extends Phaser.Scene {
         this.renderHandTiles(sortedHand, 512, handPanelY + 8, !!q.tableTurn);
       }
 
-      this.renderOptions(q.options, 512, isTableDecision ? 410 : 490);
+      this.renderOptions(q.options, 512, isTableDecision ? 455 : 490);
       this.renderRelicActions();
     }
   }
@@ -1785,12 +1801,12 @@ export class GameScene extends Phaser.Scene {
     const q = this.currentQuestion;
 
     const semantic = !!q.optionLabels;
-    const optionW = semantic ? 170 : OPTION_TILE_W;
-    const optionH = semantic ? 78 : OPTION_TILE_H;
-    const gap = semantic ? 16 : 20;
+    const optionW = semantic ? 210 : OPTION_TILE_W;
+    const optionH = semantic ? 96 : OPTION_TILE_H;
+    const gap = semantic ? 18 : 20;
     const totalW = q.options.length * optionW + (q.options.length - 1) * gap;
     const startX = 512 - totalW / 2 + optionW / 2;
-    const highlightY = q.type === 'table-decision' ? 410 : 490;
+    const highlightY = q.type === 'table-decision' ? 455 : 490;
 
     q.options.forEach((tile, i) => {
       const x = startX + i * (optionW + gap);
@@ -1816,9 +1832,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private renderSemanticOptions(tiles: Tile[], labels: string[], centerX: number, y: number): void {
-    const width = 170;
-    const height = 78;
-    const gap = 16;
+    const width = 210;
+    const height = 96;
+    const gap = 18;
     const totalW = tiles.length * width + (tiles.length - 1) * gap;
     const startX = centerX - totalW / 2 + width / 2;
     const isBoss = this.currentQuestion?.isBoss ?? false;
@@ -1828,11 +1844,15 @@ export class GameScene extends Phaser.Scene {
       const frameColor = isBoss ? 0xc73e3a : 0xd4a574;
       const bg = this.add.rectangle(0, 0, width, height, 0x1a0e08, 0.96)
         .setStrokeStyle(isBoss ? 3 : 2, frameColor, 0.9);
-      const label = this.add.text(0, 0, labels[index], {
+      const label = this.add.text(0, -15, labels[index], {
         fontSize: '17px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
         align: 'center', wordWrap: { width: width - 18 },
       }).setOrigin(0.5);
-      const container = this.add.container(x, y, [bg, label]);
+      const hint = this.add.text(0, 20, this.currentQuestion?.optionAnnotations?.[index] ?? '', {
+        fontSize: '10px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+        align: 'center', wordWrap: { width: width - 24 }, lineSpacing: 2,
+      }).setOrigin(0.5);
+      const container = this.add.container(x, y, [bg, label, hint]);
       container.setSize(width, height).setInteractive({ useHandCursor: true });
       container.on('pointerover', () => {
         if (!this.answered) {
@@ -2363,31 +2383,43 @@ export class GameScene extends Phaser.Scene {
   private showRonFeedback(q: QuizQuestion): void {
     const depth = 1100;
     const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.86).setDepth(depth);
-    const panelW = 620;
-    const panelH = 350;
+    const panelW = 680;
+    const panelH = 440;
     const panel = this.add.rectangle(512, 360, panelW, panelH, 0x120a06)
       .setStrokeStyle(2, 0xc73e3a, 0.9).setDepth(depth);
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 3, 0xc73e3a, 0.9).setDepth(depth);
 
-    const title = this.add.text(512, 278, 'RON!', {
+    const title = this.add.text(512, 185, 'RON!', {
       fontSize: '38px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const opponent = OPPONENT_DEFS[this.currentOpponent];
-    const sub = this.add.text(512, 322, `${opponent.name} caught your discard`, {
+    const sub = this.add.text(512, 232, `${opponent.name} caught your discard`, {
       fontSize: '17px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const riskLine = this.lives > 0
-      ? `Risk hit 100%. You lost 1 life and point sticks; pressure resets to ${this.opponentRisk}%.`
-      : 'Risk hit 100%. You dealt in, lost point sticks, and the run is over.';
-    const detail = `${this.lastRonReason}\n${riskLine}\nGoal failed: ${this.currentObjective.title}.\n\n${q.explanation}`;
-    const expText = this.add.text(512, 390, detail, {
-      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
-      align: 'center', wordWrap: { width: panelW - 70 }, lineSpacing: 6,
+      ? `Risk reached 100% · Lost 1 life · Pressure reset to ${this.opponentRisk}%`
+      : 'Risk reached 100% · Dealt in · Run over';
+    const consequence = this.add.text(512, 278, `${this.lastRonReason}\n${riskLine}`, {
+      fontSize: '13px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+      align: 'center', wordWrap: { width: panelW - 80 }, lineSpacing: 5,
     }).setOrigin(0.5).setDepth(depth + 1);
 
-    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub, expText];
+    const correctIndex = q.correctIndices[0];
+    const correctChoice = q.optionLabels?.[correctIndex] ?? String.fromCharCode(65 + correctIndex);
+    const betterChoice = this.add.text(512, 329, `BETTER CHOICE · ${correctChoice}   |   GOAL · ${this.currentObjective.title}`, {
+      fontSize: '13px', color: '#6fbf73', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      align: 'center', wordWrap: { width: panelW - 70 },
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const divider = this.add.rectangle(512, 354, panelW - 80, 1, 0x6a5845, 0.6).setDepth(depth + 1);
+    const expText = this.add.text(512, 410, q.explanation, {
+      fontSize: '13px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
+      align: 'center', wordWrap: { width: panelW - 90 }, lineSpacing: 5,
+    }).setOrigin(0.5).setDepth(depth + 1);
+
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, topAccent, title, sub, consequence, betterChoice, divider, expText];
 
     const btnW = 190;
     const btnH = 46;

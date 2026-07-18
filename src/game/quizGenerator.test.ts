@@ -91,8 +91,10 @@ describe('quiz generator table decisions', () => {
       expect(question.hand).toHaveLength(0);
       expect(question.options).toHaveLength(3);
       expect(question.optionLabels).toHaveLength(3);
+      expect(question.optionAnnotations).toHaveLength(3);
       expect(question.correctIndices).toHaveLength(1);
       expect(question.context).toMatch(/TURN|SHANTEN/);
+      expect(question.context?.split('\n')).toHaveLength(3);
       expect(question.explanation.length).toBeGreaterThan(80);
     }
   });
