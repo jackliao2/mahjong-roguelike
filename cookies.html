@@ -84,7 +84,18 @@
   td { color: var(--cream); }
   footer { background: var(--ink); border-top: 4px solid var(--vermillion); padding: 24px; text-align: center; color: var(--cream-dim); font-size: 13px; }
   footer a { color: var(--amber-bright); text-decoration: none; } footer a:hover { text-decoration: underline; }
-  @media (max-width: 600px) { h1 { font-size: 20px; } .nav-links a { font-size: 7px; padding: 6px 8px; } table { font-size: 12px; } }
+  @media (max-width: 600px) {
+    h1 { font-size: 20px; }
+    .nav-links a { font-size: 7px; padding: 6px 8px; }
+    table {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      font-size: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
 </style>
 <!-- Structured Data: BreadcrumbList -->
 <script type="application/ld+json">
