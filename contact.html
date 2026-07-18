@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contact - Mahjong Quiz</title>
-<meta name="description" content="Contact Mahjong Quiz for licensing inquiries, feedback, bug reports, and partnership opportunities. We respond within 24 hours.">
+<meta name="description" content="Contact Mahjong Quiz for licensing inquiries, feedback, bug reports, and partnership opportunities by email.">
 <meta name="keywords" content="contact mahjong quiz, mahjong game licensing, feedback, bug report">
 <meta property="og:title" content="Contact - Mahjong Quiz">
 <meta property="og:description" content="Contact us for licensing, feedback, and partnership inquiries.">
@@ -202,12 +202,12 @@
   <p class="breadcrumb"><a href="/">Home</a> &gt; Contact</p>
   <p class="page-eyebrow">GET IN TOUCH</p>
   <h1 class="page-title">Contact <span class="accent">Us</span></h1>
-  <p class="page-sub">Licensing inquiries, feedback, bug reports, or just saying hello. We respond within 24 hours.</p>
+  <p class="page-sub">Licensing inquiries, feedback, bug reports, or just saying hello. This page prepares an email in your own mail app.</p>
 </section>
 
 <main class="content">
 
-  <div class="contact-form" id="contact-form">
+  <form class="contact-form" id="contact-form">
     <div class="form-group">
       <label for="name">Your Name</label>
       <input type="text" id="name" name="name" placeholder="What should we call you?" required>
@@ -231,11 +231,11 @@
       <textarea id="message" name="message" placeholder="Tell us what's on your mind..." required></textarea>
     </div>
     <button type="submit" class="submit-btn" id="submit-btn">SEND MESSAGE</button>
-  </div>
+  </form>
 
   <div class="form-success" id="form-success">
-    <h2>Message Sent!</h2>
-    <p>Thank you for reaching out. We'll get back to you within 24 hours.</p>
+    <h2>Email Draft Requested</h2>
+    <p>Please review and send the message in your email app. If no email app opened, write to the address below directly; this website has not sent the message itself.</p>
   </div>
 
   <div class="direct-contact">
@@ -259,33 +259,27 @@
 </main>
 
 <script>
-  // Form submission — 使用 mailto 兜底（无需后端），用户点击后打开邮件客户端
   (function () {
     var form = document.getElementById('contact-form');
     var success = document.getElementById('form-success');
     var btn = document.getElementById('submit-btn');
     if (!form || !btn) return;
 
-    btn.addEventListener('click', function () {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+
       var name = document.getElementById('name').value.trim();
       var email = document.getElementById('email').value.trim();
       var topic = document.getElementById('topic').value;
       var message = document.getElementById('message').value.trim();
 
-      if (!name || !email || !message) {
-        alert('Please fill in all required fields.');
-        return;
-      }
-
-      // 构建 mailto 链接，确保消息真正能送达
       var subject = '[Mahjong Quiz] ' + topic + ' — from ' + name;
       var body = 'Name: ' + name + '\nEmail: ' + email + '\nTopic: ' + topic + '\n\n' + message;
       var mailtoLink = 'mailto:hello@mahjongroguelike.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 
-      // 打开邮件客户端
       window.location.href = mailtoLink;
 
-      // 显示成功提示
       form.style.display = 'none';
       success.style.display = 'block';
     });

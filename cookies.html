@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cookie Policy - Mahjong Quiz</title>
-<meta name="description" content="Cookie Policy for Mahjong Quiz. Learn how the game uses localStorage, service worker cache, analytics if enabled, and advertising cookies if ads are enabled.">
+<meta name="description" content="Cookie and local storage policy for Mahjong Quiz, covering saved game progress, preferences, notice acknowledgement, and offline cache.">
 <meta name="keywords" content="cookie policy, no cookies, GDPR cookies, mahjong quiz cookies, browser game cookies">
 <meta property="og:title" content="Cookie Policy - Mahjong Quiz">
-<meta property="og:description" content="Learn how Mahjong Quiz uses localStorage and how third-party cookies may apply if ads are enabled.">
+<meta property="og:description" content="Learn how Mahjong Quiz uses browser storage and offline cache, and which external requests the current site makes.">
 <meta property="og:image" content="https://mahjongroguelike.com/og-image.svg">
 <meta property="og:url" content="https://mahjongroguelike.com/cookies.html">
 <meta property="og:type" content="article">
@@ -103,7 +103,7 @@
   "@context": "https://schema.org",
   "@type": "WebPage",
   "name": "Cookie Policy - Mahjong Quiz",
-  "description": "Cookie Policy for Mahjong Quiz. This policy explains localStorage, service worker cache, optional analytics, and advertising cookies if ads are enabled.",
+  "description": "Cookie and local storage policy for Mahjong Quiz, covering saved game progress, preferences, notice acknowledgement, and offline cache.",
   "url": "https://mahjongroguelike.com/cookies.html",
   "publisher": { "@type": "Organization", "name": "Mahjong Quiz" }
 }
@@ -119,16 +119,16 @@
 </nav>
 
 <div class="container">
-  <h1>Cookie Policy</h1>
-  <p class="last-updated">Last updated: July 7, 2026</p>
+  <h1>Cookie &amp; Local Storage Policy</h1>
+  <p class="last-updated">Last updated: July 18, 2026</p>
 
   <div class="callout">
-    <strong>The short version:</strong> The Game uses localStorage to save progress. We do not set our own account or session cookies. If advertising is enabled on content pages, Google or another advertising provider may use cookies or similar technologies as described below.
+    <strong>The short version:</strong> The Game uses localStorage to save progress and preferences, plus Cache Storage for offline assets. We do not currently load an analytics or advertising provider. The first-visit notice records only that you dismissed it.
   </div>
 
   <h2>1. Our Storage Approach</h2>
   <p>Mahjong Quiz is designed to work without accounts. The Game saves progress in browser localStorage, not in an account database. We do not set our own login, account, or session cookies.</p>
-  <p>Some third-party services may use cookies or similar technologies, especially if display advertising is enabled on article, guide, or blog pages. Where required by law, non-essential cookies are controlled through a consent flow.</p>
+  <p>The current site does not load an analytics or advertising provider. If we introduce non-essential storage or tracking later, we will update this policy and add consent or opt-out controls where required.</p>
   <h2>2. What Are Cookies?</h2>
   <p>Cookies are small text files stored on your device by websites you visit. They are widely used to track users across sessions and sites, enable advertising networks, and store authentication state. Common types include:</p>
   <ul>
@@ -139,7 +139,7 @@
   </ul>
 
   <h2>3. Technologies We Use</h2>
-  <p>We use or may use the following technologies:</p>
+  <p>The current public site uses the following technologies:</p>
 
   <table>
     <thead>
@@ -150,14 +150,7 @@
         <td><strong>localStorage</strong></td>
         <td>Game progress, achievements, settings</td>
         <td>Your browser only</td>
-        <td>No</td>
-        <td>No</td>
-      </tr>
-      <tr>
-        <td><strong>sessionStorage</strong></td>
-        <td>Temporary in-game UI state</td>
-        <td>Your browser only (cleared when tab closes)</td>
-        <td>No</td>
+        <td>Not by current application code</td>
         <td>No</td>
       </tr>
       <tr>
@@ -168,24 +161,10 @@
         <td>No</td>
       </tr>
       <tr>
-        <td><strong>Umami Analytics</strong></td>
-        <td>Aggregate, anonymous page view statistics, if enabled</td>
-        <td>Umami server</td>
-        <td>Yes (anonymous)</td>
-        <td>No</td>
-      </tr>
-      <tr>
-        <td><strong>Google advertising services</strong></td>
-        <td>Ad serving, measurement, fraud prevention, and personalization where permitted</td>
-        <td>Google / advertising partner systems</td>
-        <td>Yes</td>
-        <td>May use cookies or similar technologies</td>
-      </tr>
-      <tr>
         <td><strong>Google Fonts</strong></td>
         <td>Loading web fonts</td>
-        <td>Google CDN cache</td>
-        <td>Font request only</td>
+        <td>Google's systems and browser cache</td>
+        <td>Yes, to request font files</td>
         <td>No</td>
       </tr>
     </tbody>
@@ -193,47 +172,36 @@
   <h2>4. LocalStorage Details</h2>
   <p>The Game uses the browser's <strong>localStorage</strong> API to save your progress. localStorage is fundamentally different from cookies:</p>
   <ul>
-    <li><strong>Not transmitted:</strong> localStorage data never leaves your browser. Cookies are sent with every HTTP request.</li>
-    <li><strong>Larger capacity:</strong> localStorage can store up to 5-10MB; cookies are limited to 4KB.</li>
-    <li><strong>No expiration:</strong> localStorage persists until you clear it; cookies have expiration dates.</li>
-    <li><strong>Not tracked:</strong> localStorage cannot be read by other websites; cookies can be read by third-party domains.</li>
+    <li><strong>Not automatically attached to requests:</strong> Browsers do not send localStorage values with every HTTP request as they do with cookies.</li>
+    <li><strong>Persistent:</strong> These values normally remain until the site or user clears them.</li>
+    <li><strong>Origin-scoped:</strong> Other website origins cannot directly read this site's localStorage.</li>
+    <li><strong>Current use:</strong> The current application code reads these values for gameplay and does not send them to us.</li>
   </ul>
   <p>The following localStorage keys are used:</p>
   <ul>
     <li><code>mjrg_run</code> — Current run state (round, score, relics, custom tiles)</li>
     <li><code>mjrg_meta</code> — Meta-progression (total runs, wins, best score, achievements)</li>
+    <li><code>mjrg_settings</code>, <code>mjrg_sound_muted</code> — Gameplay and sound preferences</li>
     <li><code>mjrg_yaku_bonuses</code> — Active yaku boost bonuses</li>
+    <li><code>mjrg_leaderboard</code>, <code>mjrg_daily</code>, <code>mjrg_mistakes</code> — Local scores, daily-challenge state, and review history</li>
+    <li><code>mjrg_onboarded</code>, <code>mjrg_beginner_done</code>, <code>mjrg_tutorial_seen</code>, <code>mjrg_normal_done</code> — Tutorial and mode-completion state</li>
+    <li><code>mjrg_cookies_accepted</code> — Acknowledgement that the first-visit storage notice was dismissed</li>
   </ul>
-  <p>The Game may also use <strong>sessionStorage</strong> for ephemeral UI state (such as which tooltip is currently shown or which scene is in transition). sessionStorage behaves like localStorage but is automatically cleared when you close the browser tab. It is never transmitted to any server and is not a cookie.</p>
   <p>As a <strong>Progressive Web App (PWA)</strong>, the Game registers a service worker that caches static assets (HTML, CSS, JavaScript, images) in a Cache API storage. This enables offline play after the first visit. This cache is also browser-local, not transmitted, and not a cookie. You can clear it via your browser's "Site data" settings.</p>
-  <p>You can clear all of these at any time via your browser's developer tools (Application &rarr; Local Storage / Session Storage / Cache Storage) or browser settings (Clear browsing data &rarr; Cookies and site data).</p>
+  <p>You can clear these values at any time via your browser's site-data settings or developer tools (Application &rarr; Local Storage / Cache Storage).</p>
 
-  <h2>5. Umami Analytics (Cookie-Free)</h2>
-  <p>Our analytics provider, <a href="https://umami.is" target="_blank" rel="noopener">Umami</a>, is specifically designed to work without cookies. Here's how it differs from Google Analytics:</p>
-  <table>
-    <thead>
-      <tr><th>Feature</th><th>Google Analytics</th><th>Umami (Our Choice)</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Uses cookies</td><td>Yes (multiple)</td><td>No</td></tr>
-      <tr><td>Stores IP address</td><td>Yes (truncated)</td><td>No (derived to country, then discarded)</td></tr>
-      <tr><td>Tracks individuals</td><td>Yes (client ID)</td><td>No (anonymous aggregate only)</td></tr>
-      <tr><td>Cross-site tracking</td><td>Yes</td><td>No</td></tr>
-      <tr><td>Requires consent banner</td><td>Yes (GDPR)</td><td>No</td></tr>
-      <tr><td>Fingerprinting</td><td>Possible</td><td>No</td></tr>
-    </tbody>
-  </table>
+  <h2>5. Analytics and Advertising</h2>
+  <p><strong>No analytics or advertising provider is currently loaded on the public site.</strong> The codebase includes an inactive analytics integration point and empty advertising layout placeholders, but they do not contact a provider. If either feature is enabled later, this policy will be updated and any legally required choices will be provided.</p>
 
-  <h2>6. Third-Party Cookies</h2>
-  <p>While we do not set our own account or session cookies, some third-party services may set cookies or use similar technologies when you visit our site:</p>
+  <h2>6. External Requests</h2>
+  <p>The current site makes ordinary web requests to third-party infrastructure:</p>
   <ul>
-    <li><strong>Google Fonts</strong> - Google's font CDN may set cookies. These are controlled by Google, not us. See <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener">Google's cookie policy</a>. You can block these with browser extensions without affecting gameplay.</li>
-    <li><strong>Google AdSense / Google advertising services</strong> - If enabled, Google may use cookies or similar technologies to serve and measure ads, prevent fraud and abuse, limit ad frequency, and personalize ads where legally permitted. See <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google's advertising technologies policy</a>.</li>
-    <li><strong>Hosting provider</strong> - Our hosting platform may set essential operational cookies for security and abuse prevention.</li>
+    <li><strong>Google Fonts</strong> — Content pages request font files from Google's servers, which receive the request's ordinary technical information. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</li>
+    <li><strong>Vercel</strong> — Hosts and serves the site and may process request or security information. See <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's Privacy Policy</a>.</li>
   </ul>
-  <p>We do not control and are not responsible for third-party cookies. To block all third-party cookies, enable "Block third-party cookies" in your browser settings.</p>
+  <p>These external requests are separate from the locally stored game-progress values described above.</p>
   <h2>7. Server Logs (Hosting Provider)</h2>
-  <p>While we do not set cookies, our hosting provider (Vercel or Cloudflare Pages) automatically records standard server request logs when you load the Game. These logs typically include:</p>
+  <p>Vercel may process standard request and security information when it serves the Game. Depending on its systems and settings, that information may include:</p>
   <ul>
     <li>IP address (used for security/abuse detection, not linked to identity)</li>
     <li>Timestamp of the request</li>
@@ -242,11 +210,10 @@
     <li>Referrer URL</li>
     <li>Response status code</li>
   </ul>
-  <p>These logs are <strong>not cookies</strong> — they are server-side records controlled by the hosting provider, not by your browser. They are retained for up to 30 days for security and operational purposes, then automatically deleted. We do not have direct access to these logs for analytics; they are used solely for infrastructure protection and abuse mitigation.</p>
-  <p>For details on how your hosting provider handles logs, see <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's Privacy Policy</a> or <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a>.</p>
+  <p>Server logs are not browser cookies. Their handling and retention depend on Vercel's services, settings, and policies; we do not promise a retention period that we do not control. See <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's Privacy Policy</a>.</p>
 
   <h2>8. How to Manage Your Data</h2>
-  <p>You can manage site data through your browser. This includes localStorage, sessionStorage, service worker cache, and any third-party cookies:</p>
+  <p>You can manage localStorage, Cache Storage, and cookies through your browser:</p>
 
   <h3>8.1 Browser-Specific Instructions</h3>
   <ul>
@@ -259,30 +226,22 @@
 
   <h3>8.2 Quick Actions</h3>
   <ul>
-    <li><strong>To clear game progress:</strong> Use the "Reset Progress" button in the Game's settings menu, or clear site data via your browser as described above.</li>
-    <li><strong>To block analytics:</strong> Install an ad blocker (uBlock Origin, AdGuard) or add the Umami domain to your blocklist. This will not affect gameplay.</li>
-    <li><strong>To block Google Fonts:</strong> Use a browser extension (e.g., uBlock Origin's "Block remote fonts") or disable web fonts in your browser settings. The Game will fall back to system fonts.</li>
+    <li><strong>To clear game progress and preferences:</strong> Clear this site's data through your browser as described above.</li>
+    <li><strong>To block remote fonts:</strong> Use a browser privacy setting or content blocker. The site will fall back to system fonts.</li>
     <li><strong>To disable service worker / PWA:</strong> Use your browser's developer tools (Application &rarr; Service Workers &rarr; Unregister). The Game will still work but will not be available offline.</li>
     <li><strong>To browse privately:</strong> Use Incognito/Private Browsing mode. Your game progress will not be saved when you close the window.</li>
   </ul>
 
-  <h2>9. Regulatory Compliance</h2>
-  <p>Our storage and cookie practices are designed to support compliance with:</p>
+  <h2>9. Your Choices and Applicable Rules</h2>
+  <p>Depending on where you live, laws such as the EU ePrivacy rules or UK PECR may require consent before non-essential storage or tracking is used. The current notice's "Got it" button only records that the notice was dismissed; it is not presented as consent to analytics or advertising, because neither is currently loaded.</p>
   <ul>
-    <li><strong>EU ePrivacy Directive</strong> - Non-essential cookies require consent where applicable.</li>
-    <li><strong>GDPR</strong> - See our <a href="/privacy.html">Privacy Policy</a> for data processing details.</li>
-    <li><strong>CCPA</strong> - We do not sell personal information; advertising providers may provide their own privacy controls.</li>
-    <li><strong>UK PECR</strong> - Non-essential cookies require consent where applicable.</li>
-    <li><strong>COPPA</strong> - The Game does not require accounts or collect children's contact information.</li>
+    <li>Blocking or clearing local storage may reset progress, settings, and offline files.</li>
+    <li>We do not currently sell or share personal information for cross-context behavioral advertising.</li>
+    <li>See our <a href="/privacy.html">Privacy Policy</a> for information about data handling and regional rights.</li>
   </ul>
 
   <h2>10. Changes to This Policy</h2>
-  <p>If we materially change how cookies or similar technologies are used, we will:</p>
-  <ul>
-    <li>Update this Cookie Policy with details of each cookie used.</li>
-    <li>Implement a consent management platform where legally required.</li>
-    <li>Provide granular opt-in/opt-out controls where applicable.</li>
-  </ul>
+  <p>If we materially change how cookies or similar technologies are used, we will update the "Last updated" date, revise the inventory, and provide consent or opt-out controls where required by applicable law.</p>
   <h2>11. Contact Us</h2>
   <p>Questions about our storage and cookie practices? Contact us:</p>
   <ul>
