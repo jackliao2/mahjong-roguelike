@@ -43,11 +43,12 @@ export class DeckSelectScene extends Phaser.Scene {
 
   private renderDifficultyCards(): void {
     const beginnerDone = localStorage.getItem(GameConfig.beginner.completedKey) === '1';
+    const tutorialSeen = localStorage.getItem(GameConfig.beginner.tutorialSeenKey) === '1';
     const normalDone = localStorage.getItem('mjrg_normal_done') === '1';
     const y = 320;
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
-      { id: 'beginner', label: 'BEGINNER', desc: beginnerDone ? '5-question warm-up\nHints and forgiving play\nBuild confidence first' : 'Start with 5 guided hands\nLearn by making decisions\nNo prior knowledge needed', locked: false, recommended: !beginnerDone },
+      { id: 'beginner', label: 'BEGINNER', desc: tutorialSeen ? '5-question warm-up\nHints and forgiving play\nBuild confidence first' : 'Learn riichi in 3 minutes\n7 guided interactions\nNo prior knowledge needed', locked: false, recommended: !beginnerDone },
       { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 2 lives\nCh.1-4: win / yaku / defense\nOpponent Risk active' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
       { id: 'endless', label: 'ENDLESS', desc: normalDone ? 'Infinite chapters\nDifficulty ramps up\nHow far can you go?' : 'Complete Normal\nto unlock', locked: !normalDone, recommended: false },
     ];
@@ -130,19 +131,23 @@ export class DeckSelectScene extends Phaser.Scene {
   private createBottomButtons(): void {
     const y = 640;
     const beginnerDone = localStorage.getItem(GameConfig.beginner.completedKey) === '1';
+    const tutorialSeen = localStorage.getItem(GameConfig.beginner.tutorialSeenKey) === '1';
     const isEndless = this.difficulty === 'endless';
     const startLabel = this.difficulty === 'beginner'
-      ? (beginnerDone ? 'START BEGINNER' : 'START LEARNING')
+      ? (tutorialSeen ? 'START BEGINNER' : 'LEARN RIICHI · 3 MIN')
       : isEndless ? 'START ENDLESS' : 'START NORMAL';
 
     // Keep the screen to one decision: choose a difficulty, then start.
-    // Beginner teaches on the first visit and becomes a warm-up afterwards.
+    // Beginner opens the interactive primer once, then becomes a warm-up.
     this.createActionButton(512, y, 280, 52, startLabel, 0xc73e3a, 0xd44a46, () => {
+      if (this.difficulty === 'beginner' && !tutorialSeen) {
+        this.scene.start('TutorialScene');
+        return;
+      }
       this.scene.start('GameScene', {
         action: 'new_run',
         difficulty: isEndless ? 'normal' : this.difficulty,
         endless: isEndless,
-        teaching: this.difficulty === 'beginner' && !beginnerDone,
       });
     });
 
@@ -155,6 +160,7 @@ export class DeckSelectScene extends Phaser.Scene {
       skip.on('pointerdown', () => {
         this.soundManager.playClick();
         localStorage.setItem(GameConfig.beginner.completedKey, '1');
+        localStorage.setItem(GameConfig.beginner.tutorialSeenKey, '1');
         this.scene.start('GameScene', { action: 'new_run', difficulty: 'normal' });
       });
     }

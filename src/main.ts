@@ -4,6 +4,7 @@ import { GameScene } from '@/scenes/GameScene';
 import { BootScene } from '@/scenes/BootScene';
 import { GameOverScene } from '@/scenes/GameOverScene';
 import { DeckSelectScene } from '@/scenes/DeckSelectScene';
+import { TutorialScene } from '@/scenes/TutorialScene';
 
 export function createGame(parent: HTMLElement): Phaser.Game {
   const { width, height, backgroundColor, pixelArt } = GameConfig.canvas;
@@ -18,7 +19,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
     },
-    scene: [BootScene, DeckSelectScene, GameScene, GameOverScene],
+    scene: [BootScene, DeckSelectScene, TutorialScene, GameScene, GameOverScene],
   });
   (window as any).game = game;
   return game;
