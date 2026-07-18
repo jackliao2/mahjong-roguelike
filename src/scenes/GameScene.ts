@@ -174,6 +174,8 @@ export class GameScene extends Phaser.Scene {
   private opponentRisk: number = 0;
   private lastRiskDelta: number = 0;
   private lastRonReason: string = '';
+  private stakeMultiplier: number = 1;
+  private stakeRiskPenalty: number = 0;
 
   // Endless mode
   private isEndless: boolean = false;
@@ -241,6 +243,8 @@ export class GameScene extends Phaser.Scene {
     this.opponentRisk = 0;
     this.lastRiskDelta = 0;
     this.lastRonReason = '';
+    this.stakeMultiplier = 1;
+    this.stakeRiskPenalty = 0;
     this.endlessDifficulty = 1;
 
     trackRunStart(this.isDaily ? 'daily' : this.isReview ? 'review' : this.isBeginner ? 'beginner' : 'normal');
@@ -570,7 +574,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.lastRonReason = "Time ran out under pressure.";
-    const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].timeoutRisk);
+    const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].timeoutRisk + this.stakeRiskPenalty);
+    this.stakeMultiplier = 1;
+    this.stakeRiskPenalty = 0;
     this.lives -= 1;
     this.mistakesThisRun += 1;
     if (!this.relics.includes('combo-feather')) this.combo = 0;
@@ -851,14 +857,71 @@ export class GameScene extends Phaser.Scene {
         this.currentQuestion.isBoss = true;
       }
     }
-    this.renderQuestion();
-    if (!this.teachingMode) {
-      const hasHourglass = this.relics.includes('hourglass');
-      const extraSec = hasHourglass ? 10 : 0;
-      const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
-      const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
-      this.startTimer(Math.max(8, base - endlessPenalty));
-    }
+    this.stakeMultiplier = 1;
+    this.stakeRiskPenalty = 0;
+    const beginQuestion = () => {
+      this.renderQuestion();
+      if (!this.teachingMode && this.currentQuestion) {
+        const hasHourglass = this.relics.includes('hourglass');
+        const extraSec = hasHourglass ? 10 : 0;
+        const base = (this.currentQuestion.isBoss ? this.bossTime : this.baseTime) + extraSec;
+        const endlessPenalty = this.isEndless ? Math.max(0, this.endlessDifficulty * 1.5) : 0;
+        this.startTimer(Math.max(8, base - endlessPenalty));
+      }
+    };
+    const stakeTypes: QuizQuestion['type'][] = ['ukeire-choice', 'table-decision', 'safe-discard'];
+    const offerStake = !this.teachingMode && !this.isBeginner && !this.isDaily && !this.isReview
+      && !!this.currentQuestion && stakeTypes.includes(this.currentQuestion.type);
+    if (offerStake) this.showStakeChoice(beginQuestion);
+    else beginQuestion();
+  }
+
+  private showStakeChoice(onDone: () => void): void {
+    const depth = 1050;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.82).setDepth(depth);
+    const title = this.add.text(512, 180, 'CHOOSE YOUR READ', {
+      fontSize: '28px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const subtitle = this.add.text(512, 220, 'Back your judgment before seeing the choices', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
+    const choices = [
+      { x: 370, label: 'STEADY READ', detail: 'x1.0 score\nNo extra risk', color: 0x4a9e4a, mult: 1, risk: 0 },
+      { x: 654, label: 'PRESS THE TABLE', detail: 'x1.6 score\nWrong: +25% Risk', color: 0xc73e3a, mult: 1.6, risk: 25 },
+    ];
+    choices.forEach(choice => {
+      const card = this.add.rectangle(choice.x, 380, 240, 210, 0x1a0f08)
+        .setStrokeStyle(3, choice.color).setDepth(depth);
+      const label = this.add.text(choice.x, 340, choice.label, {
+        fontSize: '18px', color: choice.color === 0xc73e3a ? '#ff7b70' : '#6fbf73',
+        fontFamily: '"Nunito", sans-serif', fontStyle: 'bold', align: 'center', wordWrap: { width: 210 },
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const detail = this.add.text(choice.x, 410, choice.detail, {
+        fontSize: '15px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
+        align: 'center', lineSpacing: 8,
+      }).setOrigin(0.5).setDepth(depth + 1);
+      const hit = this.add.rectangle(choice.x, 380, 240, 210, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+      hit.on('pointerover', () => card.setStrokeStyle(5, choice.color));
+      hit.on('pointerout', () => card.setStrokeStyle(3, choice.color));
+      hit.on('pointerdown', () => {
+        this.soundManager.playClick();
+        this.stakeMultiplier = choice.mult;
+        this.stakeRiskPenalty = choice.risk;
+        if (this.currentQuestion && choice.mult > 1) {
+          const stakeBanner = `PRESS x${choice.mult.toFixed(1)} · WRONG +${choice.risk}% RISK`;
+          this.currentQuestion.context = this.currentQuestion.context
+            ? `${stakeBanner} · ${this.currentQuestion.context}`
+            : stakeBanner;
+        }
+        elements.forEach(element => element.destroy());
+        onDone();
+      });
+      elements.push(card, label, detail, hit);
+    });
+    elements.forEach(element => { (element as any).setAlpha?.(0); });
+    this.tweens.add({ targets: elements, alpha: 1, duration: 220 });
   }
 
   private generateModeQuestion(forcedType?: string): QuizQuestion {
@@ -1198,6 +1261,7 @@ export class GameScene extends Phaser.Scene {
 
       let baseScore = q.isBoss ? 1500 : 1000;
       baseScore *= this.pathMultiplier;
+      baseScore *= this.stakeMultiplier;
       const buildMultiplier = getBuildScoreMultiplier(this.buildStrategy, q.targetYaku, q.isBoss);
       baseScore *= buildMultiplier;
       if (this.relics.includes('lucky-coin')) baseScore *= 1.3;
@@ -1274,7 +1338,9 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       this.lastRonReason = 'Unsafe read gave the opponent a shot.';
-      const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].wrongRisk);
+      const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].wrongRisk + this.stakeRiskPenalty);
+      this.stakeMultiplier = 1;
+      this.stakeRiskPenalty = 0;
       this.lives -= 1;
       this.mistakesThisRun += 1;
       if (!this.relics.includes('combo-feather')) this.combo = 0;
@@ -1488,8 +1554,11 @@ export class GameScene extends Phaser.Scene {
     const relicText = this.lastRelicBonus > 0
       ? `\n${this.lastRelicBonusName}: +${this.lastRelicBonus} score`
       : '';
+    const stakeText = this.stakeMultiplier > 1
+      ? `\nPRESS THE TABLE: x${this.stakeMultiplier.toFixed(1)} score`
+      : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + focusText + comboText + speedText + defenseText + riskText + relicText, {
+    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + stakeText + focusText + comboText + speedText + defenseText + riskText + relicText, {
       fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);

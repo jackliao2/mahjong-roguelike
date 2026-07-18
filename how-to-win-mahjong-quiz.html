@@ -46,7 +46,7 @@
       "name": "What are the seven question types in Mahjong Quiz?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Mahjong Quiz uses seven question types: tenpai-win, yaku-form, waiting-tiles, discard-best, multi-wait, yaku-combo, and safe-discard. Each tests a different mahjong skill, from reading hands to choosing safe tiles under pressure."
+        "text": "Mahjong Quiz uses nine question types covering winning tiles, yaku, waits, discards, ukeire, table-state decisions, multi-waits, yaku recognition, and defense. Adaptive difficulty introduces harder reads after a streak and recovery questions after repeated misses."
       }
     },
     {
@@ -422,17 +422,19 @@
 
 <article class="article-wrap">
 
-  <p class="lead">The first time I played Mahjong Quiz, I treated it like a trivia game. I answered fast, guessed when I was unsure, and wondered why my scores were mediocre. Then I realized the quiz is not just a test. It is a roguelike. Every chapter is a run, every relic is a build, and every combo is a resource. Once I started playing strategically, my scores doubled. This guide is the strategy I wish I had from the start.</p>
+  <p class="lead">Mahjong Quiz combines decision training with a short roguelike run. Hand knowledge determines whether you find the answer; combo management, relics, paths, adaptive difficulty, and optional score pressure determine how far you can push the run.</p>
 
-  <h2>Understand the Seven Question Types</h2>
+  <h2>Understand the Nine Question Types</h2>
 
-  <p>Mahjong Quiz tests seven core skills. Each question type rewards a specific kind of pattern recognition. If you want a high score, you need to be comfortable with all of them.</p>
+  <p>Mahjong Quiz tests nine related skills. Each question type rewards a different reading process, so high scores require more than memorizing a few common hands.</p>
 
   <ul>
     <li><strong>Tenpai-win:</strong> Identify whether a hand is complete and which tile wins it.</li>
     <li><strong>Yaku-form:</strong> Recognize which yaku a hand qualifies for.</li>
     <li><strong>Waiting-tiles:</strong> Name the tile or tiles a tenpai hand is waiting on.</li>
     <li><strong>Discard-best:</strong> Choose the discard that maximizes efficiency or safety.</li>
+    <li><strong>Ukeire-choice:</strong> Compare the verified number of live improving tiles after each discard.</li>
+    <li><strong>Table-decision:</strong> Use placement, turn, value, wait quality, and opponent pressure to choose riichi, dama, push, or fold.</li>
     <li><strong>Multi-wait:</strong> Find hands that wait on multiple tiles in complex shapes.</li>
     <li><strong>Yaku-combo:</strong> Identify which yaku stack together in a single hand.</li>
     <li><strong>Safe-discard:</strong> Pick the safest tile to discard against an opponent's riichi.</li>
@@ -457,6 +459,12 @@
   <p>Your combo streak is your most important scoring asset. Each correct answer adds to the combo, and many relics scale with it. A long combo can turn an average run into a high-score run.</p>
 
   <p>This means consistency beats speed. It is better to answer carefully and maintain a streak than to rush and break it. If a question feels risky, use the time you have. A wrong answer resets your combo and often costs more than the time you saved.</p>
+
+  <h2>Choose Your Read: Steady or Press</h2>
+
+  <p>Before advanced efficiency, defense, and table-state questions, you may choose <strong>Steady Read</strong> for normal scoring or <strong>Press the Table</strong> for a 1.6x score multiplier. Pressing adds 25% opponent risk if the answer is wrong or the timer expires.</p>
+
+  <p>Press when you recognize the pattern and can explain the answer before clicking. Choose Steady when the situation depends on unfamiliar notation or close placement math. After a wrong press, the multiplier resets before a retry, so guessing cannot be used to farm the higher reward.</p>
 
   <h2>Boss Questions: Slow Down</h2>
 
@@ -523,7 +531,7 @@
 
   <div class="faq-item">
     <h3>What are the seven question types in Mahjong Quiz?</h3>
-    <p>Mahjong Quiz uses seven question types: tenpai-win, yaku-form, waiting-tiles, discard-best, multi-wait, yaku-combo, and safe-discard. Each tests a different mahjong skill, from reading hands to choosing safe tiles under pressure.</p>
+    <p>Mahjong Quiz uses nine question types covering winning tiles, yaku, waits, discards, ukeire, table-state decisions, multi-waits, yaku recognition, and defense. Adaptive difficulty introduces harder reads after a streak and recovery questions after repeated misses.</p>
   </div>
 
   <div class="faq-item">
