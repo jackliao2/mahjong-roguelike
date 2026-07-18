@@ -10,6 +10,16 @@ import { GameConfig } from '@/config/game-config';
 import { generateContinuousTableTurn, generateQuestionForRound, getAdaptiveQuestionType, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
 import { RelicId, getRandomRelics, Relic } from '@/game/relics';
 import {
+  advanceOpponentTurn,
+  createOpponentTableState,
+  getRoundObjective,
+  objectivePointDelta,
+  objectiveRiskModifier,
+  opponentStatusLabel,
+  OpponentTableState,
+  RoundObjective,
+} from '@/game/tableState';
+import {
   BUILD_DEFS,
   BUILD_FOCUS_BONUS,
   BUILD_FOCUS_TARGET,
@@ -175,6 +185,9 @@ export class GameScene extends Phaser.Scene {
   private tablePoints: number = 25000;
   private lastPointDelta: number = 0;
   private predictedNextDraw: Tile | null = null;
+  private opponentState: OpponentTableState = createOpponentTableState('calm');
+  private currentObjective: RoundObjective = getRoundObjective(1, 25000, 25000);
+  private lastOpponentAction: string = 'Opening hand · reading the table';
 
   // Path system
   private currentPath: PathId = 'safe';
@@ -256,6 +269,9 @@ export class GameScene extends Phaser.Scene {
     this.tablePoints = 25000;
     this.lastPointDelta = 0;
     this.predictedNextDraw = null;
+    this.opponentState = createOpponentTableState('calm');
+    this.currentObjective = getRoundObjective(1, 25000, 25000);
+    this.lastOpponentAction = 'Opening hand · reading the table';
     this.currentPath = 'safe';
     this.pathMultiplier = 1;
     this.buildStrategy = 'balanced';
@@ -527,7 +543,7 @@ export class GameScene extends Phaser.Scene {
       timerLabel.setText(this.timerActive ? `${Math.ceil(this.timeLeft)}s` : '');
     }
     if (opponentLabel) {
-      opponentLabel.setText(OPPONENT_DEFS[this.currentOpponent].name.toUpperCase());
+      opponentLabel.setText(`${this.currentOpponent.toUpperCase()} · ${opponentStatusLabel(this.opponentState)}`);
     }
     if (riskLabel) {
       const points = `${(this.tablePoints / 1000).toFixed(1)}k`;
@@ -599,21 +615,31 @@ export class GameScene extends Phaser.Scene {
 
     this.lastRonReason = "Time ran out under pressure.";
     const pressedTimeout = this.stakeRiskPenalty > 0;
+    this.lastPointDelta = 0;
     if (pressedTimeout) {
-      this.tablePoints = Math.max(0, this.tablePoints - 3900);
+      this.changeTablePoints(-3900);
       this.lastPointDelta = -4900;
     }
-    const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].timeoutRisk + this.stakeRiskPenalty);
+    const hitRon = this.applyRiskDelta(
+      OPPONENT_DEFS[this.currentOpponent].timeoutRisk
+      + this.stakeRiskPenalty
+      + objectiveRiskModifier(this.currentObjective, pressedTimeout),
+    );
     if (pressedTimeout && hitRon) {
-      this.tablePoints = Math.max(0, this.tablePoints - 4100);
+      this.changeTablePoints(-4100);
       this.lastPointDelta = -9000;
+    } else if (!pressedTimeout && hitRon) {
+      this.changeTablePoints(-8000);
+      this.lastPointDelta = -8000;
     }
+    this.lastPointDelta += this.applyObjectiveSettlement(false, this.currentQuestion, pressedTimeout);
     this.stakeMultiplier = 1;
     this.stakeRiskPenalty = 0;
     this.lives -= 1;
     this.mistakesThisRun += 1;
     if (!this.relics.includes('combo-feather')) this.combo = 0;
     if (hitRon && this.lives > 0) this.opponentRisk = 35;
+    if (hitRon) this.resetLiveHandAfterDealIn();
     this.updateTopBar();
     if (hitRon) {
       this.soundManager.playGameOver();
@@ -632,6 +658,7 @@ export class GameScene extends Phaser.Scene {
     this.feedbackContainer.removeAll(true);
     this.questionContainer.removeAll(true);
     this.syncOpponentForRound();
+    this.currentObjective = getRoundObjective(this.round, this.tablePoints, this.opponentState.points);
     this.updateTopBar();
 
     if (this.teachingMode) {
@@ -722,7 +749,16 @@ export class GameScene extends Phaser.Scene {
     const opponentOrder: OpponentId[] = ['calm', 'speed', 'hunter', 'riichi'];
     const nextOpponent = opponentOrder[Math.min(chapterIndex, opponentOrder.length - 1)];
     if (nextOpponent !== this.currentOpponent || this.round === 1) {
+      if (this.round !== 1) {
+        this.tableHand13 = null;
+        this.tableTurn = 1;
+        this.playerRiver = [];
+        this.opponentRiver = [];
+        this.predictedNextDraw = null;
+      }
       this.currentOpponent = nextOpponent;
+      this.opponentState = createOpponentTableState(nextOpponent);
+      this.lastOpponentAction = this.opponentState.actionLog[0];
       this.opponentRisk = OPPONENT_DEFS[nextOpponent].startRisk;
       this.lastRiskDelta = 0;
       this.lastRonReason = '';
@@ -736,6 +772,7 @@ export class GameScene extends Phaser.Scene {
     let delta = q.isBoss ? opponent.bossPushRisk : opponent.pushRisk;
     if (this.currentPath === 'safe') delta = Math.max(4, delta - 5);
     if (this.currentPath === 'elite') delta += 8;
+    delta += objectiveRiskModifier(this.currentObjective, this.stakeMultiplier > 1);
     return delta;
   }
 
@@ -930,8 +967,9 @@ export class GameScene extends Phaser.Scene {
     const title = this.add.text(512, 180, 'CHOOSE YOUR READ', {
       fontSize: '28px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
-    const subtitle = this.add.text(512, 220, 'Back your judgment before seeing the choices', {
+    const subtitle = this.add.text(512, 220, `GOAL: ${this.currentObjective.title} · ${this.currentObjective.detail}`, {
       fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+      align: 'center', wordWrap: { width: 760 },
     }).setOrigin(0.5).setDepth(depth + 1);
     const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
     const choices = [
@@ -1129,7 +1167,19 @@ export class GameScene extends Phaser.Scene {
       if (q.tableTurn) {
         const yourRiver = q.playerRiver?.length ? q.playerRiver.map(key => this.getTileKeyLabel(key)).join(' ') : '—';
         const theirRiver = q.opponentRiver?.length ? q.opponentRiver.map(key => this.getTileKeyLabel(key)).join(' ') : '—';
-        const riverText = this.add.text(512, 205, `YOUR RIVER  ${yourRiver}\n${OPPONENT_DEFS[this.currentOpponent].name.toUpperCase()}  ${theirRiver}`, {
+        const objectiveText = this.add.text(512, 198, `GOAL · ${this.currentObjective.title} — ${this.currentObjective.detail}`, {
+          fontSize: '11px', color: '#6aa3e0', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+          align: 'center', wordWrap: { width: 900 },
+        }).setOrigin(0.5);
+        this.questionContainer.add(objectiveText);
+
+        const actionText = this.add.text(512, 218, `${OPPONENT_DEFS[this.currentOpponent].name.toUpperCase()} · ${opponentStatusLabel(this.opponentState)} · ${this.lastOpponentAction}`, {
+          fontSize: '10px', color: '#c73e3a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+          align: 'center', wordWrap: { width: 900 },
+        }).setOrigin(0.5);
+        this.questionContainer.add(actionText);
+
+        const riverText = this.add.text(512, 243, `YOUR RIVER  ${yourRiver}\n${OPPONENT_DEFS[this.currentOpponent].name.toUpperCase()}  ${theirRiver}`, {
           fontSize: '11px', color: '#9f8b73', fontFamily: '"Nunito", sans-serif',
           align: 'center', lineSpacing: 4, wordWrap: { width: 850 },
         }).setOrigin(0.5);
@@ -1139,7 +1189,7 @@ export class GameScene extends Phaser.Scene {
       if (!isTableDecision) {
         const handPanelW = 640;
         const handPanelH = 110;
-        const handPanelY = q.tableTurn ? 290 : 250;
+        const handPanelY = q.tableTurn ? 325 : 250;
         const handPanelBg = this.add.rectangle(512, handPanelY, handPanelW, handPanelH, 0x0a0604, 0.4)
           .setStrokeStyle(1, 0x3a2818, 0.5);
         this.questionContainer.add(handPanelBg);
@@ -1316,13 +1366,47 @@ export class GameScene extends Phaser.Scene {
     nextHand.splice(discardIndex, 1);
     this.tableHand13 = nextHand;
     this.playerRiver.push(tileKey(discarded));
-    this.opponentRiver.push(tileKey(this.randomTableTile()));
     this.tableTurn += 1;
+  }
+
+  private advanceOpponentAfterSafeDiscard(): void {
+    this.opponentRiver.push(tileKey(this.randomTableTile()));
+    const opponentTurn = advanceOpponentTurn(this.opponentState, this.opponentRisk);
+    this.opponentState = opponentTurn.state;
+    this.lastOpponentAction = opponentTurn.log;
+    this.opponentRisk = Phaser.Math.Clamp(this.opponentRisk + opponentTurn.riskDelta, 0, 95);
+    this.currentObjective = getRoundObjective(this.round, this.tablePoints, this.opponentState.points);
   }
 
   private randomTableTile(): Tile {
     const wall = createFullTileSet();
     return wall[Phaser.Math.Between(0, wall.length - 1)];
+  }
+
+  private changeTablePoints(delta: number): void {
+    this.tablePoints = Math.max(0, this.tablePoints + delta);
+    this.opponentState = {
+      ...this.opponentState,
+      points: Math.max(0, this.opponentState.points - delta),
+    };
+  }
+
+  private applyObjectiveSettlement(correct: boolean, q: QuizQuestion, pressed: boolean): number {
+    if (this.isBeginner || this.isDaily || this.isReview || this.teachingMode) return 0;
+    const delta = objectivePointDelta(this.currentObjective, correct, pressed, !!q.tableTurn);
+    if (delta !== 0) this.changeTablePoints(delta);
+    this.currentObjective = getRoundObjective(this.round, this.tablePoints, this.opponentState.points);
+    return delta;
+  }
+
+  private resetLiveHandAfterDealIn(): void {
+    const opponentPoints = this.opponentState.points;
+    this.tableHand13 = null;
+    this.tableTurn = 1;
+    this.playerRiver = [];
+    this.opponentRiver = [];
+    this.opponentState = { ...createOpponentTableState(this.currentOpponent), points: opponentPoints };
+    this.lastOpponentAction = 'New hand after deal-in';
   }
 
   /** Create a clickable option tile button */
@@ -1397,6 +1481,7 @@ export class GameScene extends Phaser.Scene {
     this.hideTooltip();
     const q = this.currentQuestion;
     const isCorrect = q.correctIndices.includes(optionIndex);
+    this.lastPointDelta = 0;
     if (!isCorrect && !this.teachingMode) recordMistake(q.type);
     if (isCorrect && this.isReview) resolveMistake(q.type);
 
@@ -1471,12 +1556,14 @@ export class GameScene extends Phaser.Scene {
           this.buildFocus = 0;
         }
       }
-      if (this.stakeMultiplier > 1) {
-        this.tablePoints += 4000;
+      const pressedCorrect = this.stakeMultiplier > 1;
+      if (pressedCorrect) {
+        this.changeTablePoints(4000);
         this.lastPointDelta = 3000;
       } else {
         this.lastPointDelta = 0;
       }
+      this.lastPointDelta += this.applyObjectiveSettlement(true, q, pressedCorrect);
       this.score += finalScore;
       this.showScoreBurst(finalScore, q.isBoss === true);
       if (q.isBoss) {
@@ -1486,8 +1573,8 @@ export class GameScene extends Phaser.Scene {
       const hitRon = this.applyRiskDelta(this.getCorrectRiskDelta(q));
       this.updateTopBar();
       if (hitRon) {
-        this.tablePoints = Math.max(0, this.tablePoints - 8000);
-        this.lastPointDelta = this.stakeMultiplier > 1 ? -5000 : -8000;
+        this.changeTablePoints(-8000);
+        this.lastPointDelta -= 8000;
         this.lastRonReason = q.type === 'safe-discard'
           ? 'The fold came too late.'
           : 'You pushed through a dangerous table.';
@@ -1495,11 +1582,14 @@ export class GameScene extends Phaser.Scene {
         this.mistakesThisRun += 1;
         if (!this.relics.includes('combo-feather')) this.combo = 0;
         if (this.lives > 0) this.opponentRisk = 35;
+        this.resetLiveHandAfterDealIn();
         this.updateTopBar();
         this.soundManager.playGameOver();
         this.showRonFeedback(q);
         return;
       }
+      if (q.tableTurn) this.advanceOpponentAfterSafeDiscard();
+      this.updateTopBar();
       this.showCorrectFeedback(q);
     } else {
       if (this.relics.includes('shield-tile') && !this.shieldUsedThisChapter) {
@@ -1513,20 +1603,29 @@ export class GameScene extends Phaser.Scene {
       this.lastRonReason = 'Unsafe read gave the opponent a shot.';
       const pressedWrong = this.stakeRiskPenalty > 0;
       if (pressedWrong) {
-        this.tablePoints = Math.max(0, this.tablePoints - 3900);
+        this.changeTablePoints(-3900);
         this.lastPointDelta = -4900;
       }
-      const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].wrongRisk + this.stakeRiskPenalty);
+      const hitRon = this.applyRiskDelta(
+        OPPONENT_DEFS[this.currentOpponent].wrongRisk
+        + this.stakeRiskPenalty
+        + objectiveRiskModifier(this.currentObjective, pressedWrong),
+      );
       if (pressedWrong && hitRon) {
-        this.tablePoints = Math.max(0, this.tablePoints - 4100);
+        this.changeTablePoints(-4100);
         this.lastPointDelta = -9000;
+      } else if (!pressedWrong && hitRon) {
+        this.changeTablePoints(-8000);
+        this.lastPointDelta = -8000;
       }
+      this.lastPointDelta += this.applyObjectiveSettlement(false, q, pressedWrong);
       this.stakeMultiplier = 1;
       this.stakeRiskPenalty = 0;
       this.lives -= 1;
       this.mistakesThisRun += 1;
       if (!this.relics.includes('combo-feather')) this.combo = 0;
       if (hitRon && this.lives > 0) this.opponentRisk = 35;
+      if (hitRon) this.resetLiveHandAfterDealIn();
       this.updateTopBar();
       if (hitRon) {
         this.soundManager.playGameOver();
@@ -1744,7 +1843,7 @@ export class GameScene extends Phaser.Scene {
     const pointText = this.lastPointDelta !== 0
       ? ` · POINTS ${this.lastPointDelta > 0 ? '+' : ''}${this.lastPointDelta}`
       : '';
-    const quickSummary = `COMBO x${this.combo} · RISK ${this.opponentRisk}%${pointText}\nClick WHY? only when you want the full read.`;
+    const quickSummary = `COMBO x${this.combo} · RISK ${this.opponentRisk}%${pointText}\nGOAL · ${this.currentObjective.title}\nClick WHY? only when you want the full read.`;
     const expText = this.add.text(512, 360, quickSummary, {
       fontSize: '16px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
@@ -2143,7 +2242,7 @@ export class GameScene extends Phaser.Scene {
     const riskLine = this.lives > 0
       ? `Risk hit 100%. You lost 1 life and point sticks; pressure resets to ${this.opponentRisk}%.`
       : 'Risk hit 100%. You dealt in, lost point sticks, and the run is over.';
-    const detail = `${this.lastRonReason}\n${riskLine}\n\n${q.explanation}`;
+    const detail = `${this.lastRonReason}\n${riskLine}\nGoal failed: ${this.currentObjective.title}.\n\n${q.explanation}`;
     const expText = this.add.text(512, 390, detail, {
       fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 70 }, lineSpacing: 6,

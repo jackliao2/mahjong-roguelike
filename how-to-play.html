@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How to Play Mahjong Quiz - Rules, Question Types &amp; Strategy</title>
-<meta name="description" content="Learn Mahjong Quiz: continuous draw-and-discard turns, advanced table decisions, BOSS rounds, active relics, Press stakes, scoring, and strategy.">
+<meta name="description" content="Learn Mahjong Quiz: continuous draw-and-discard turns, active opponents, situational goals, BOSS rounds, relics, Press stakes, scoring, and strategy.">
 <meta name="keywords" content="how to play mahjong quiz, mahjong quiz game, riichi mahjong quiz, tenpai quiz, yaku quiz, waiting tiles, mahjong discard quiz">
 <meta property="og:title" content="How to Play Mahjong Quiz - Rules, Question Types &amp; Strategy">
 <meta property="og:description" content="A complete guide to continuous table turns, advanced decisions, BOSS rounds, active relics, Press stakes, and strategy.">
@@ -39,7 +39,7 @@
   "@context": "https://schema.org",
   "@type": "HowTo",
   "name": "How to Play Mahjong Quiz",
-  "description": "A complete guide to the mahjong quiz format: read the hand, choose from four tile options, and progress through roguelike chapters.",
+  "description": "A complete guide to the mahjong decision roguelike: continue a hand across turns, read active opponents, pursue situational goals, and progress through chapters.",
   "image": "https://mahjongroguelike.com/og-image.svg",
   "totalTime": "PT10M",
   "estimatedCost": { "@type": "MonetaryAmount", "currency": "USD", "value": "0" },
@@ -54,7 +54,7 @@
       "@type": "HowToStep",
       "position": 2,
       "name": "Pick the Correct Tile",
-      "text": "Four tile options are shown. Select the one that correctly answers the prompt. A wrong answer ends the run."
+      "text": "Four tile options are shown. Select the one that correctly answers the prompt. Wrong answers cost a life and can lose point sticks or cause a deal-in."
     },
     {
       "@type": "HowToStep",
@@ -569,7 +569,7 @@
     <p class="breadcrumb"><a href="/">Home</a> &gt; How to Play</p>
     <p class="page-eyebrow">BEGINNER'S GUIDE</p>
     <h1 class="page-title">How to Play <span class="accent">Mahjong Quiz</span></h1>
-    <p class="page-sub">Everything you need to know about live draw-and-discard turns, table reads, BOSS rounds, active relics, Press stakes, and progression.</p>
+    <p class="page-sub">Everything you need to know about live draw-and-discard turns, active opponents, situational goals, BOSS rounds, relics, Press stakes, and progression.</p>
   </section>
 
   <div class="layout">
@@ -581,6 +581,7 @@
         <li><a href="#quiz-basics">1. Quiz Basics</a></li>
         <li class="toc-sub"><a href="#difficulty">Difficulty Modes</a></li>
         <li class="toc-sub"><a href="#lives">Lives &amp; Game Over</a></li>
+        <li class="toc-sub"><a href="#table-state">Opponents &amp; Goals</a></li>
         <li><a href="#question-types">2. Question Types</a></li>
         <li class="toc-sub"><a href="#tenpai-win">Tenpai Win</a></li>
         <li class="toc-sub"><a href="#yaku-form">Yaku Form</a></li>
@@ -620,6 +621,13 @@
 
         <div class="callout-box">
           <p><strong>Quick tip:</strong> Read the prompt carefully. A question might ask which tile <em>wins</em>, which tile <em>completes a yaku</em>, which tiles you're <em>waiting on</em>, or which tile is the <em>safest discard</em>. The same hand can have different correct answers depending on the prompt.</p>
+        </div>
+
+        <h3 id="table-state">Active Opponents &amp; Situational Goals</h3>
+        <p>NORMAL is a live table rather than a disconnected question list. After each correct discard, the opponent takes a turn. Their hand can advance from 3-shanten toward tenpai, they may call PON, declare RIICHI and pay a 1,000-point stick, or fold when pressure becomes too high. Their current state and latest action appear above the rivers.</p>
+        <p>Each chapter also gives you a table goal: reach tenpai, protect a lead, overtake the opponent, build a 4,000+ hand, or avoid a deal-in. The goal changes the best commitment. A Steady read is rewarded when protecting a lead; a successful Press is more valuable when you must overtake or build value.</p>
+        <div class="callout-box">
+          <p><strong>Read all three layers:</strong> your hand efficiency, the opponent's state, and the chapter goal. The highest-ukeire discard is not automatically the best strategic commitment when the opponent is in riichi or your lead only needs protection.</p>
         </div>
       </section>
 
@@ -790,6 +798,7 @@
 
         <p>The best scores come from chaining correct answers on risky paths with fast answers. One mistake resets your combo, so consistency beats risky guessing.</p>
         <p>On advanced efficiency and table decisions, choose between <strong>STEADY READ</strong> and <strong>PRESS THE TABLE</strong>. Press pays a 1,000-point stick up front and raises the score reward, but a miss adds Risk, loses point sticks, and can become a full deal-in at 100% Risk.</p>
+        <p>Point sticks now affect the table position shown by chapter goals. Goal-aligned decisions can earn an extra 1,000 points, while failing a defensive objective costs additional points. Opponent riichi, calls, and hand progress also change table Risk between your turns.</p>
       </section>
 
       <!-- Section 6: Strategy -->
@@ -851,7 +860,7 @@
 
         <div class="faq-item">
           <h3>What is the difference between this and a real mahjong game?</h3>
-          <p>This is a practice tool, not a full 4-player match. There are no opponents, no wall, and no calls like pon or chi. The focus is on recognizing patterns, waits, and efficient discards.</p>
+          <p>This is a focused decision roguelike, not a complete four-player rules simulator. NORMAL has a persistent hand, draws, rivers, active opponents, calls, riichi pressure, point sticks, and situational goals. It abstracts the other two seats and full hand resolution so each turn stays focused on efficiency, danger, value, and table position.</p>
         </div>
       </section>
 
