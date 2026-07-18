@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { MetaProgression } from '@/types';
 import { SoundManager } from '@/render/sound';
 import { GameConfig } from '@/config/game-config';
-import { getTodayKey, loadDailyProgress, loadMistakeTypes } from '@/data/storage';
 
 type Difficulty = 'beginner' | 'normal' | 'endless';
 
@@ -48,7 +47,7 @@ export class DeckSelectScene extends Phaser.Scene {
     const y = 320;
 
     const options: { id: Difficulty; label: string; desc: string; locked: boolean; recommended: boolean }[] = [
-      { id: 'beginner', label: 'BEGINNER', desc: 'Learn or play\n5 guided lessons + 5 question run\nNo Risk meter in lessons', locked: false, recommended: !beginnerDone },
+      { id: 'beginner', label: 'BEGINNER', desc: beginnerDone ? '5-question warm-up\nHints and forgiving play\nBuild confidence first' : 'Start with 5 guided hands\nLearn by making decisions\nNo prior knowledge needed', locked: false, recommended: !beginnerDone },
       { id: 'normal', label: 'NORMAL', desc: beginnerDone ? '12 questions · 2 lives\nCh.1-4: win / yaku / defense\nOpponent Risk active' : 'Complete Beginner\nto unlock', locked: !beginnerDone, recommended: beginnerDone && !normalDone },
       { id: 'endless', label: 'ENDLESS', desc: normalDone ? 'Infinite chapters\nDifficulty ramps up\nHow far can you go?' : 'Complete Normal\nto unlock', locked: !normalDone, recommended: false },
     ];
@@ -130,60 +129,33 @@ export class DeckSelectScene extends Phaser.Scene {
 
   private createBottomButtons(): void {
     const y = 640;
-    const daily = loadDailyProgress();
-    const dailyDone = daily.lastCompleted === getTodayKey();
-    const reviewCount = loadMistakeTypes().length;
+    const beginnerDone = localStorage.getItem(GameConfig.beginner.completedKey) === '1';
+    const isEndless = this.difficulty === 'endless';
+    const startLabel = this.difficulty === 'beginner'
+      ? (beginnerDone ? 'START BEGINNER' : 'START LEARNING')
+      : isEndless ? 'START ENDLESS' : 'START NORMAL';
 
-    if (!localStorage.getItem(GameConfig.beginner.completedKey)) {
-      this.createActionButton(512, 555, 310, 42, 'I KNOW RIICHI · PLAY NORMAL', 0x4a6fa5, 0x6286bd, () => {
-        localStorage.setItem(GameConfig.beginner.completedKey, '1');
-        this.scene.start('GameScene', {
-          action: 'new_run',
-          difficulty: 'normal',
-        });
-      });
-    }
-
-    this.createActionButton(350, y, 170, 48, dailyDone ? `DAILY ✓ · ${daily.streak}` : 'DAILY 5', 0x4a6fa5, 0x6286bd, () => {
+    // Keep the screen to one decision: choose a difficulty, then start.
+    // Beginner teaches on the first visit and becomes a warm-up afterwards.
+    this.createActionButton(512, y, 280, 52, startLabel, 0xc73e3a, 0xd44a46, () => {
       this.scene.start('GameScene', {
         action: 'new_run',
-        difficulty: 'beginner',
-        daily: true,
+        difficulty: isEndless ? 'normal' : this.difficulty,
+        endless: isEndless,
+        teaching: this.difficulty === 'beginner' && !beginnerDone,
       });
     });
 
-    if (reviewCount > 0) {
-      this.createActionButton(535, y, 170, 48, `REVIEW · ${reviewCount}`, 0x5c3825, 0x8b6f47, () => {
-        this.scene.start('GameScene', {
-          action: 'new_run',
-          difficulty: 'beginner',
-          review: true,
-        });
-      });
-    }
-
-    if (this.difficulty === 'beginner') {
-      this.createActionButton(reviewCount > 0 ? 720 : 620, y, 170, 48, 'LEARN GUIDE', 0x2d6a4f, 0x4a9e4a, () => {
-        this.scene.start('GameScene', {
-          action: 'new_run',
-          difficulty: 'beginner',
-          teaching: true,
-        });
-      });
-      this.createActionButton(reviewCount > 0 ? 900 : 815, y, 170, 48, 'START RUN', 0xc73e3a, 0xd44a46, () => {
-        this.scene.start('GameScene', {
-          action: 'new_run',
-          difficulty: 'beginner',
-        });
-      });
-    } else {
-      const isEndless = this.difficulty === 'endless';
-      this.createActionButton(760, y, 220, 48, isEndless ? 'START ENDLESS' : 'START NORMAL', 0xc73e3a, 0xd44a46, () => {
-        this.scene.start('GameScene', {
-          action: 'new_run',
-          difficulty: isEndless ? 'normal' : this.difficulty,
-          endless: isEndless,
-        });
+    if (!beginnerDone) {
+      const skip = this.add.text(512, 682, 'Already know riichi? Unlock Normal', {
+        fontSize: '12px', color: '#8b7a67', fontFamily: '"Nunito", sans-serif',
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      skip.on('pointerover', () => skip.setColor('#f5e6d3'));
+      skip.on('pointerout', () => skip.setColor('#8b7a67'));
+      skip.on('pointerdown', () => {
+        this.soundManager.playClick();
+        localStorage.setItem(GameConfig.beginner.completedKey, '1');
+        this.scene.start('GameScene', { action: 'new_run', difficulty: 'normal' });
       });
     }
 
