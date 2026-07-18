@@ -26,6 +26,12 @@ export interface OpponentTurnResult {
   log: string;
 }
 
+export interface TileDanger {
+  value: number;
+  label: 'GENBUTSU' | 'SUJI' | 'LOW' | 'DANGER';
+  reason: string;
+}
+
 const SPEED: Record<TableOpponentId, number> = {
   calm: 0.48,
   speed: 0.78,
@@ -36,7 +42,7 @@ const SPEED: Record<TableOpponentId, number> = {
 export function createOpponentTableState(id: TableOpponentId): OpponentTableState {
   return {
     id,
-    shanten: id === 'speed' ? 2 : 3,
+    shanten: id === 'riichi' ? 1 : id === 'speed' || id === 'hunter' ? 2 : 3,
     mode: 'building',
     points: 25000,
     turn: 0,
@@ -141,6 +147,68 @@ export function opponentStatusLabel(state: OpponentTableState): string {
   if (state.mode === 'defending') return 'FOLDING';
   if (state.shanten === 0) return state.mode === 'open' ? 'OPEN TENPAI' : 'TENPAI';
   return `${state.shanten}-SHANTEN${state.mode === 'open' ? ' · OPEN' : ''}`;
+}
+
+/**
+ * Compact riichi danger read for a discard candidate. This deliberately uses
+ * visible, teachable signals only: genbutsu, basic suji, tile position and
+ * honor exhaustion. It is not presented as a perfect deal-in probability.
+ */
+export function evaluateTileDanger(
+  key: string,
+  opponentRiver: string[],
+  state: OpponentTableState,
+): TileDanger {
+  if (opponentRiver.includes(key)) {
+    return { value: 0, label: 'GENBUTSU', reason: 'Already discarded by this opponent; safe against ron.' };
+  }
+
+  const [suit, rankText] = key.split('-');
+  const rank = Number(rankText);
+  const threatBonus = state.mode === 'riichi' ? 14 : state.shanten === 0 ? 10 : state.mode === 'open' ? 7 : 0;
+
+  if (suit === 'wind' || suit === 'dragon') {
+    const visible = opponentRiver.filter(tile => tile === key).length;
+    if (visible >= 3) return { value: 4, label: 'LOW', reason: 'Three copies are visible.' };
+    if (visible >= 2) return { value: 18, label: 'LOW', reason: 'Two copies are visible.' };
+    return { value: Math.min(95, 46 + threatBonus), label: 'DANGER', reason: 'Unseen honor can still complete a pair or triplet.' };
+  }
+
+  if (!['man', 'pin', 'sou'].includes(suit) || !Number.isFinite(rank)) {
+    return { value: 60 + threatBonus, label: 'DANGER', reason: 'No reliable safety signal.' };
+  }
+
+  const isSuji = opponentRiver.some(riverKey => {
+    const [riverSuit, riverRankText] = riverKey.split('-');
+    return riverSuit === suit && Math.abs(Number(riverRankText) - rank) === 3;
+  });
+  if (isSuji) {
+    return { value: 24 + Math.floor(threatBonus / 3), label: 'SUJI', reason: 'Basic suji reduces ryanmen danger, but is not guaranteed safe.' };
+  }
+
+  const base = rank === 1 || rank === 9 ? 36 : rank === 2 || rank === 8 ? 48 : 62;
+  const value = Math.min(95, base + threatBonus);
+  return value <= 42
+    ? { value, label: 'LOW', reason: 'Outer tile with lower shape coverage.' }
+    : { value, label: 'DANGER', reason: 'No visible genbutsu or suji protection.' };
+}
+
+export function strategicDiscardScore(
+  liveTiles: number,
+  danger: TileDanger,
+  objective: RoundObjective,
+  state: OpponentTableState,
+): number {
+  const defenseWeight = objective.id === 'avoid-dealin' || state.mode === 'riichi'
+    ? 1.35
+    : objective.id === 'protect-lead'
+      ? 1.2
+      : 1;
+  return liveTiles * 5 - danger.value * defenseWeight;
+}
+
+export function strategicRiskDelta(dangerValue: number): number {
+  return Math.round((dangerValue - 45) / 3);
 }
 
 function formatPoints(points: number): string {

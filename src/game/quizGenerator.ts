@@ -36,6 +36,9 @@ export interface QuizQuestion {
   drawnTileKey?: string;      // visually separate the latest draw
   playerRiver?: string[];     // tile keys for the persistent river
   opponentRiver?: string[];
+  optionAnnotations?: string[]; // compact strategic read shown above tile options
+  optionDangerValues?: number[];
+  strategicRead?: boolean;
 }
 
 // ===== Helpers =====
@@ -472,7 +475,7 @@ export function generateDiscardBest(): QuizQuestion {
   return generateFallback();
 }
 
-interface DiscardMetric {
+export interface DiscardMetric {
   tile: Tile;
   waits: string[];
   liveTiles: number;

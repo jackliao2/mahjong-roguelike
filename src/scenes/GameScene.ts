@@ -7,15 +7,18 @@ import { completeDailyChallenge, getTodayKey, loadMistakeTypes, loadRun, clearRu
 import { SoundManager } from '@/render/sound';
 import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
-import { generateContinuousTableTurn, generateQuestionForRound, getAdaptiveQuestionType, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
+import { generateContinuousTableTurn, generateQuestionForRound, getAdaptiveQuestionType, getChapterForRound, measureDiscardUkeire, QuizQuestion } from '@/game/quizGenerator';
 import { RelicId, getRandomRelics, Relic } from '@/game/relics';
 import {
   advanceOpponentTurn,
   createOpponentTableState,
+  evaluateTileDanger,
   getRoundObjective,
   objectivePointDelta,
   objectiveRiskModifier,
   opponentStatusLabel,
+  strategicDiscardScore,
+  strategicRiskDelta,
   OpponentTableState,
   RoundObjective,
 } from '@/game/tableState';
@@ -765,13 +768,15 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private getCorrectRiskDelta(q: QuizQuestion): number {
+  private getCorrectRiskDelta(q: QuizQuestion, optionIndex?: number): number {
     const opponent = OPPONENT_DEFS[this.currentOpponent];
     if (q.type === 'safe-discard') return opponent.safeRisk;
 
-    let delta = q.isBoss ? opponent.bossPushRisk : opponent.pushRisk;
-    if (this.currentPath === 'safe') delta = Math.max(4, delta - 5);
-    if (this.currentPath === 'elite') delta += 8;
+    let delta = q.strategicRead && optionIndex !== undefined && q.optionDangerValues?.[optionIndex] !== undefined
+      ? strategicRiskDelta(q.optionDangerValues[optionIndex])
+      : q.isBoss ? opponent.bossPushRisk : opponent.pushRisk;
+    if (this.currentPath === 'safe') delta = q.strategicRead ? delta - 3 : Math.max(4, delta - 5);
+    if (this.currentPath === 'elite') delta += q.strategicRead ? 5 : 8;
     delta += objectiveRiskModifier(this.currentObjective, this.stakeMultiplier > 1);
     return delta;
   }
@@ -926,6 +931,9 @@ export class GameScene extends Phaser.Scene {
       this.currentQuestion = continuousTurn
         ? generateContinuousTableTurn(this.tableHand13, this.tableTurn, this.playerRiver, this.opponentRiver, this.predictedNextDraw)
         : this.generateModeQuestion(ch.isBoss && !this.isBeginner && !this.isDaily && !this.isReview ? 'table-decision' : selectedType);
+      if (continuousTurn) {
+        this.currentQuestion = this.applyStrategicTableRead(this.currentQuestion);
+      }
       if (continuousTurn && this.relics.includes('perspective-glass') && this.currentQuestion) {
         this.predictedNextDraw = this.randomTableTile();
         this.currentQuestion.context = `${this.currentQuestion.context ?? 'LIVE TABLE'} · GLASS NEXT: ${this.getTileLabel(this.predictedNextDraw)}`;
@@ -1290,7 +1298,84 @@ export class GameScene extends Phaser.Scene {
       const isHidden = hiddenWrongIndices.has(i);
       const option = this.createOptionButton(tile, x, y, i, isHidden, false);
       this.questionContainer.add(option);
+      if (q.optionAnnotations?.[i]) {
+        const annotation = q.optionAnnotations[i];
+        const color = annotation.startsWith('GENBUTSU')
+          ? '#6fbf73'
+          : annotation.startsWith('SUJI') || annotation.startsWith('LOW')
+            ? '#e5b567'
+            : '#ff7b70';
+        const label = this.add.text(x, y - 62, annotation, {
+          fontSize: '9px', color, fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+          align: 'center', wordWrap: { width: 92 },
+        }).setOrigin(0.5);
+        this.questionContainer.add(label);
+      }
     });
+  }
+
+  private applyStrategicTableRead(question: QuizQuestion): QuizQuestion {
+    if (!question.tableTurn || question.type !== 'ukeire-choice') return question;
+
+    const defensiveObjective = this.currentObjective.id === 'protect-lead' || this.currentObjective.id === 'avoid-dealin';
+    const activeThreat = this.opponentState.mode === 'riichi' || this.opponentState.shanten === 0;
+    if (!defensiveObjective && !activeThreat) return question;
+
+    const visibleTiles = [...this.playerRiver, ...this.opponentRiver];
+    const options = [...question.options];
+    const safeKey = this.opponentRiver.find(key =>
+      question.hand.some(tile => tileKey(tile) === key)
+      && !options.some(tile => tileKey(tile) === key),
+    );
+
+    if (safeKey) {
+      const replacement = question.hand.find(tile => tileKey(tile) === safeKey);
+      if (replacement) {
+        const metrics = options.map(tile => measureDiscardUkeire(question.hand, tileKey(tile), visibleTiles));
+        let replaceIndex = 0;
+        for (let i = 1; i < metrics.length; i++) {
+          if ((metrics[i]?.liveTiles ?? 0) < (metrics[replaceIndex]?.liveTiles ?? 0)) replaceIndex = i;
+        }
+        options[replaceIndex] = replacement;
+      }
+    }
+
+    const reads = options.map((tile, index) => {
+      const metric = measureDiscardUkeire(question.hand, tileKey(tile), visibleTiles);
+      const danger = evaluateTileDanger(tileKey(tile), this.opponentRiver, this.opponentState);
+      const liveTiles = metric?.liveTiles ?? 0;
+      return {
+        index,
+        tile,
+        liveTiles,
+        danger,
+        score: strategicDiscardScore(liveTiles, danger, this.currentObjective, this.opponentState),
+      };
+    });
+    reads.sort((a, b) => b.score - a.score || a.danger.value - b.danger.value || b.liveTiles - a.liveTiles);
+    const best = reads[0];
+    const annotations = options.map((_, index) => {
+      const read = reads.find(item => item.index === index)!;
+      return `${read.danger.label} ${read.danger.value}\n${read.liveTiles} LIVE`;
+    });
+    const breakdown = options.map((tile, index) => {
+      const read = reads.find(item => item.index === index)!;
+      return `${this.getTileLabel(tile)}: ${read.danger.label} ${read.danger.value}, ${read.liveTiles} live`;
+    }).join(' · ');
+
+    return {
+      ...question,
+      options,
+      correctIndices: [best.index],
+      optionAnnotations: annotations,
+      optionDangerValues: options.map((_, index) => reads.find(item => item.index === index)!.danger.value),
+      strategicRead: true,
+      prompt: activeThreat
+        ? 'The opponent is ready. Which discard best balances safety and ukeire?'
+        : 'Protect your position. Which discard keeps the best safety-efficiency balance?',
+      context: `${question.context ?? 'LIVE TABLE'} · DEFENSE READ: genbutsu and suji can outweigh raw ukeire.`,
+      explanation: `${this.getTileLabel(best.tile)} is the best table-position discard: ${best.danger.reason} It keeps ${best.liveTiles} live tiles.\n${breakdown}`,
+    };
   }
 
   private renderRelicActions(): void {
@@ -1308,7 +1393,9 @@ export class GameScene extends Phaser.Scene {
           const base = this.getTableBaseHand(q);
           if (!base) return;
           this.swapUsedThisChapter = true;
-          this.currentQuestion = generateContinuousTableTurn(base, this.tableTurn, this.playerRiver, this.opponentRiver);
+          this.currentQuestion = this.applyStrategicTableRead(
+            generateContinuousTableTurn(base, this.tableTurn, this.playerRiver, this.opponentRiver),
+          );
           this.soundManager.playReward();
           this.renderQuestion();
         },
@@ -1370,7 +1457,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private advanceOpponentAfterSafeDiscard(): void {
-    this.opponentRiver.push(tileKey(this.randomTableTile()));
+    const visibleMatch = this.tableHand13 && this.tableHand13.length > 0
+      ? this.tableHand13[Phaser.Math.Between(0, this.tableHand13.length - 1)]
+      : this.randomTableTile();
+    this.opponentRiver.push(tileKey(visibleMatch));
     const opponentTurn = advanceOpponentTurn(this.opponentState, this.opponentRisk);
     this.opponentState = opponentTurn.state;
     this.lastOpponentAction = opponentTurn.log;
@@ -1570,7 +1660,7 @@ export class GameScene extends Phaser.Scene {
         this.bossKillsThisRun += 1;
       }
       trackWin([q.targetYaku || q.type], 1, finalScore, false);
-      const hitRon = this.applyRiskDelta(this.getCorrectRiskDelta(q));
+      const hitRon = this.applyRiskDelta(this.getCorrectRiskDelta(q, optionIndex));
       this.updateTopBar();
       if (hitRon) {
         this.changeTablePoints(-8000);
