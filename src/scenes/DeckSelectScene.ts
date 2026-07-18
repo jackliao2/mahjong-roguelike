@@ -134,6 +134,16 @@ export class DeckSelectScene extends Phaser.Scene {
     const dailyDone = daily.lastCompleted === getTodayKey();
     const reviewCount = loadMistakeTypes().length;
 
+    if (!localStorage.getItem(GameConfig.beginner.completedKey)) {
+      this.createActionButton(512, 555, 310, 42, 'I KNOW RIICHI · PLAY NORMAL', 0x4a6fa5, 0x6286bd, () => {
+        localStorage.setItem(GameConfig.beginner.completedKey, '1');
+        this.scene.start('GameScene', {
+          action: 'new_run',
+          difficulty: 'normal',
+        });
+      });
+    }
+
     this.createActionButton(350, y, 170, 48, dailyDone ? `DAILY ✓ · ${daily.streak}` : 'DAILY 5', 0x4a6fa5, 0x6286bd, () => {
       this.scene.start('GameScene', {
         action: 'new_run',

@@ -32,6 +32,10 @@ export interface QuizQuestion {
   targetYaku?: string;
   isBoss?: boolean;           // BOSS round — styled differently
   chapter?: string;           // e.g. "CH 1: TENPAI"
+  tableTurn?: number;         // continuous-table turn inside a run
+  drawnTileKey?: string;      // visually separate the latest draw
+  playerRiver?: string[];     // tile keys for the persistent river
+  opponentRiver?: string[];
 }
 
 // ===== Helpers =====
@@ -475,7 +479,11 @@ interface DiscardMetric {
 }
 
 /** Count remaining winning tiles after discarding one tile type. */
-function measureDiscardUkeire(hand14: Tile[], discardKey: string): DiscardMetric | null {
+export function measureDiscardUkeire(
+  hand14: Tile[],
+  discardKey: string,
+  visibleTileKeys: string[] = [],
+): DiscardMetric | null {
   const discardIndex = hand14.findIndex(tile => tileKey(tile) === discardKey);
   if (discardIndex < 0) return null;
   const hand13 = [...hand14];
@@ -483,6 +491,7 @@ function measureDiscardUkeire(hand14: Tile[], discardKey: string): DiscardMetric
   const waits = findWaitingTiles(hand13);
   const visibleCounts = new Map<string, number>();
   hand14.forEach(tile => visibleCounts.set(tileKey(tile), (visibleCounts.get(tileKey(tile)) ?? 0) + 1));
+  visibleTileKeys.forEach(key => visibleCounts.set(key, (visibleCounts.get(key) ?? 0) + 1));
   const liveTiles = waits.reduce((sum, wait) => sum + Math.max(0, 4 - (visibleCounts.get(wait) ?? 0)), 0);
   return { tile: discarded, waits, liveTiles };
 }
@@ -535,6 +544,79 @@ export function generateUkeireChoice(): QuizQuestion {
     };
   }
   return generateDiscardBest();
+}
+
+/**
+ * Continue one real hand across several quiz turns. The previous optimal
+ * discard leaves 13 tiles; this function draws a new tile and verifies every
+ * candidate against the win detector before offering the next decision.
+ */
+export function generateContinuousTableTurn(
+  previousHand13: Tile[] | null,
+  turn: number,
+  playerRiver: string[] = [],
+  opponentRiver: string[] = [],
+  forcedDraw?: Tile | null,
+): QuizQuestion {
+  if (!previousHand13 || previousHand13.length !== 13) {
+    const opening = generateUkeireChoice();
+    const draw = opening.hand[opening.hand.length - 1];
+    return {
+      ...opening,
+      prompt: 'You draw a tile. What do you discard?',
+      context: `LIVE TABLE · TURN ${turn} · Keep the best acceptance while the rivers develop.`,
+      tableTurn: turn,
+      drawnTileKey: draw ? tileKey(draw) : undefined,
+      playerRiver: [...playerRiver],
+      opponentRiver: [...opponentRiver],
+    };
+  }
+
+  const visibleRiverTiles = [...playerRiver, ...opponentRiver];
+
+  for (let attempt = 0; attempt < 240; attempt++) {
+    const draw = attempt === 0 && forcedDraw ? forcedDraw : randomTile();
+    if (!draw) continue;
+    const hand14 = [...previousHand13, draw];
+    if (!isValidTileCount(hand14) || detectWin(hand14)) continue;
+
+    const uniqueKeys = [...new Set(hand14.map(tileKey))];
+    const metrics = uniqueKeys
+      .map(key => measureDiscardUkeire(hand14, key, visibleRiverTiles))
+      .filter((metric): metric is DiscardMetric => metric !== null)
+      .sort((a, b) => b.liveTiles - a.liveTiles);
+    if (metrics.length < 4 || metrics[0].liveTiles <= 0) continue;
+    if (metrics[0].liveTiles === metrics[1].liveTiles) continue;
+
+    const candidates = metrics.slice(0, 4);
+    const options = shuffle(candidates.map(metric => metric.tile));
+    const bestKey = tileKey(metrics[0].tile);
+    const correctIndex = options.findIndex(tile => tileKey(tile) === bestKey);
+    const metricByKey = new Map(candidates.map(metric => [tileKey(metric.tile), metric]));
+    const breakdown = options.map(tile => {
+      const metric = metricByKey.get(tileKey(tile))!;
+      const waits = metric.waits.length ? metric.waits.map(keyToNotation).join('/') : 'none';
+      return `${tileNotation(tile)} → ${metric.liveTiles} live (${waits})`;
+    }).join(' · ');
+
+    return {
+      type: 'ukeire-choice',
+      hand: hand14,
+      prompt: `Turn ${turn}: draw ${tileNotation(draw)}. What do you discard?`,
+      context: 'LIVE TABLE · Your hand and both rivers continue from the previous turn.',
+      options,
+      correctIndices: [correctIndex],
+      explanation: `${tileNotation(metrics[0].tile)} keeps the strongest verified acceptance: ${metrics[0].liveTiles} live tiles.\n${breakdown}`,
+      tableTurn: turn,
+      drawnTileKey: tileKey(draw),
+      playerRiver: [...playerRiver],
+      opponentRiver: [...opponentRiver],
+    };
+  }
+
+  // If a random draw produces no unique educational answer, start a fresh
+  // verified shape instead of presenting an ambiguous decision.
+  return generateContinuousTableTurn(null, turn, playerRiver, opponentRiver);
 }
 
 type TableDecision = {

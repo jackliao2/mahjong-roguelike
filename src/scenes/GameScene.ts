@@ -1,13 +1,13 @@
 ﻿import Phaser from 'phaser';
 import { Tile, RunState } from '@/types';
 import { sortHand } from '@/game/hand';
-import { tileKey, getTileDisplay } from '@/game/tiles';
+import { tileKey, getTileDisplay, createFullTileSet } from '@/game/tiles';
 import { checkRunComplete, persistRun, endRun } from '@/roguelike/run';
 import { completeDailyChallenge, getTodayKey, loadMistakeTypes, loadRun, clearRun, recordMistake, resolveMistake } from '@/data/storage';
 import { SoundManager } from '@/render/sound';
 import { trackRunStart, trackRunComplete, trackWin } from '@/data/analytics';
 import { GameConfig } from '@/config/game-config';
-import { generateQuestionForRound, getAdaptiveQuestionType, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
+import { generateContinuousTableTurn, generateQuestionForRound, getAdaptiveQuestionType, getChapterForRound, QuizQuestion } from '@/game/quizGenerator';
 import { RelicId, getRandomRelics, Relic } from '@/game/relics';
 import {
   BUILD_DEFS,
@@ -163,6 +163,18 @@ export class GameScene extends Phaser.Scene {
   private relics: RelicId[] = [];
   private doubleTalismanUses: number = 0;
   private shieldUsedThisChapter: boolean = false;
+  private swapUsedThisChapter: boolean = false;
+  private riskSealUsedThisChapter: boolean = false;
+  private riskFrozen: boolean = false;
+
+  // Persistent table: normal rounds continue the same hand and rivers.
+  private tableHand13: Tile[] | null = null;
+  private tableTurn: number = 1;
+  private playerRiver: string[] = [];
+  private opponentRiver: string[] = [];
+  private tablePoints: number = 25000;
+  private lastPointDelta: number = 0;
+  private predictedNextDraw: Tile | null = null;
 
   // Path system
   private currentPath: PathId = 'safe';
@@ -234,6 +246,16 @@ export class GameScene extends Phaser.Scene {
     this.relics = [];
     this.doubleTalismanUses = 0;
     this.shieldUsedThisChapter = false;
+    this.swapUsedThisChapter = false;
+    this.riskSealUsedThisChapter = false;
+    this.riskFrozen = false;
+    this.tableHand13 = null;
+    this.tableTurn = 1;
+    this.playerRiver = [];
+    this.opponentRiver = [];
+    this.tablePoints = 25000;
+    this.lastPointDelta = 0;
+    this.predictedNextDraw = null;
     this.currentPath = 'safe';
     this.pathMultiplier = 1;
     this.buildStrategy = 'balanced';
@@ -508,7 +530,8 @@ export class GameScene extends Phaser.Scene {
       opponentLabel.setText(OPPONENT_DEFS[this.currentOpponent].name.toUpperCase());
     }
     if (riskLabel) {
-      riskLabel.setText(`${this.opponentRisk}%`);
+      const points = `${(this.tablePoints / 1000).toFixed(1)}k`;
+      riskLabel.setText(`${this.opponentRisk}% · ${points}`);
       riskLabel.setColor(this.opponentRisk >= 75 ? '#ff5a4f' : this.opponentRisk >= 45 ? '#e5b567' : '#4a9e4a');
     }
     if (riskFill) {
@@ -525,6 +548,7 @@ export class GameScene extends Phaser.Scene {
           'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
           'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
           'lucky-coin': '🪙', 'shield-tile': '🛡', 'red-five': '5',
+          'swap-charm': '↻', 'risk-seal': '◆',
         };
         relicLabel.setColor('#c9b89a');
         relicLabel.setText(this.relics.map(r => icons[r] || '?').join(' '));
@@ -574,7 +598,16 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.lastRonReason = "Time ran out under pressure.";
+    const pressedTimeout = this.stakeRiskPenalty > 0;
+    if (pressedTimeout) {
+      this.tablePoints = Math.max(0, this.tablePoints - 3900);
+      this.lastPointDelta = -4900;
+    }
     const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].timeoutRisk + this.stakeRiskPenalty);
+    if (pressedTimeout && hitRon) {
+      this.tablePoints = Math.max(0, this.tablePoints - 4100);
+      this.lastPointDelta = -9000;
+    }
     this.stakeMultiplier = 1;
     this.stakeRiskPenalty = 0;
     this.lives -= 1;
@@ -708,6 +741,12 @@ export class GameScene extends Phaser.Scene {
 
   private applyRiskDelta(delta: number): boolean {
     if (this.teachingMode) return false;
+
+    if (this.riskFrozen) {
+      this.lastRiskDelta = 0;
+      this.riskFrozen = false;
+      return false;
+    }
 
     this.lastRiskDelta = delta;
     this.opponentRisk = Phaser.Math.Clamp(this.opponentRisk + delta, 0, 100);
@@ -846,8 +885,17 @@ export class GameScene extends Phaser.Scene {
         ? getAdaptiveQuestionType(this.combo, this.mistakesThisRun, this.round, ch.isBoss)
         : undefined;
       const selectedType = reviewType ?? adaptiveType;
-      this.currentQuestion = this.generateModeQuestion(selectedType);
-      if (adaptiveType) {
+      const continuousTurn = !this.isBeginner && !this.isDaily && !this.isReview && !ch.isBoss;
+      this.currentQuestion = continuousTurn
+        ? generateContinuousTableTurn(this.tableHand13, this.tableTurn, this.playerRiver, this.opponentRiver, this.predictedNextDraw)
+        : this.generateModeQuestion(ch.isBoss && !this.isBeginner && !this.isDaily && !this.isReview ? 'table-decision' : selectedType);
+      if (continuousTurn && this.relics.includes('perspective-glass') && this.currentQuestion) {
+        this.predictedNextDraw = this.randomTableTile();
+        this.currentQuestion.context = `${this.currentQuestion.context ?? 'LIVE TABLE'} · GLASS NEXT: ${this.getTileLabel(this.predictedNextDraw)}`;
+      } else if (continuousTurn) {
+        this.predictedNextDraw = null;
+      }
+      if (adaptiveType && !continuousTurn) {
         const adaptiveLabel = adaptiveType === 'tenpai-win' ? 'ADAPTIVE RECOVERY' : 'ADAPTIVE CHALLENGE';
         this.currentQuestion.context = this.currentQuestion.context
           ? `${adaptiveLabel} · ${this.currentQuestion.context}`
@@ -887,8 +935,8 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(depth + 1);
     const elements: Phaser.GameObjects.GameObject[] = [overlay, title, subtitle];
     const choices = [
-      { x: 370, label: 'STEADY READ', detail: 'x1.0 score\nNo extra risk', color: 0x4a9e4a, mult: 1, risk: 0 },
-      { x: 654, label: 'PRESS THE TABLE', detail: 'x1.6 score\nWrong: +25% Risk', color: 0xc73e3a, mult: 1.6, risk: 25 },
+      { x: 370, label: 'STEADY READ', detail: 'x1.0 score\nNo point stick', color: 0x4a9e4a, mult: 1, risk: 0 },
+      { x: 654, label: 'PRESS THE TABLE', detail: 'Pay 1,000 · x1.6 score\nWin +4,000 · Wrong can deal in', color: 0xc73e3a, mult: 1.6, risk: 25 },
     ];
     choices.forEach(choice => {
       const card = this.add.rectangle(choice.x, 380, 240, 210, 0x1a0f08)
@@ -909,6 +957,11 @@ export class GameScene extends Phaser.Scene {
         this.soundManager.playClick();
         this.stakeMultiplier = choice.mult;
         this.stakeRiskPenalty = choice.risk;
+        if (choice.risk > 0) {
+          this.tablePoints = Math.max(0, this.tablePoints - 1000);
+          this.lastPointDelta = -1000;
+          this.updateTopBar();
+        }
         if (this.currentQuestion && choice.mult > 1) {
           const stakeBanner = `PRESS x${choice.mult.toFixed(1)} · WRONG +${choice.risk}% RISK`;
           this.currentQuestion.context = this.currentQuestion.context
@@ -1073,32 +1126,63 @@ export class GameScene extends Phaser.Scene {
         this.questionContainer.add(context);
       }
 
+      if (q.tableTurn) {
+        const yourRiver = q.playerRiver?.length ? q.playerRiver.map(key => this.getTileKeyLabel(key)).join(' ') : '—';
+        const theirRiver = q.opponentRiver?.length ? q.opponentRiver.map(key => this.getTileKeyLabel(key)).join(' ') : '—';
+        const riverText = this.add.text(512, 205, `YOUR RIVER  ${yourRiver}\n${OPPONENT_DEFS[this.currentOpponent].name.toUpperCase()}  ${theirRiver}`, {
+          fontSize: '11px', color: '#9f8b73', fontFamily: '"Nunito", sans-serif',
+          align: 'center', lineSpacing: 4, wordWrap: { width: 850 },
+        }).setOrigin(0.5);
+        this.questionContainer.add(riverText);
+      }
+
       if (!isTableDecision) {
         const handPanelW = 640;
         const handPanelH = 110;
-        const handPanelY = 250;
+        const handPanelY = q.tableTurn ? 290 : 250;
         const handPanelBg = this.add.rectangle(512, handPanelY, handPanelW, handPanelH, 0x0a0604, 0.4)
           .setStrokeStyle(1, 0x3a2818, 0.5);
         this.questionContainer.add(handPanelBg);
 
-        const sortedHand = sortHand([...q.hand]);
-        this.renderHandTiles(sortedHand, 512, handPanelY + 8);
+        let sortedHand: Tile[];
+        if (q.tableTurn && q.drawnTileKey) {
+          const base = [...q.hand];
+          let drawnIndex = -1;
+          for (let i = base.length - 1; i >= 0; i--) {
+            if (tileKey(base[i]) === q.drawnTileKey) { drawnIndex = i; break; }
+          }
+          const drawn = drawnIndex >= 0 ? base.splice(drawnIndex, 1)[0] : undefined;
+          sortedHand = sortHand(base);
+          if (drawn) sortedHand.push(drawn);
+        } else {
+          sortedHand = sortHand([...q.hand]);
+        }
+        this.renderHandTiles(sortedHand, 512, handPanelY + 8, !!q.tableTurn);
       }
 
       this.renderOptions(q.options, 512, isTableDecision ? 410 : 490);
+      this.renderRelicActions();
     }
   }
 
   /** Render the hand tiles in a centered row */
-  private renderHandTiles(tiles: Tile[], centerX: number, y: number): void {
+  private renderHandTiles(tiles: Tile[], centerX: number, y: number, separateDraw: boolean = false): void {
     const gap = 4;
-    const totalW = tiles.length * HAND_TILE_W + (tiles.length - 1) * gap;
+    const drawGap = separateDraw ? 14 : 0;
+    const totalW = tiles.length * HAND_TILE_W + (tiles.length - 1) * gap + drawGap;
     const startX = centerX - totalW / 2 + HAND_TILE_W / 2;
 
     tiles.forEach((tile, i) => {
-      const x = startX + i * (HAND_TILE_W + gap);
+      const isDrawn = separateDraw && i === tiles.length - 1;
+      const x = startX + i * (HAND_TILE_W + gap) + (isDrawn ? drawGap : 0);
       const sprite = this.createHandTileSprite(tile, x, y);
       this.questionContainer.add(sprite);
+      if (isDrawn) {
+        const drawLabel = this.add.text(x, y - 48, 'DRAW', {
+          fontSize: '9px', color: '#e5b567', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+        }).setOrigin(0.5);
+        this.questionContainer.add(drawLabel);
+      }
     });
   }
 
@@ -1126,7 +1210,6 @@ export class GameScene extends Phaser.Scene {
   /** Render 4 option tiles as large clickable buttons */
   private renderOptions(tiles: Tile[], centerX: number, y: number): void {
     const hasHint = this.relics.includes('hint-scroll');
-    const hasGlass = this.relics.includes('perspective-glass');
     const q = this.currentQuestion;
     if (!q) return;
 
@@ -1155,10 +1238,91 @@ export class GameScene extends Phaser.Scene {
     tiles.forEach((tile, i) => {
       const x = startX + i * (OPTION_TILE_W + gap);
       const isHidden = hiddenWrongIndices.has(i);
-      const isCorrectAnswer = q.correctIndices.includes(i);
-      const option = this.createOptionButton(tile, x, y, i, isHidden, hasGlass && isCorrectAnswer);
+      const option = this.createOptionButton(tile, x, y, i, isHidden, false);
       this.questionContainer.add(option);
     });
+  }
+
+  private renderRelicActions(): void {
+    const q = this.currentQuestion;
+    if (!q?.tableTurn || this.answered) return;
+
+    const actions: { x: number; label: string; enabled: boolean; color: number; run: (label: Phaser.GameObjects.Text) => void }[] = [];
+    if (this.relics.includes('swap-charm')) {
+      actions.push({
+        x: 395,
+        label: this.swapUsedThisChapter ? 'SWAP USED' : 'SWAP DRAW',
+        enabled: !this.swapUsedThisChapter,
+        color: 0x4a6fa5,
+        run: () => {
+          const base = this.getTableBaseHand(q);
+          if (!base) return;
+          this.swapUsedThisChapter = true;
+          this.currentQuestion = generateContinuousTableTurn(base, this.tableTurn, this.playerRiver, this.opponentRiver);
+          this.soundManager.playReward();
+          this.renderQuestion();
+        },
+      });
+    }
+    if (this.relics.includes('risk-seal')) {
+      actions.push({
+        x: 629,
+        label: this.riskSealUsedThisChapter ? 'RISK SEAL USED' : 'FREEZE RISK',
+        enabled: !this.riskSealUsedThisChapter,
+        color: 0x2d6a4f,
+        run: label => {
+          this.riskSealUsedThisChapter = true;
+          this.riskFrozen = true;
+          label.setText('RISK FROZEN');
+          this.soundManager.playReward();
+        },
+      });
+    }
+
+    actions.forEach(action => {
+      const bg = this.add.rectangle(action.x, 605, 190, 38, action.enabled ? action.color : 0x2a2018)
+        .setStrokeStyle(1, action.enabled ? 0xe5b567 : 0x4a3828);
+      const label = this.add.text(action.x, 605, action.label, {
+        fontSize: '11px', color: action.enabled ? '#f5e6d3' : '#6a5845',
+        fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.questionContainer.add([bg, label]);
+      if (action.enabled) {
+        const hit = this.add.rectangle(action.x, 605, 190, 38, 0xffffff, 0).setInteractive({ useHandCursor: true });
+        hit.on('pointerdown', () => action.run(label));
+        this.questionContainer.add(hit);
+      }
+    });
+  }
+
+  private getTableBaseHand(q: QuizQuestion): Tile[] | null {
+    if (!q.drawnTileKey || q.hand.length !== 14) return null;
+    const base = [...q.hand];
+    for (let i = base.length - 1; i >= 0; i--) {
+      if (tileKey(base[i]) === q.drawnTileKey) {
+        base.splice(i, 1);
+        return base;
+      }
+    }
+    return null;
+  }
+
+  private commitTableDiscard(q: QuizQuestion, discarded: Tile): void {
+    if (!q.tableTurn || q.hand.length !== 14) return;
+    const nextHand = [...q.hand];
+    const exactIndex = nextHand.findIndex(tile => tile.id === discarded.id);
+    const discardIndex = exactIndex >= 0 ? exactIndex : nextHand.findIndex(tile => tileKey(tile) === tileKey(discarded));
+    if (discardIndex < 0) return;
+    nextHand.splice(discardIndex, 1);
+    this.tableHand13 = nextHand;
+    this.playerRiver.push(tileKey(discarded));
+    this.opponentRiver.push(tileKey(this.randomTableTile()));
+    this.tableTurn += 1;
+  }
+
+  private randomTableTile(): Tile {
+    const wall = createFullTileSet();
+    return wall[Phaser.Math.Between(0, wall.length - 1)];
   }
 
   /** Create a clickable option tile button */
@@ -1293,6 +1457,7 @@ export class GameScene extends Phaser.Scene {
         finalScore += this.lastDefenseBonus;
       }
       const chosenTile = q.options[optionIndex];
+      this.commitTableDiscard(q, chosenTile);
       if (this.relics.includes('red-five') && this.questionHasFive(q, chosenTile)) {
         this.lastRelicBonus = 750;
         this.lastRelicBonusName = 'Red Five';
@@ -1306,6 +1471,12 @@ export class GameScene extends Phaser.Scene {
           this.buildFocus = 0;
         }
       }
+      if (this.stakeMultiplier > 1) {
+        this.tablePoints += 4000;
+        this.lastPointDelta = 3000;
+      } else {
+        this.lastPointDelta = 0;
+      }
       this.score += finalScore;
       this.showScoreBurst(finalScore, q.isBoss === true);
       if (q.isBoss) {
@@ -1315,6 +1486,8 @@ export class GameScene extends Phaser.Scene {
       const hitRon = this.applyRiskDelta(this.getCorrectRiskDelta(q));
       this.updateTopBar();
       if (hitRon) {
+        this.tablePoints = Math.max(0, this.tablePoints - 8000);
+        this.lastPointDelta = this.stakeMultiplier > 1 ? -5000 : -8000;
         this.lastRonReason = q.type === 'safe-discard'
           ? 'The fold came too late.'
           : 'You pushed through a dangerous table.';
@@ -1338,7 +1511,16 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       this.lastRonReason = 'Unsafe read gave the opponent a shot.';
+      const pressedWrong = this.stakeRiskPenalty > 0;
+      if (pressedWrong) {
+        this.tablePoints = Math.max(0, this.tablePoints - 3900);
+        this.lastPointDelta = -4900;
+      }
       const hitRon = this.applyRiskDelta(OPPONENT_DEFS[this.currentOpponent].wrongRisk + this.stakeRiskPenalty);
+      if (pressedWrong && hitRon) {
+        this.tablePoints = Math.max(0, this.tablePoints - 4100);
+        this.lastPointDelta = -9000;
+      }
       this.stakeMultiplier = 1;
       this.stakeRiskPenalty = 0;
       this.lives -= 1;
@@ -1523,7 +1705,7 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x4a9e4a, 0.8).setDepth(depth);
     const topAccent = this.add.rectangle(512, 360 - panelH / 2 + 2, panelW - 12, 2, 0x4a9e4a, 0.8).setDepth(depth);
 
-    const title = this.add.text(512, 300, this.isReview ? 'REVIEW CLEARED!' : 'CORRECT!', {
+    const title = this.add.text(512, 292, this.isReview ? 'REVIEW CLEARED!' : 'CORRECT!', {
       fontSize: '32px', color: '#4a9e4a', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -1558,8 +1740,13 @@ export class GameScene extends Phaser.Scene {
       ? `\nPRESS THE TABLE: x${this.stakeMultiplier.toFixed(1)} score`
       : '';
 
-    const expText = this.add.text(512, 360, q.explanation + buildBonus + pathBonus + stakeText + focusText + comboText + speedText + defenseText + riskText + relicText, {
-      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
+    const fullExplanation = q.explanation + buildBonus + pathBonus + stakeText + focusText + comboText + speedText + defenseText + riskText + relicText;
+    const pointText = this.lastPointDelta !== 0
+      ? ` · POINTS ${this.lastPointDelta > 0 ? '+' : ''}${this.lastPointDelta}`
+      : '';
+    const quickSummary = `COMBO x${this.combo} · RISK ${this.opponentRisk}%${pointText}\nClick WHY? only when you want the full read.`;
+    const expText = this.add.text(512, 360, quickSummary, {
+      fontSize: '16px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif',
       align: 'center', wordWrap: { width: panelW - 60 }, lineSpacing: 6,
     }).setOrigin(0.5).setDepth(depth + 1);
 
@@ -1568,15 +1755,16 @@ export class GameScene extends Phaser.Scene {
     // Next button
     const isLastRound = checkRunComplete({ round: this.round, maxRounds: this.maxRounds, score: this.score, targetScore: 0, unlockedYaku: [], isRiichi: false, riichiTurns: 0, doraIndicators: [] } as RunState);
     const btnLabel = isLastRound ? 'COMPLETE!' : 'NEXT ROUND ▶';
-    const btnW = 200;
+    const btnW = 180;
     const btnH = 48;
     const btnY = 360 + panelH / 2 - 40;
-    const btnBg = this.add.rectangle(512, btnY, btnW, btnH, 0xc73e3a)
+    const btnX = 620;
+    const btnBg = this.add.rectangle(btnX, btnY, btnW, btnH, 0xc73e3a)
       .setStrokeStyle(3, 0x2b1810).setDepth(depth);
-    const btnText = this.add.text(512, btnY, btnLabel, {
+    const btnText = this.add.text(btnX, btnY, btnLabel, {
       fontSize: '16px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(depth + 1);
-    const btnHit = this.add.rectangle(512, btnY, btnW, btnH, 0xffffff, 0)
+    const btnHit = this.add.rectangle(btnX, btnY, btnW, btnH, 0xffffff, 0)
       .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
     btnHit.on('pointerover', () => btnBg.setFillStyle(0xe04e4a));
     btnHit.on('pointerout', () => btnBg.setFillStyle(0xc73e3a));
@@ -1585,7 +1773,22 @@ export class GameScene extends Phaser.Scene {
       elements.forEach(el => el.destroy());
       this.proceedToNextRound();
     });
-    elements.push(btnBg, btnText, btnHit);
+    const whyX = 404;
+    const whyBg = this.add.rectangle(whyX, btnY, 160, btnH, 0x2d6a4f)
+      .setStrokeStyle(2, 0x1a0f08).setDepth(depth);
+    const whyText = this.add.text(whyX, btnY, 'WHY?', {
+      fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 1);
+    const whyHit = this.add.rectangle(whyX, btnY, 160, btnH, 0xffffff, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(depth + 2);
+    let explanationOpen = false;
+    whyHit.on('pointerdown', () => {
+      explanationOpen = !explanationOpen;
+      expText.setText(explanationOpen ? fullExplanation : quickSummary);
+      expText.setFontSize(explanationOpen ? 13 : 16);
+      whyText.setText(explanationOpen ? 'SUMMARY' : 'WHY?');
+    });
+    elements.push(btnBg, btnText, btnHit, whyBg, whyText, whyHit);
 
     this.feedbackContainer.add(elements);
 
@@ -1938,8 +2141,8 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(depth + 1);
 
     const riskLine = this.lives > 0
-      ? `Risk hit 100%. You lost 1 life, pressure resets to ${this.opponentRisk}%.`
-      : 'Risk hit 100%. You dealt in and the run is over.';
+      ? `Risk hit 100%. You lost 1 life and point sticks; pressure resets to ${this.opponentRisk}%.`
+      : 'Risk hit 100%. You dealt in, lost point sticks, and the run is over.';
     const detail = `${this.lastRonReason}\n${riskLine}\n\n${q.explanation}`;
     const expText = this.add.text(512, 390, detail, {
       fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
@@ -1970,6 +2173,7 @@ export class GameScene extends Phaser.Scene {
         this.finishRun(false);
       }
     });
+
     elements.push(btnBg, btnText, btnHit);
 
     this.feedbackContainer.add(elements);
@@ -2015,6 +2219,9 @@ export class GameScene extends Phaser.Scene {
     // Reset shield at new chapter
     if (isNewChapter) {
       this.shieldUsedThisChapter = false;
+      this.swapUsedThisChapter = false;
+      this.riskSealUsedThisChapter = false;
+      this.riskFrozen = false;
     }
 
     // After BOSS: relic choice + path choice
@@ -2126,6 +2333,7 @@ export class GameScene extends Phaser.Scene {
         'hint-scroll': '📜', 'time-charm': '⏳', 'double-talisman': '✦',
         'perspective-glass': '🔍', 'combo-feather': '🪶', 'hourglass': '⌛',
         'lucky-coin': '🪙', 'shield-tile': '🛡', 'red-five': '5',
+        'swap-charm': '↻', 'risk-seal': '◆',
       };
       const icon = this.add.text(x, y - 20, iconMap[relic.id] || '?', {
         fontSize: '48px',
@@ -2272,6 +2480,17 @@ export class GameScene extends Phaser.Scene {
     if (tile.suit === 'sou') return `${tile.rank}s`;
     if (tile.suit === 'wind') return ['E', 'S', 'W', 'N'][tile.rank - 1] || '?';
     if (tile.suit === 'dragon') return ['Rd', 'Wh', 'Gr'][tile.rank - 1] || '?';
+    return '?';
+  }
+
+  private getTileKeyLabel(key: string): string {
+    const [suit, rankText] = key.split('-');
+    const rank = Number(rankText);
+    if (suit === 'man') return `${rank}m`;
+    if (suit === 'pin') return `${rank}p`;
+    if (suit === 'sou') return `${rank}s`;
+    if (suit === 'wind') return ['E', 'S', 'W', 'N'][rank - 1] || '?';
+    if (suit === 'dragon') return ['Rd', 'Wh', 'Gr'][rank - 1] || '?';
     return '?';
   }
 

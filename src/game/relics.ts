@@ -14,7 +14,9 @@ export type RelicId =
   | 'hourglass'
   | 'lucky-coin'
   | 'shield-tile'
-  | 'red-five';
+  | 'red-five'
+  | 'swap-charm'
+  | 'risk-seal';
 
 export interface Relic {
   id: RelicId;
@@ -45,7 +47,7 @@ export const RELICS: Record<RelicId, Relic> = {
   'perspective-glass': {
     id: 'perspective-glass',
     name: 'Perspective Glass',
-    description: 'Correct answer highlighted with bright golden glow (impossible to miss)',
+    description: 'Preview the likely next draw without revealing the answer',
     rarity: 'common',
   },
   'combo-feather': {
@@ -76,6 +78,18 @@ export const RELICS: Record<RelicId, Relic> = {
     id: 'red-five',
     name: 'Red Five',
     description: '+750 score when the hand or chosen tile contains a 5',
+    rarity: 'rare',
+  },
+  'swap-charm': {
+    id: 'swap-charm',
+    name: 'Swap Charm',
+    description: 'Once per chapter, replace the current draw and recalculate the hand',
+    rarity: 'epic',
+  },
+  'risk-seal': {
+    id: 'risk-seal',
+    name: 'Risk Seal',
+    description: 'Once per chapter, freeze Risk before committing to a dangerous read',
     rarity: 'rare',
   },
 };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tileKey } from './tiles';
-import { generateQuestionForRound, generateSafeDiscard, generateTableDecision, generateUkeireChoice, generateYakuCombo, getAdaptiveQuestionType } from './quizGenerator';
+import { generateContinuousTableTurn, generateQuestionForRound, generateSafeDiscard, generateTableDecision, generateUkeireChoice, generateYakuCombo, getAdaptiveQuestionType } from './quizGenerator';
 
 describe('quiz generator defense questions', () => {
   it('builds real safe-discard questions instead of falling back', () => {
@@ -57,6 +57,29 @@ describe('quiz generator efficiency questions', () => {
 
   it('introduces ukeire in round 7 of a normal run', () => {
     expect(generateQuestionForRound(7, 12).type).toBe('ukeire-choice');
+  });
+});
+
+describe('continuous table turns', () => {
+  it('carries the post-discard hand and rivers into the next draw', () => {
+    const first = generateContinuousTableTurn(null, 1);
+    const discard = first.options[first.correctIndices[0]];
+    const hand13 = [...first.hand];
+    const discardIndex = hand13.findIndex(tile => tile.id === discard.id);
+    hand13.splice(discardIndex, 1);
+
+    const second = generateContinuousTableTurn(hand13, 2, ['man-1'], ['wind-1']);
+    const originalIds = new Set(hand13.map(tile => tile.id));
+    const carriedIds = second.hand.filter(tile => originalIds.has(tile.id));
+
+    expect(first.tableTurn).toBe(1);
+    expect(second.tableTurn).toBe(2);
+    expect(second.hand).toHaveLength(14);
+    expect(carriedIds).toHaveLength(13);
+    expect(second.playerRiver).toEqual(['man-1']);
+    expect(second.opponentRiver).toEqual(['wind-1']);
+    expect(second.correctIndices).toHaveLength(1);
+    expect(second.prompt).toContain('Turn 2');
   });
 });
 
