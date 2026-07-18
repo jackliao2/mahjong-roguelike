@@ -99,6 +99,7 @@
   // Skip on the game page so the banner never covers the hand tray/buttons.
   var isPlayPage = location.pathname === '/play.html' || location.pathname === '/play';
   if (!isPlayPage && !localStorage.getItem('mjrg_cookies_accepted')) {
+    document.body.classList.add('mri-cookie-open');
     var banner = document.createElement('div');
     banner.className = 'mri-cookie-banner';
     banner.setAttribute('role', 'dialog');
@@ -117,6 +118,7 @@
       banner.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
       banner.style.opacity = '0';
       banner.style.transform = 'translateY(100%)';
+      document.body.classList.remove('mri-cookie-open');
       setTimeout(function () { banner.remove(); }, 350);
     });
     banner.appendChild(btn);

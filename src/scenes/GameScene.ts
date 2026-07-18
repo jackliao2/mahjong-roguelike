@@ -173,6 +173,7 @@ export class GameScene extends Phaser.Scene {
   private timerEvent: Phaser.Time.TimerEvent | null = null;
   private baseTime: number = 20; // seconds per question
   private bossTime: number = 30;
+  private quitConfirmOpen: boolean = false;
 
   // Relic system
   private relics: RelicId[] = [];
@@ -228,6 +229,7 @@ export class GameScene extends Phaser.Scene {
     this.tutorialActive = data?.tutorial === true;
     this.teachingMode = data?.teaching === true;
     this.tutorialStep = 0;
+    this.quitConfirmOpen = false;
 
     if (this.teachingMode) {
       this.maxRounds = GameConfig.beginner.trainingLevels.length;
@@ -442,9 +444,57 @@ export class GameScene extends Phaser.Scene {
     });
     quitHit.on('pointerdown', () => {
       this.soundManager.playClick();
-      this.stopTimer();
-      window.location.href = '/';
+      this.showQuitConfirmation();
     });
+  }
+
+  private showQuitConfirmation(): void {
+    if (this.quitConfirmOpen) return;
+    this.quitConfirmOpen = true;
+    const resumeTimer = this.timerActive;
+    const remainingTime = this.timeLeft;
+    this.stopTimer();
+
+    const depth = 12000;
+    const overlay = this.add.rectangle(512, 360, 1024, 720, 0x000000, 0.78).setDepth(depth);
+    const panel = this.add.rectangle(512, 360, 500, 230, 0x1a0f08)
+      .setStrokeStyle(3, 0xe5b567).setDepth(depth + 1);
+    const title = this.add.text(512, 305, 'LEAVE THIS RUN?', {
+      fontSize: '27px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 2);
+    const detail = this.add.text(512, 345, 'Current round progress will be lost.', {
+      fontSize: '14px', color: '#c9b89a', fontFamily: '"Nunito", sans-serif',
+    }).setOrigin(0.5).setDepth(depth + 2);
+    const elements: Phaser.GameObjects.GameObject[] = [overlay, panel, title, detail];
+
+    const close = (leave: boolean): void => {
+      elements.forEach(element => element.destroy());
+      this.quitConfirmOpen = false;
+      if (leave) {
+        window.location.href = '/';
+      } else if (resumeTimer && !this.answered) {
+        this.startTimer(Math.max(0.1, remainingTime));
+      }
+    };
+
+    const addButton = (x: number, label: string, color: number, onClick: () => void): void => {
+      const bg = this.add.rectangle(x, 410, 180, 48, color).setStrokeStyle(2, 0x2b1810).setDepth(depth + 1);
+      const text = this.add.text(x, 410, label, {
+        fontSize: '14px', color: '#f5e6d3', fontFamily: '"Nunito", sans-serif', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(depth + 2);
+      const hit = this.add.rectangle(x, 410, 180, 48, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true }).setDepth(depth + 3);
+      hit.on('pointerover', () => bg.setAlpha(0.82));
+      hit.on('pointerout', () => bg.setAlpha(1));
+      hit.on('pointerdown', () => {
+        this.soundManager.playClick();
+        onClick();
+      });
+      elements.push(bg, text, hit);
+    };
+
+    addButton(408, 'KEEP PLAYING', 0x4a9e4a, () => close(false));
+    addButton(616, 'LEAVE RUN', 0xc73e3a, () => close(true));
   }
 
   private updateTopBar(): void {

@@ -196,6 +196,10 @@ html {
   flex-wrap: wrap;
   animation: mriBannerSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* Keep the homepage's primary play buttons above the first-visit notice. */
+body.mri-cookie-open .hero-content {
+  transform: translateY(-48px);
+}
 @keyframes mriBannerSlideUp {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
@@ -237,12 +241,22 @@ html {
 }
 @media (max-width: 640px) {
   .mri-cookie-banner {
-    flex-direction: column;
-    text-align: center;
-    padding: 16px 18px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    text-align: left;
+    gap: 10px;
+    padding: 10px 12px;
   }
   .mri-cookie-banner p {
-    font-size: 12px;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .mri-cookie-btn {
+    font-size: 8px;
+    padding: 8px 10px;
+  }
+  body.mri-cookie-open .hero-content {
+    transform: translateY(-36px);
   }
 }
 

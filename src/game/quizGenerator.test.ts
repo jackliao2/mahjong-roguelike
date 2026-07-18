@@ -132,3 +132,33 @@ describe('adaptive difficulty', () => {
     expect(getAdaptiveQuestionType(5, 0, 2, false)).toBeUndefined();
   });
 });
+
+describe('release question-bank smoke test', () => {
+  it('keeps every generated question structurally playable', () => {
+    const types = [
+      'tenpai-win',
+      'waiting-tiles',
+      'yaku-form:tanyao',
+      'yaku-form:pinfu',
+      'yaku-form:yakuhai',
+      'discard-best',
+      'ukeire-choice',
+      'table-decision',
+      'safe-discard',
+      'multi-wait',
+      'yaku-combo',
+    ];
+
+    for (const type of types) {
+      for (let sample = 0; sample < 30; sample++) {
+        const question = generateQuestionForRound(1, 12, type);
+        expect(question.type, type).not.toBe('fallback');
+        expect(question.options.length, type).toBeGreaterThanOrEqual(3);
+        expect(question.correctIndices.length, type).toBeGreaterThan(0);
+        expect(question.correctIndices.every(index => index >= 0 && index < question.options.length), type).toBe(true);
+        expect(question.prompt.trim().length, type).toBeGreaterThan(10);
+        expect(question.explanation.trim().length, type).toBeGreaterThan(10);
+      }
+    }
+  });
+});
