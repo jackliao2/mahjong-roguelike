@@ -198,13 +198,21 @@ export function strategicDiscardScore(
   danger: TileDanger,
   objective: RoundObjective,
   state: OpponentTableState,
+  valueScore: number = 0,
+  valueWeight: number = 0,
 ): number {
   const defenseWeight = objective.id === 'avoid-dealin' || state.mode === 'riichi'
     ? 1.35
     : objective.id === 'protect-lead'
       ? 1.2
       : 1;
-  return liveTiles * 5 - danger.value * defenseWeight;
+  return liveTiles * 5 - danger.value * defenseWeight + valueScore * valueWeight;
+}
+
+export function objectiveValueWeight(objective: RoundObjective, focusedBuild: boolean): number {
+  if (objective.id === 'minimum-value') return 0.55;
+  if (objective.id === 'overtake') return 0.34;
+  return focusedBuild ? 0.18 : 0;
 }
 
 export function strategicRiskDelta(dangerValue: number): number {

@@ -16,6 +16,7 @@ import {
   getRoundObjective,
   objectivePointDelta,
   objectiveRiskModifier,
+  objectiveValueWeight,
   opponentStatusLabel,
   strategicDiscardScore,
   strategicRiskDelta,
@@ -27,6 +28,7 @@ import {
   BUILD_FOCUS_BONUS,
   BUILD_FOCUS_TARGET,
   BuildId,
+  assessDiscardValue,
   getBuildQuestionType,
   getBuildScoreMultiplier,
   isBuildRouteMatch,
@@ -775,8 +777,8 @@ export class GameScene extends Phaser.Scene {
     let delta = q.strategicRead && optionIndex !== undefined && q.optionDangerValues?.[optionIndex] !== undefined
       ? strategicRiskDelta(q.optionDangerValues[optionIndex])
       : q.isBoss ? opponent.bossPushRisk : opponent.pushRisk;
-    if (this.currentPath === 'safe') delta = q.strategicRead ? delta - 3 : Math.max(4, delta - 5);
-    if (this.currentPath === 'elite') delta += q.strategicRead ? 5 : 8;
+    if (this.currentPath === 'safe') delta = q.optionDangerValues ? delta - 3 : Math.max(4, delta - 5);
+    if (this.currentPath === 'elite') delta += q.optionDangerValues ? 5 : 8;
     delta += objectiveRiskModifier(this.currentObjective, this.stakeMultiplier > 1);
     return delta;
   }
@@ -1302,6 +1304,8 @@ export class GameScene extends Phaser.Scene {
         const annotation = q.optionAnnotations[i];
         const color = annotation.startsWith('GENBUTSU')
           ? '#6fbf73'
+          : annotation.startsWith('VALUE')
+            ? '#6aa3e0'
           : annotation.startsWith('SUJI') || annotation.startsWith('LOW')
             ? '#e5b567'
             : '#ff7b70';
@@ -1319,14 +1323,18 @@ export class GameScene extends Phaser.Scene {
 
     const defensiveObjective = this.currentObjective.id === 'protect-lead' || this.currentObjective.id === 'avoid-dealin';
     const activeThreat = this.opponentState.mode === 'riichi' || this.opponentState.shanten === 0;
-    if (!defensiveObjective && !activeThreat) return question;
+    const focusedBuild = this.buildStrategy !== 'balanced';
+    const valueWeight = objectiveValueWeight(this.currentObjective, focusedBuild);
+    const valueDriven = valueWeight > 0;
+    const dangerDriven = defensiveObjective || activeThreat;
+    if (!dangerDriven && !valueDriven) return question;
 
     const visibleTiles = [...this.playerRiver, ...this.opponentRiver];
     const options = [...question.options];
-    const safeKey = this.opponentRiver.find(key =>
+    const safeKey = dangerDriven ? this.opponentRiver.find(key =>
       question.hand.some(tile => tileKey(tile) === key)
       && !options.some(tile => tileKey(tile) === key),
-    );
+    ) : undefined;
 
     if (safeKey) {
       const replacement = question.hand.find(tile => tileKey(tile) === safeKey);
@@ -1340,41 +1348,82 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    if (valueDriven) {
+      const uniqueHandTiles = [...new Map(question.hand.map(tile => [tileKey(tile), tile])).values()];
+      const routeCandidates = uniqueHandTiles
+        .map(tile => ({ tile, value: assessDiscardValue(question.hand, tileKey(tile), this.buildStrategy) }))
+        .sort((a, b) => b.value.score - a.value.score);
+      const routeBest = routeCandidates[0];
+      if (routeBest && !options.some(tile => tileKey(tile) === tileKey(routeBest.tile))) {
+        const replaceable = options
+          .map((tile, index) => ({
+            index,
+            key: tileKey(tile),
+            value: assessDiscardValue(question.hand, tileKey(tile), this.buildStrategy).score,
+          }))
+          .filter(item => item.key !== safeKey)
+          .sort((a, b) => a.value - b.value);
+        if (replaceable[0]) options[replaceable[0].index] = routeBest.tile;
+      }
+    }
+
     const reads = options.map((tile, index) => {
       const metric = measureDiscardUkeire(question.hand, tileKey(tile), visibleTiles);
       const danger = evaluateTileDanger(tileKey(tile), this.opponentRiver, this.opponentState);
+      const value = assessDiscardValue(question.hand, tileKey(tile), this.buildStrategy);
       const liveTiles = metric?.liveTiles ?? 0;
       return {
         index,
         tile,
         liveTiles,
         danger,
-        score: strategicDiscardScore(liveTiles, danger, this.currentObjective, this.opponentState),
+        value,
+        score: strategicDiscardScore(
+          liveTiles,
+          dangerDriven ? danger : { ...danger, value: 0 },
+          this.currentObjective,
+          this.opponentState,
+          value.score,
+          valueWeight,
+        ),
       };
     });
-    reads.sort((a, b) => b.score - a.score || a.danger.value - b.danger.value || b.liveTiles - a.liveTiles);
+    reads.sort((a, b) => b.score - a.score || b.value.score - a.value.score || a.danger.value - b.danger.value || b.liveTiles - a.liveTiles);
     const best = reads[0];
     const annotations = options.map((_, index) => {
       const read = reads.find(item => item.index === index)!;
-      return `${read.danger.label} ${read.danger.value}\n${read.liveTiles} LIVE`;
+      return dangerDriven
+        ? `${read.danger.label} ${read.danger.value}\n${read.liveTiles} LIVE · V${read.value.score}`
+        : `VALUE ${read.value.score}\n${read.liveTiles} LIVE`;
     });
     const breakdown = options.map((tile, index) => {
       const read = reads.find(item => item.index === index)!;
-      return `${this.getTileLabel(tile)}: ${read.danger.label} ${read.danger.value}, ${read.liveTiles} live`;
+      return `${this.getTileLabel(tile)}: ${read.liveTiles} live, ${read.value.hanPotential}H ${read.value.route}${dangerDriven ? `, ${read.danger.label} ${read.danger.value}` : ''}`;
     }).join(' · ');
+
+    const prompt = activeThreat
+      ? 'The opponent is ready. Which discard best balances safety, value and ukeire?'
+      : defensiveObjective
+        ? 'Protect your position. Which discard keeps the best safety-efficiency balance?'
+        : this.currentObjective.id === 'minimum-value' || this.currentObjective.id === 'overtake'
+          ? 'You need points. Which discard best preserves value and ukeire?'
+          : `${BUILD_DEFS[this.buildStrategy].shortName} route: which discard best preserves value and ukeire?`;
+    const readContext = dangerDriven
+      ? 'TABLE READ: safety can outweigh raw ukeire.'
+      : `VALUE READ: ${best.value.route} potential matters alongside ukeire.`;
 
     return {
       ...question,
       options,
       correctIndices: [best.index],
       optionAnnotations: annotations,
-      optionDangerValues: options.map((_, index) => reads.find(item => item.index === index)!.danger.value),
+      optionDangerValues: dangerDriven
+        ? options.map((_, index) => reads.find(item => item.index === index)!.danger.value)
+        : undefined,
       strategicRead: true,
-      prompt: activeThreat
-        ? 'The opponent is ready. Which discard best balances safety and ukeire?'
-        : 'Protect your position. Which discard keeps the best safety-efficiency balance?',
-      context: `${question.context ?? 'LIVE TABLE'} · DEFENSE READ: genbutsu and suji can outweigh raw ukeire.`,
-      explanation: `${this.getTileLabel(best.tile)} is the best table-position discard: ${best.danger.reason} It keeps ${best.liveTiles} live tiles.\n${breakdown}`,
+      prompt,
+      context: `${question.context ?? 'LIVE TABLE'} · ${readContext}`,
+      explanation: `${this.getTileLabel(best.tile)} best fits the table: ${best.value.reason}${dangerDriven ? ` ${best.danger.reason}` : ''} It keeps ${best.liveTiles} live tiles.\n${breakdown}`,
     };
   }
 

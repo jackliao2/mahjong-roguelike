@@ -5,6 +5,7 @@ import {
   getRoundObjective,
   objectivePointDelta,
   objectiveRiskModifier,
+  objectiveValueWeight,
   opponentStatusLabel,
   evaluateTileDanger,
   strategicDiscardScore,
@@ -72,5 +73,11 @@ describe('round objectives', () => {
     expect(strategicRiskDelta(0)).toBeLessThan(0);
     expect(strategicRiskDelta(24)).toBeLessThan(0);
     expect(strategicRiskDelta(76)).toBeGreaterThan(0);
+  });
+
+  it('weights hand value most heavily when the table needs a valuable hand', () => {
+    const valueGoal = getRoundObjective(7, 18000, 28000);
+    const tenpaiGoal = getRoundObjective(1, 25000, 25000);
+    expect(objectiveValueWeight(valueGoal, true)).toBeGreaterThan(objectiveValueWeight(tenpaiGoal, true));
   });
 });

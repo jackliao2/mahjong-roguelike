@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   BUILD_FOCUS_BONUS,
   BUILD_FOCUS_TARGET,
+  assessDiscardValue,
   getBuildQuestionType,
   getBuildScoreMultiplier,
   isBuildRouteMatch,
 } from './builds';
+import { createTile } from '../game/tiles';
 
 describe('roguelike builds', () => {
   it('rewards focused yaku routes', () => {
@@ -53,5 +55,29 @@ describe('roguelike builds', () => {
   it('defines focus reward tuning in one place', () => {
     expect(BUILD_FOCUS_TARGET).toBe(3);
     expect(BUILD_FOCUS_BONUS).toBe(1200);
+  });
+
+  it('rewards cutting a terminal from a Tanyao route', () => {
+    const hand = [
+      createTile('man', 1), createTile('man', 2), createTile('man', 3),
+      createTile('man', 4), createTile('man', 5), createTile('man', 6),
+      createTile('pin', 2), createTile('pin', 3), createTile('pin', 4),
+      createTile('sou', 4), createTile('sou', 5), createTile('sou', 6),
+      createTile('sou', 7), createTile('sou', 7),
+    ];
+    expect(assessDiscardValue(hand, 'man-1', 'tanyao').score)
+      .toBeGreaterThan(assessDiscardValue(hand, 'man-2', 'tanyao').score);
+  });
+
+  it('protects a dragon pair on a Yakuhai route', () => {
+    const hand = [
+      createTile('dragon', 1), createTile('dragon', 1),
+      createTile('man', 2), createTile('man', 3), createTile('man', 4),
+      createTile('pin', 2), createTile('pin', 3), createTile('pin', 4),
+      createTile('sou', 2), createTile('sou', 3), createTile('sou', 4),
+      createTile('man', 6), createTile('man', 7), createTile('man', 8),
+    ];
+    expect(assessDiscardValue(hand, 'man-6', 'yakuhai').score)
+      .toBeGreaterThan(assessDiscardValue(hand, 'dragon-1', 'yakuhai').score);
   });
 });

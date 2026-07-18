@@ -1,4 +1,14 @@
+import { Tile } from '@/types';
+import { isHonorTile, isSimple, tileKey } from '@/game/tiles';
+
 export type BuildId = 'balanced' | 'tanyao' | 'pinfu' | 'yakuhai';
+
+export interface DiscardValueAssessment {
+  score: number;
+  hanPotential: number;
+  route: string;
+  reason: string;
+}
 
 export interface BuildDef {
   id: BuildId;
@@ -90,4 +100,65 @@ export function getBuildQuestionType(
 export function isBuildRouteMatch(buildId: BuildId, targetYaku?: string): boolean {
   const build = BUILD_DEFS[buildId];
   return !!build.targetYaku && build.targetYaku === targetYaku;
+}
+
+/** Estimate route potential after a discard. This is a strategic heuristic,
+ * not a final scoring calculation for an unfinished hand. */
+export function assessDiscardValue(hand14: Tile[], discardKey: string, buildId: BuildId): DiscardValueAssessment {
+  const discardIndex = hand14.findIndex(tile => tileKey(tile) === discardKey);
+  const remaining = [...hand14];
+  if (discardIndex >= 0) remaining.splice(discardIndex, 1);
+
+  if (buildId === 'tanyao') {
+    const breakers = remaining.filter(tile => !isSimple(tile)).length;
+    const score = clamp(100 - breakers * 22);
+    return {
+      score,
+      hanPotential: breakers === 0 ? 2 : breakers <= 2 ? 1 : 0,
+      route: 'TANYAO',
+      reason: breakers === 0 ? 'All remaining tiles are simples.' : `${breakers} terminal/honor blocker${breakers === 1 ? '' : 's'} remain.`,
+    };
+  }
+
+  if (buildId === 'yakuhai') {
+    const dragonCounts = [1, 2, 3].map(rank => remaining.filter(tile => tile.suit === 'dragon' && tile.rank === rank).length);
+    const maxDragons = Math.max(...dragonCounts);
+    return {
+      score: clamp(maxDragons * 34),
+      hanPotential: maxDragons >= 3 ? 2 : maxDragons === 2 ? 1 : 0,
+      route: 'YAKUHAI',
+      reason: maxDragons >= 3 ? 'Dragon triplet is secured.' : maxDragons === 2 ? 'Dragon pair is one tile from Yakuhai.' : 'No protected dragon pair yet.',
+    };
+  }
+
+  const suited = remaining.filter(tile => !isHonorTile(tile));
+  const connected = suited.filter(tile => suited.some(other =>
+    other.id !== tile.id && other.suit === tile.suit && Math.abs(other.rank - tile.rank) <= 2,
+  )).length;
+  const honors = remaining.length - suited.length;
+  const tripletExcess = [...new Set(remaining.map(tileKey))]
+    .filter(key => remaining.filter(tile => tileKey(tile) === key).length >= 3).length;
+  const connectionScore = remaining.length > 0 ? (connected / remaining.length) * 100 : 0;
+
+  if (buildId === 'pinfu') {
+    const score = clamp(connectionScore - honors * 14 - tripletExcess * 10);
+    return {
+      score,
+      hanPotential: score >= 75 ? 2 : score >= 48 ? 1 : 0,
+      route: 'PINFU',
+      reason: honors > 0 ? `${honors} honor tile${honors === 1 ? '' : 's'} still obstruct a sequence hand.` : 'Connected suited tiles preserve the Pinfu route.',
+    };
+  }
+
+  const score = clamp(45 + connectionScore * 0.4 - honors * 4);
+  return {
+    score,
+    hanPotential: score >= 72 ? 2 : 1,
+    route: 'CLOSED',
+    reason: 'Closed-hand value follows shape quality and future riichi potential.',
+  };
+}
+
+function clamp(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
